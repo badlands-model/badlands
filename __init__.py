@@ -15,4 +15,5 @@ from .surface import FVmethod
 from .surface import raster2TIN
 from .surface import elevationTIN 
 from .surface import partitionTIN 
+from .surface import visualiseTIN 
 from .libUtils import *
