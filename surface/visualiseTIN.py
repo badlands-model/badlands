@@ -15,7 +15,7 @@ import h5py
 import numpy 
 import xml.etree.ElementTree as ETO
 
-def output_cellsIDs(allIDs, inIDs, cells):
+def output_cellsIDs(allIDs, inIDs, visXlim, visYlim, coords, cells):
     """ 
     This function defines the cells used for visualising the TIN surface. 
         
@@ -29,15 +29,24 @@ def output_cellsIDs(allIDs, inIDs, cells):
         Numpy integer-type array filled with the global vertex IDs for each local grid located
         within the partition (not those on the edges).
         
+    variable: visXlim, visYlim
+        Numpy array containing the extent of visualisation grid.
+        
+    variable: coords
+        Numpy float-type array containing X, Y coordinates of the local TIN nodes.
+        
     variable: cells
         Numpy integer-type array filled with the global cell IDs.
         
     Return
     ----------
+    variable: outPts
+        Numpy integer-type array containing the output node IDs.
+        
     variable: cells
         Numpy integer-type array containing the output cell IDs.
     """
-
+    
     # Find non-overlapping vertices in each local TIN
     findInside = numpy.in1d(allIDs, inIDs)
     inside = numpy.where(findInside == True)  
@@ -47,8 +56,27 @@ def output_cellsIDs(allIDs, inIDs, cells):
     intCell = 1*inCell
     sumCell = intCell.sum(axis=1)
     localCell = numpy.where(sumCell>0)[0]
+    outcell = cells[localCell]
     
-    return cells[localCell] + 1
+    # Get the non-border points IDs
+    notBorder = numpy.where((coords[allIDs,0] >= visXlim[0]) & (coords[allIDs,0] <= visXlim[1]) &
+                         (coords[allIDs,1] >= visYlim[0]) & (coords[allIDs,1] <= visYlim[1]) )[0]
+    notBorderIDs = numpy.zeros(len(allIDs),dtype=int)
+    notBorderIDs.fill(-1)
+    notBorderIDs[notBorder] = allIDs[notBorder]
+    findInside2 = numpy.in1d(allIDs, notBorderIDs)
+    inside2 = numpy.where(findInside2 == True)
+    
+    inCell2 = numpy.in1d(outcell, inside2).reshape(outcell.shape)
+    intCell2 = 1*inCell2
+    sumCell2 = intCell2.sum(axis=1)
+    localCell2 = numpy.where(sumCell2>2)[0]
+    
+    # Get inside nodes
+    rav = numpy.ravel(outcell[localCell2])
+    allInside = numpy.unique(rav)
+    
+    return allIDs[allInside], outcell[localCell2] + 1
 
 def write_hdf5(folder, h5file, step, coords, elevation, discharge, cells, rank):
     """ 

@@ -156,7 +156,8 @@ class flowNetwork:
         numPts = len(self.stack)
         
         #self.drainage_area = numpy.zeros(numPts, dtype=float) + Acell
-        self.discharge = numpy.zeros(numPts, dtype=float) + Acell[self.stack]*rain[self.stack]
+        self.discharge = numpy.zeros(numPts, dtype=float) 
+        self.discharge[self.stack] = Acell[self.stack]*rain[self.stack]
 
         # Compute drainage area and discharge using libUtils
         self.discharge = FLOWalgo.flowcompute.discharge(self.stack,self.receivers,self.discharge)
