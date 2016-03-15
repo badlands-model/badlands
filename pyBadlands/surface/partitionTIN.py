@@ -13,7 +13,7 @@ This module proposes 2 methods of triangular irregular network (TIN) partitionin
 import time
 import numpy 
 import triangle
-import FASTloop
+from pyBadlands.libUtils import FASTloop
 import mpi4py.MPI as mpi
 
 from numba import jit
