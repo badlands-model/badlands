@@ -22,7 +22,6 @@ LIBDIR = .
 INCDIR = .
 
 # Depression filling algorithm using Planchon and Darboux
-PD_FMOD = PDstack
 PD_LMOD = PDalgo
 
 # Single flow direction
@@ -42,7 +41,7 @@ FNET_LMOD = FLWnetwork
 FV_FMOD = FVclass
 FV_LMOD = FVframe
 
-all: ${PD_FMOD}.so ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so 
+all: ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so 
 
 	@echo ""
 	@echo ""
@@ -61,11 +60,8 @@ all: ${PD_FMOD}.so ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so 
 	@echo ""
 	@echo ""
 
-${PD_FMOD}.so: ${PD_FMOD}.f90
-	${F90} ${FFLAGS} -o lib${PD_FMOD}.so $<
-
 ${PD_LMOD}.so: ${PD_LMOD}.f90
-	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${PD_FMOD} -m ${PD_LMOD} $<
+	${F2PY} ${F2PY_FLAGS} -c -m ${PD_LMOD} $<
 
 ${SFD_LMOD}.so: ${SFD_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -m ${SFD_LMOD} $<
@@ -89,5 +85,4 @@ ${FV_LMOD}.so: ${FV_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${FV_FMOD} -m ${FV_LMOD} $<
     
 clean:
-	rm -fv *~ *.bak *.o *.mod *.original
-	rm lib${PD_FMOD}.so ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so lib${FNET_FMOD}.so ${FNET_LMOD}.so lib${FV_FMOD}.so ${FV_LMOD}.so
+	rm -fv *~ *.bak *.o *.mod *.original *.so
