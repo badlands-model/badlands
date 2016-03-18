@@ -85,7 +85,7 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
 
     return flowIDs, line[lineIDs,:2]
 
-def write_hdf5(folder, h5file, step, coords, elevation, discharge, connect, rank):
+def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, basin, connect, rank):
     """ 
     This function writes for each processor the HDF5 file containing flow network information. 
         
@@ -109,6 +109,12 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, connect, rank
     variable : discharge
         Numpy float-type array containing the discharge values of the local TIN.
            
+    variable : chi
+        Numpy float-type array containing the chi values of the local TIN.
+           
+    variable : basin
+        Numpy integer-type array containing the basin IDs values of the local TIN.
+           
     variable: connect
         Numpy 2D integer-type array containing the local nodes IDs for each connected network.
         
@@ -127,10 +133,15 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, connect, rank
         f.create_dataset('connect',shape=(len(connect[:,0]),2), dtype='int32', compression='gzip')
         f["connect"][:,:2] = connect
         
+        f.create_dataset('basin',shape=(len(basin), 1), dtype='int32', compression='gzip')
+        f["basin"][:,0] = basin
+
+        f.create_dataset('chi',shape=(len(chi), 1), dtype='float32', compression='gzip')
+        f["chi"][:,0] = chi
         
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
-
+        
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """ 
     This function writes the XDmF file which is calling the XmF file. 
@@ -227,9 +238,19 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('Dimensions="%d 3">%s:/coords</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Geometry>\n')
     
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="BasinID">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Integer" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/basin</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
+        
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Discharge">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/discharge</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
+        
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="Chi">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/chi</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
         
         f.write('      </Grid>\n')

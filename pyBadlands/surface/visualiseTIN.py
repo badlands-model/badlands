@@ -78,7 +78,7 @@ def output_cellsIDs(allIDs, inIDs, visXlim, visYlim, coords, cells):
     
     return allIDs[allInside], outcell[localCell2] + 1
 
-def write_hdf5(folder, h5file, step, coords, elevation, discharge, cells, rank):
+def write_hdf5(folder, h5file, step, coords, elevation, discharge, cumdiff, cells, rank):
     """ 
     This function writes for each processor the HDF5 file containing surface information. 
         
@@ -102,6 +102,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, cells, rank):
     variable : discharge
         Numpy float-type array containing the discharge values of the local TIN.
             
+    variable : cumdiff
+        Numpy float-type array containing the cumulative elevation changes values of the local TIN.
+        
     variable: cells
         Numpy integer-type array filled with the global cell IDs.
         
@@ -124,6 +127,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, cells, rank):
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
 
+        f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["cumdiff"][:,0] = cumdiff
+        
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """ 
     This function writes the XDmF file which is calling the XmF file. 
@@ -222,6 +228,11 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Discharge">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/discharge</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
+        
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="Cumdiff">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/cumdiff</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
         
         f.write('      </Grid>\n')

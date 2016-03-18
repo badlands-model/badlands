@@ -68,10 +68,11 @@ contains
 
   end subroutine push2
 
-  subroutine filling(elevation,pyNgbs,fillTH,epsilon,pybounds,demH,pydnodes)
+  subroutine filling(elevation,pyNgbs,fillTH,epsilon,pybounds,sealimit,demH,pydnodes)
 
       integer :: pydnodes
       integer,intent(in) :: pybounds
+      real(kind=8),intent(in) :: sealimit
       real(kind=8),intent(in) :: fillTH
       real(kind=8),intent(in) :: epsilon
       real(kind=8),intent(in) :: elevation(pydnodes)
@@ -86,7 +87,7 @@ contains
       size2 = 0
       demH(1:pybounds) = elevation(1:pybounds)
       do k=pybounds+1,pydnodes
-          demH(k) = 1.e6
+          if( demH(k) > sealimit) demH(k) = 1.e6
           call push1(k)
       enddo
 

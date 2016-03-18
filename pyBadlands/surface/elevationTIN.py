@@ -12,13 +12,13 @@ This module encapsulates functions related to Badlands surface elevation.
 
 import time
 import numpy
-from pyBadlands.libUtils import PDalgo
+import PDalgo
 import warnings
 
 from scipy.interpolate import interpn
 from scipy.interpolate import LinearNDInterpolator
 from scipy.interpolate import NearestNDInterpolator
-    
+
 def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
     """ 
     This function defines the elevation of the TIN surface edges for 2 different types of conditions:
@@ -57,25 +57,22 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
             if len(ids) == 1:
                 elevation[id] = elevation[ngbhs[ids]]
             elif len(ids) > 1:
-                ngbhsID = numpy.where(ngbhs > -1)[0]
-                lselect = edge_lenght[id,ngbhsID]
+                lselect = edge_lenght[id,ids]
                 picked = numpy.argmin(lselect)
-                elevation[id] = elevation[ngbhs[picked]]
+                elevation[id] = elevation[ngbhs[ids[picked]]]
             else:
                 missedPts = numpy.append(missedPts,id)
-            
+       
         if len(missedPts) > 0 :
             for p in range(len(missedPts)):
                 id = missedPts[p]
                 ngbhs = neighbours[id,:]
-                ngbhsID = numpy.where(ngbhs > -1)[0]
-                lgths = edge_lenght[id,ngbhsID]
-                ids = numpy.where((elevation[ngbhs] < 1.e7) & (ngbhs >= 0))[0]
+                ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
                     raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
-                lselect = lgths[ids]
+                lselect = edge_lenght[id,ids]
                 picked = numpy.argmin(lselect)
-                elevation[id] = elevation[ngbhs[picked]]
+                elevation[id] = elevation[ngbhs[ids[picked]]]
     
     # Slope        
     elif btype == 1:
@@ -85,38 +82,29 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
             ids = numpy.where(ngbhs >= boundPts)[0]
             if len(ids) == 1:
                 # Pick closest non-boundary vertice
-                ngbhsID = numpy.where(ngbhs > -1)[0]
-                lgths = edge_lenght[id,ngbhsID]
-                picked = ids[0]
-                ln1 = lgths[ids[0]]
+                ln1 = edge_lenght[id,ids[0]]
                 id1 = ngbhs[ids[0]] 
                 # Pick closest non-boundary vertice to first picked
                 ngbhs2 = neighbours[id1,:]
                 ids2 = numpy.where(ngbhs2 >= boundPts)[0]
-                ngbhsID2 = numpy.where(ngbhs2 > -1)[0]
-                lgths2 = edge_lenght[id1,ngbhsID2]
-                lselect2 = lgths2[ids2]
-                if len(lselect2) > 0:
-                    picked2 = numpy.argmin(lselect2)
-                    id2 = ngbhs2[ids2[picked2]]
-                    ln2 = lselect2[picked2]
+                lselect = edge_lenght[id1,ids2]
+                if len(lselect) > 0:
+                    picked = numpy.argmin(lselect)
+                    id2 = ngbhs2[ids2[picked]]
+                    ln2 = lselect[picked]
                     elevation[id] = (elevation[id1]-elevation[id2])*(ln2+ln1)/ln2 + elevation[id2] 
                 else:
                     missedPts = numpy.append(missedPts,id) 
             elif len(ids) > 1:
                 # Pick closest non-boundary vertice
-                ngbhsID = numpy.where(ngbhs > -1)[0]
-                lgths = edge_lenght[id,ngbhsID]
-                lselect = lgths[ids]
+                lselect = edge_lenght[id,ids]
                 picked = numpy.argmin(lselect)
                 id1 = ngbhs[ids[picked]]
                 ln1 = lselect[picked]
                 # Pick closest non-boundary vertice to first picked
                 ngbhs2 = neighbours[id1,:]
                 ids2 = numpy.where(ngbhs2 >= boundPts)[0]
-                ngbhsID2 = numpy.where(ngbhs2 > -1)[0]
-                lgths2 = edge_lenght[id1,ngbhsID2]
-                lselect2 = lgths2[ids2]
+                lselect2 = edge_lenght[id1,ids2]
                 if len(lselect2) > 0:
                     picked2 = numpy.argmin(lselect2)
                     id2 = ngbhs2[ids2[picked2]]
@@ -131,14 +119,12 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
             for p in range(0,len(missedPts)):
                 id = missedPts[p]
                 ngbhs = neighbours[id,:]
-                ngbhsID = numpy.where(ngbhs > -1)[0]
-                lgths = edge_lenght[id,ngbhsID]
-                ids = numpy.where( (elevation[ngbhs] < 1.e7) & (ngbhs >= 0) )[0]
+                ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
                     raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
-                lselect = lgths[ids]
+                lselect = edge_lenght[id,ids]
                 picked = numpy.argmin(lselect)
-                elevation[id] = elevation[ngbhs[picked]] 
+                elevation[id] = elevation[ngbhs[ids[picked]]]
         
     return elevation
 
@@ -222,7 +208,7 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
     return elev 
     
     
-def pit_filling_PD(elev, neighbours, boundPts, fillTH=1., epsilon=0.01):
+def pit_filling_PD(elev, neighbours, boundPts, sea, fillTH=1., epsilon=0.01):
     """ 
     This function calls a depression-less algorithm from Planchon & Darboux to compute the flow pathway.
         
@@ -236,6 +222,9 @@ def pit_filling_PD(elev, neighbours, boundPts, fillTH=1., epsilon=0.01):
         
     variable : boundPts
         Number of nodes on the edges of the TIN surface.
+        
+    variable : sea
+        Current elevation of sea level.
         
     variable : btype
         Integer defining the type of boundary: 0 for flat and 1 for slope condition.
@@ -255,6 +244,6 @@ def pit_filling_PD(elev, neighbours, boundPts, fillTH=1., epsilon=0.01):
     """     
        
     # Call pit filling function from libUtils
-    fillH = PDalgo.pdcompute.filling(elev, neighbours, fillTH, epsilon, boundPts )
+    fillH = PDalgo.pdcompute.filling(elev, neighbours, fillTH, epsilon, boundPts, sea )
         
     return fillH

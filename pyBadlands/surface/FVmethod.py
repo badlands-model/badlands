@@ -12,7 +12,7 @@ This module encapsulates functions related to Badlands SP finite volume discreti
 
 import time
 import numpy
-from pyBadlands.libUtils import FVframe
+import FVframe
 import warnings
 import triangle
 import mpi4py.MPI as mpi

@@ -13,7 +13,7 @@ This module proposes 2 methods of triangular irregular network (TIN) partitionin
 import time
 import numpy 
 import triangle
-from pyBadlands.libUtils import FASTloop
+import FASTloop
 import mpi4py.MPI as mpi
 
 from numba import jit
@@ -21,8 +21,45 @@ from numpy import random
 from pyzoltan.core import zoltan
 from pyzoltan.core.carray import UIntArray, DoubleArray
 
+def get_closest_factors(size):
+    """ 
+    This function finds the two closest integers which, when multiplied, equal a given number.
+    This is used to defined the partition of the regular and TIN grids.
+    
+    Parameters
+    ----------
+    variable : size
+        Integer corresponding to the number of CPUs that are used.
+        
+    Return
+    ----------
+    variable: partID
+        Numpy integer-type array filled with the ID of the partition each node belongs to.
+        
+    variable : nb1, nb2
+        Integers which specify the number of processors along each axis.
+    """
+    factors =  []
+    for i in range(1, size + 1):
+        if size % i == 0:
+            factors.append(i)
+    factors = numpy.array(factors)
+    if len(factors)%2 == 0:
+        n1 = int( len(factors)/2 ) - 1
+        n2 = n1 + 1
+    else:
+        n1 = int( len(factors)/2 )
+        n2 = n1
+    nb1 = factors[n1]
+    nb2 = factors[n2]
+    if nb1*nb2 != size:
+        raise ValueError('Error in the decomposition grid: the number of domains \
+        decomposition is not equal to the number of CPUs allocated')
+    
+    return nb1, nb2
+
 @jit
-def simple(X, Y, nbprocX, nbprocY):
+def simple(X, Y, Xdecomp=1, Ydecomp=1):
     """ 
     This function defines a simple partitioning of the computational domain based on
     row and column wise decomposition. The method is relatively fast compared to other techniques 
@@ -37,7 +74,7 @@ def simple(X, Y, nbprocX, nbprocY):
     variable : X, Y
         Numpy arrays containing the X and Y coordinates of the TIN vertices.
         
-    variable : nbprocX, nbprocY
+    variable : Xdecomp, Xdecomp
         Integers which specify the number of processors along each axis. It is a requirement that
         the number of processors used matches the proposed decomposition:
                     >> nb CPUs = nbprocX x nbprocY
@@ -46,6 +83,9 @@ def simple(X, Y, nbprocX, nbprocY):
     ----------
     variable: partID
         Numpy integer-type array filled with the ID of the partition each node belongs to.
+        
+    variable : nbprocX, nbprocY
+        Integers which specify the number of processors along each axis.
     """
     
     # Initialise MPI communications
@@ -53,6 +93,24 @@ def simple(X, Y, nbprocX, nbprocY):
     rank = comm.Get_rank()
     size = comm.Get_size()
     
+    xmin = X.min()
+    xmax = X.max()
+    ymin = Y.min()
+    ymax = Y.max()
+    
+    if Xdecomp == 1 and Ydecomp == 1 and size > 1:
+        n1,n2 = get_closest_factors(size)
+        if xmax-xmin > ymax-ymin :
+            nbprocX = n2
+            nbprocY = n1
+        else:
+            nbprocX = n1
+            nbprocY = n2
+    else:
+        nbprocX = Xdecomp
+        nbprocY = Ydecomp
+        
+        
     # Check decomposition versus CPUs number
     if size != nbprocX*nbprocY:
         raise ValueError('Error in the decomposition grid: the number of domains \
@@ -62,8 +120,6 @@ def simple(X, Y, nbprocX, nbprocY):
     partID = numpy.zeros( len(X), dtype=numpy.uint32 ) 
     
     # Get extent of X partition 
-    xmin = X.min()
-    xmax = X.max()
     nbX = int((xmax-xmin)/nbprocX)
     Xstart = numpy.zeros( nbprocX )
     Xend = numpy.zeros( nbprocX )
@@ -73,8 +129,6 @@ def simple(X, Y, nbprocX, nbprocY):
     Xend[nbprocX-1]=xmax
     
     # Get extent of Y partition
-    ymin = Y.min()
-    ymax = Y.max()
     nbY = int((ymax-ymin)/nbprocY)
     Ystart = numpy.zeros( nbprocY )
     Yend = numpy.zeros( nbprocY )
@@ -97,7 +151,7 @@ def simple(X, Y, nbprocX, nbprocY):
             pY = Yend[iy]
         partID[id] = ix + iy * nbprocX
     
-    return partID
+    return partID, nbprocX, nbprocY
 
 def overlap(X, Y, nbprocX, nbprocY, overlapLen):
     """ 

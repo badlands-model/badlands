@@ -10,12 +10,15 @@
 This module encapsulates functions related to the creation of triangular irregular network (TIN)
 from raster type digital elevation model (DEM).
 """
-
+import os
 import numpy
+import errno
 import pandas
 import os.path
 import warnings
 import triangle
+from uuid import uuid4
+from shutil import rmtree
 
 class raster2TIN:
     """ 
@@ -31,6 +34,12 @@ class raster2TIN:
     ----------
     string : inputfile
         This is a string containing the path to the regular grid file.
+        
+    string : outputDir
+        This is a string containing the path to the output directory.
+        
+    integer : rank
+        Rank of processor.
         
     string : delimiter
         The delimiter between columns from the regular grid file. The regular file contains
@@ -51,13 +60,27 @@ class raster2TIN:
         Default: 1
     """
     
-    def __init__(self, inputfile=None, delimiter=' ', resRecFactor=1, areaDelFactor=1):
+    def __init__(self, inputfile=None, outputDir=None, rank=0, delimiter=' ', resRecFactor=1, areaDelFactor=1):
         
         if inputfile==None:
             raise RuntimeError('DEM input file name must be defined to construct Badlands irregular grid.')
         if not os.path.isfile(inputfile):
             raise RuntimeError('The DEM input file name cannot be found in your path.')
         self.inputfile = inputfile
+        
+        if outputDir==None:
+            raise RuntimeError('Output directory name must be defined to use Badlands code.')
+        
+        if rank == 0:
+            temp_path = os.path.dirname(outputDir)+'/'+str(uuid4())
+            try:
+                os.renames(outputDir, temp_path)
+            except OSError as exception:
+                if exception.errno != errno.ENOENT:
+                    raise
+            else:
+                rmtree(temp_path)
+            os.mkdir(outputDir)
         
         self.delimiter = delimiter
         

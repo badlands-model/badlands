@@ -7,8 +7,7 @@
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 """
-   Implementation relating to Badlands mesh algorithm.
+   Implementation relating to Badlands hillslope processes.
 """
 
-import FVmethod
-import raster2TIN
+from .diffLinear import diffLinear
