@@ -63,7 +63,7 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
     ],
-    packages=['pyBadlands'],#, 'pyBadlands.raster2TIN', 'pyBadlands.FVmethod'],
+    packages=['pyBadlands', 'pyBadlands.libUtils'],#, 'pyBadlands.raster2TIN', 'pyBadlands.FVmethod'],
     # py_modules = modules,
     ext_package='pyBadlands',
     ext_modules=ext_modules,

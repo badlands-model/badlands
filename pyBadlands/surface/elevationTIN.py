@@ -12,7 +12,7 @@ This module encapsulates functions related to Badlands surface elevation.
 
 import time
 import numpy
-import PDalgo
+from pyBadlands.libUtils import PDalgo
 import warnings
 
 from scipy.interpolate import interpn

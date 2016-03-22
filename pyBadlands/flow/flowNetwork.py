@@ -15,9 +15,9 @@ import numpy
 import warnings
 import mpi4py.MPI as MPI
 
-import SFDalgo as SFD
-import FLOWalgo
-import FLWnetwork
+from pyBadlands.libUtils import SFDalgo as SFD
+from pyBadlands.libUtils import FLOWalgo
+from pyBadlands.libUtils import FLWnetwork
 
 class flowNetwork: 
     """

@@ -14,7 +14,7 @@ based on linear diffusion.
 import math
 import numpy
 import warnings
-import FLOWalgo
+from pyBadlands.libUtils import FLOWalgo
 import mpi4py.MPI as MPI
 
 class diffLinear: 
