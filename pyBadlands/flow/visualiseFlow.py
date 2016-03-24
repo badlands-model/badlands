@@ -85,7 +85,7 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
 
     return flowIDs, line[lineIDs,:2]
 
-def write_hdf5(folder, h5file, step, coords, flowIDs, elevation, discharge, chi, basin, connect, rank):
+def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, basin, connect, rank):
     """ 
     This function writes for each processor the HDF5 file containing flow network information. 
         
@@ -102,11 +102,8 @@ def write_hdf5(folder, h5file, step, coords, flowIDs, elevation, discharge, chi,
             
     variable : coords
         Numpy float-type array containing X, Y coordinates of the local TIN nodes.
-            
-    variable : elevation
-        Numpy integer-type array containing the global IDs of the local TIN nodes.
         
-    variable : flowIDs
+    variable : elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
         
     variable : discharge
@@ -132,9 +129,6 @@ def write_hdf5(folder, h5file, step, coords, flowIDs, elevation, discharge, chi,
         f.create_dataset('coords',shape=(len(elevation),3), dtype='float32', compression='gzip')
         f["coords"][:,:2] = coords
         f["coords"][:,2] = elevation
-
-        f.create_dataset('gIDs',shape=(len(basin), 1), dtype='int32', compression='gzip')
-        f["gIDs"][:,0] = flowIDs
         
         f.create_dataset('connect',shape=(len(connect[:,0]),2), dtype='int32', compression='gzip')
         f["connect"][:,:2] = connect

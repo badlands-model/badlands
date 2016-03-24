@@ -41,10 +41,11 @@ contains
   end subroutine discharge
 
   subroutine parameters(pyStack, pyRcv, pyDischarge, pyXY, &
-      spl_part, pyChi, pyBasinID, pylNodesNb, pygNodesNb)
+      spl_part, pyBid0, pyChi, pyBasinID, pylNodesNb, pygNodesNb)
   
       integer :: pygNodesNb
       integer :: pylNodesNb
+      integer,intent(in) :: pyBid0
       real,intent(in) :: spl_part
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
@@ -59,7 +60,7 @@ contains
       
       pyChi = 0.
       pyBasinID = -1
-      bID = 0
+      bID = pyBid0
       do n = 1, pylNodesNb
         donor = pyStack(n) + 1
         recvr = pyRcv(donor) + 1
