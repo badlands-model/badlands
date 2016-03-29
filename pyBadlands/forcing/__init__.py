@@ -7,16 +7,8 @@
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 """
-   Top-level Badlands implementation.
+   Parsing of Badlands XML input file and definition of forcing 
+   parameters: climate, tectonic, sea level.
 """
 
-from .flow import flowNetwork
-from .surface import FVmethod
-from .surface import raster2TIN
-from .flow import visualiseFlow
-from .hillslope import diffLinear
-from .surface import elevationTIN
-from .surface import partitionTIN
-from .surface import visualiseTIN
-from .forcing import xmlParser 
-from .libUtils import *
+import xmlParser

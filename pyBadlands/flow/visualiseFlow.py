@@ -12,36 +12,36 @@ This module exports the flow network with associated parameters based on hdf5.
 
 import time
 import h5py
-import numpy 
+import numpy
 import xml.etree.ElementTree as ETO
 
 def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
-    """ 
-    This function defines the connectivity array for visualising flow network. 
-        
+    """
+    This function defines the connectivity array for visualising flow network.
+
     Parameters
     ----------
     variable : outPts
         Numpy integer-type array containing the output node IDs.
-        
+
     variable: inIDs
         Numpy array containing the receiver node IDs.
-        
+
     variable: visXlim, visYlim
         Numpy array containing the extent of visualisation grid.
-        
+
     variable: coordXY
         Numpy float-type array containing X, Y coordinates of the local nodes.
-        
+
     Return
     ----------
     variable: flowIDs
         Numpy integer-type array containing the output node IDs for the flow network.
-        
+
     variable: polyline
         Numpy 2D integer-type array containing the connectivity IDs for each polyline.
     """
-    
+
     flowIDs = numpy.unique(numpy.concatenate((rcvIDs,outPts)))
 
     # For every element in rcvIDs array, find the index in flowIDs
@@ -71,12 +71,12 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
     posB = numpy.searchsorted(lrcvIDs[sortB], border)
     bIDs = sortB[posB]
     lrcvIDs[bIDs] = -1
-    
+
     # Trim the connectivity array
     connect[border,0] = -1
     connect[visIDs,1] = lrcvIDs
     connect += 1
-    
+
     # Define polyline connectivity array
     lineID = numpy.where(connect[:,0] != connect[:,1])[0]
     line = connect[lineID,:2]
@@ -86,144 +86,144 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
     return flowIDs, line[lineIDs,:2]
 
 def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, basin, connect, rank):
-    """ 
-    This function writes for each processor the HDF5 file containing flow network information. 
-        
+    """
+    This function writes for each processor the HDF5 file containing flow network information.
+
     Parameters
     ----------
     variable : folder
         Name of the output folder.
-        
+
     variable: h5file
         First part of the hdf5 file name.
-        
+
     variable: step
         Output visualisation step.
-            
+
     variable : coords
         Numpy float-type array containing X, Y coordinates of the local TIN nodes.
-        
+
     variable : elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
-        
+
     variable : discharge
         Numpy float-type array containing the discharge values of the local TIN.
-           
+
     variable : chi
         Numpy float-type array containing the chi values of the local TIN.
-           
+
     variable : basin
         Numpy integer-type array containing the basin IDs values of the local TIN.
-           
+
     variable: connect
         Numpy 2D integer-type array containing the local nodes IDs for each connected network.
-        
+
     variable : rank
         ID of the local partition.
     """
-    
+
     h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
     with h5py.File(h5file, "w") as f:
-    
+
         # Write node coordinates and elevation
         f.create_dataset('coords',shape=(len(elevation),3), dtype='float32', compression='gzip')
         f["coords"][:,:2] = coords
         f["coords"][:,2] = elevation
-        
+
         f.create_dataset('connect',shape=(len(connect[:,0]),2), dtype='int32', compression='gzip')
         f["connect"][:,:2] = connect
-        
+
         f.create_dataset('basin',shape=(len(basin), 1), dtype='int32', compression='gzip')
         f["basin"][:,0] = basin
 
         f.create_dataset('chi',shape=(len(chi), 1), dtype='float32', compression='gzip')
         f["chi"][:,0] = chi
-        
+
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
-        
+
 def _write_xdmf(folder, xdmffile, xmffile, step):
-    """ 
-    This function writes the XDmF file which is calling the XmF file. 
-        
+    """
+    This function writes the XDmF file which is calling the XmF file.
+
     Parameters
     ----------
     variable : folder
         Name of the output folder.
-        
+
     variable: xdmffile
         XDmF file name.
-        
+
     variable: xmffile
         First part of the XmF file name.
-        
+
     variable: step
         Output visualisation step.
     """
-    
+
     f= open(folder+'/'+xdmffile,'w')
 
-    f.write('<?xml version="1.0" encoding="UTF-8"?>\n') 
+    f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
     f.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd">\n')
-    f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n') 
+    f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n')
     f.write(' <Domain>\n')
     f.write('    <Grid GridType="Collection" CollectionType="Temporal">\n')
-    
+
     for p in range(step+1):
-        xfile = xmffile+str(step)+'.xmf'
+        xfile = xmffile+str(p)+'.xmf'
         f.write('      <xi:include href="%s" xpointer="xpointer(//Xdmf/Domain/Grid)"/>\n' %xfile)
-    
+
     f.write('    </Grid>\n')
-    f.write(' </Domain>\n') 
-    f.write('</Xdmf>\n') 
+    f.write(' </Domain>\n')
+    f.write('</Xdmf>\n')
     f.close()
-    
+
     return
-        
+
 def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size):
-    """ 
-    This function writes the XmF file which is calling each HFD5 file. 
-        
+    """
+    This function writes the XmF file which is calling each HFD5 file.
+
     Parameters
     ----------
     variable : folder
         Name of the output folder.
-        
+
     variable: xmffile
         First part of the XmF file name.
-        
+
     variable: step
         Output visualisation step.
-            
+
     variable : time
         Simulation time.
-            
+
     variable : elems
         Numpy integer-type array containing the number of elements of each local partition.
-            
+
     variable : nodes
         Numpy integer-type array containing the number of nodes of each local partition.
-        
+
     variable : nodes
         Numpy float-type array containing the discharge values of the local TIN.
-        
+
     variable: h5file
         First part of the hdf5 file name.
-        
+
     variable : size
         Number of partitions.
     """
-    
+
     xmf_file = folder+'/'+xmffile+str(step)+'.xmf'
     f= open(str(xmf_file),'w')
 
-    f.write('<?xml version="1.0" encoding="UTF-8"?>\n') 
+    f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
     f.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd">\n')
-    f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n') 
+    f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n')
     f.write(' <Domain>\n')
     f.write('    <Grid GridType="Collection" CollectionType="Spatial">\n')
     f.write('      <Time Type="Single" Value="%s"/>\n'%time)
-    
+
     for p in range(size):
         pfile = h5file+str(step)+'.p'+str(p)+'.hdf5'
         f.write('      <Grid Name="Block.%s">\n' %(str(p)))
@@ -232,35 +232,35 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('          <DataItem Format="HDF" DataType="Int" ')
         f.write('Dimensions="%d 2">%s:/connect</DataItem>\n'%(elems[p],pfile))
         f.write('         </Topology>\n')
-        
+
         f.write('         <Geometry Type="XYZ">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 3">%s:/coords</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Geometry>\n')
-    
+
         f.write('         <Attribute Type="Scalar" Center="Node" Name="BasinID">\n')
         f.write('          <DataItem Format="HDF" NumberType="Integer" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/basin</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
-        
+
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Discharge">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/discharge</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
-        
+
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Chi">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/chi</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
-        
+
         f.write('      </Grid>\n')
-    
-    
+
+
     f.write('    </Grid>\n')
-    f.write(' </Domain>\n') 
-    f.write('</Xdmf>\n') 
+    f.write(' </Domain>\n')
+    f.write('</Xdmf>\n')
     f.close()
-    
+
     _write_xdmf(folder, xdmffile, xmffile, step)
-        
+
     return
