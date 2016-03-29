@@ -20,7 +20,7 @@ import mpi4py.MPI as mpi
     
 class FVmethod: 
     """ 
-    This class builds paramters required for the Finite Volume mesh algorithm.
+    This class builds parameters required for the Finite Volume mesh algorithm.
     
     It creates the following for each node: 
         1. the voronoi cell area
