@@ -7,7 +7,7 @@
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 """
-   Implementation relating to Badlands mesh algorithm.
+   Implementation related to Badlands mesh algorithm.
 """
 
 import FVmethod
