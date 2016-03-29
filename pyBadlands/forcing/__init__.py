@@ -12,3 +12,4 @@
 """
 
 import xmlParser
+import forceSim

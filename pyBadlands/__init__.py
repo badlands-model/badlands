@@ -15,8 +15,9 @@ from .surface import FVmethod
 from .surface import raster2TIN
 from .flow import visualiseFlow
 from .hillslope import diffLinear
-from .surface import elevationTIN
-from .surface import partitionTIN
-from .surface import visualiseTIN
+from .surface import elevationTIN 
+from .surface import partitionTIN 
+from .surface import visualiseTIN 
 from .forcing import xmlParser 
+from .forcing import forceSim 
 from .libUtils import *
