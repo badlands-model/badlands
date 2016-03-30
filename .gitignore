@@ -1,3 +1,9 @@
 *.pyc
 *.sublime-*
 *.so
+pyBadlands.egg-info/
+*.mod
+test/output/
+test/.ipynb_checkpoints/
+*.swp
+

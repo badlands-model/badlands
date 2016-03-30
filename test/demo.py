@@ -5,14 +5,11 @@ from pyBadlands.model import Model as badlandsModel
 # Connect to the MPI cluster and configure our view
 # client = Client(profile='mpi')
 
-outDir = 'output/'
-
 # initialise model
 model = badlandsModel()
 
 # use default parameters (see model.__init__)
 
-output_dir = 'output'  # FIXME: why do we need this at load time?
 model.load_dem('data/regularMR.csv')  # load input file, generate TIN
 
 # configure rainfall pattern
@@ -22,6 +19,7 @@ model.rain[:model.recGrid.boundsPt] = 0.
 
 # run 100kyears in 1k year intervals
 # for t in xrange(0, 100000, 1000):
+output_dir = 'output'
 for t in xrange(1, 31, 5):
     print('run to t=%d' % t)
     model.compute_flow(tEnd=t)
