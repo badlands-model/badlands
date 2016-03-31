@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pyBadlands:input xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:pyBadlands="http://bibucket.com/git/xsd/pyBadlands" 
+    xmlns:xi="http://www.w3.org/2001/XInclude"
+    xsi:schemaLocation="http://bibucket.com/git/xsd/pyBadlands
+    bibucket.com/git/xsd/pyBadlands/schema-Badlands.xsd">
+    
+    <!-- Regular grid structure -->
+    <grid>
+        <!-- Digital elevation model file path -->
+        <demfile>data/regularMR.csv</demfile>
+        <!-- Boundary type: flat, slope or wall -->
+        <boundary>slope</boundary>
+        <!-- Planchon & Darboux filling thickness limit [m] -->
+        <fillmax>1.</fillmax>
+    </grid>
+    
+    <!-- Simulation time structure -->
+    <time>
+        <!-- Simulation start time [a] -->
+        <start>0.</start>
+        <!-- Simulation end time [a] -->
+        <end>100.</end>
+        <!-- Minim time step [a] -->
+        <mindt>1.</mindt>
+        <!-- Display interval [a] -->
+        <display>50.</display>
+    </time>
+        
+    <!-- Sea-level structure -->
+    <sea>
+        <!-- Relative sea-level position [m] -->
+        <position>-3450.</position>
+        <!-- Sea-level curve - (optional) -->
+        <!--curve>data/sealvl.csv</curve-->
+        <!-- Limit flow network computation based on 
+             water depth [m] -->
+        <limit>100.</limit>
+    </sea>
+    
+    <!-- Tectonic structure -->
+    <?ignore
+    <tectonic>
+        <!-- Number of tectonic events -->
+        <events>1</events>
+        <!-- Displacement definition -->
+        <disp>
+            <!-- Displacement start time [a] --> 
+            <dstart>0.</dstart>
+            <!-- Displacement end time [a] --> 
+            <dend>500000.0</dend>
+            <!-- Displacement map [m] --> 
+            <dfile>data/uplift.csv</dfile>
+        </disp>
+    </tectonic>
+    ?>
+    
+    <!-- Precipitation structure -->
+    <precipitation>
+        <!-- Number of precipitation events -->
+        <climates>1</climates>
+        <!-- Precipitation definition -->
+        <rain>
+            <!-- Rain start time [a] --> 
+            <rstart>0.</rstart>
+            <!-- Rain end time [a] --> 
+            <rend>100.</rend>
+            <!-- Choice is given between loading a rain map <map> or 
+                 giving a single value <rval> for the entire area and
+                 for the given time interval -->
+            <!-- Precipitation map [m/a] - (optional) --> 
+            <!--map>data/rain.csv</map-->
+            <!-- Precipitation value [m/a] - (optional) --> 
+            <rval>1.</rval>
+        </rain>
+    </precipitation>
+    
+    <!-- Stream power law parameters: 
+         The stream power law is a simplified form of the usual expression of 
+         sediment transport by water flow, in which the transport rate is assumed 
+         to be equal to the local carrying capacity, which is itself a function of 
+         boundary shear stress. -->
+    <spl>
+        <!-- Values of m and n indicate how the incision rate scales 
+             with bed shear stress for constant value of sediment flux 
+             and sediment transport capacity. 
+             Generally, m and n are both positive, and their ratio 
+             (m/n) is considered to be close to 0.5 -->
+        <m>0.5</m>
+        <n>1.0</n>
+         <!-- The erodibility coefficient is scale-dependent and its value depend  
+              on lithology and mean precipitation rate, channel width, flood 
+              frequency, channel hydraulics. -->
+        <erodibility>1.e-5</erodibility>
+    </spl>
+
+    <!-- Linear slope diffusion parameters:
+         Parameterisation of the sediment transport includes the simple creep transport 
+         law which states that transport rate depends linearly on topographic gradient. -->
+    <creep>
+        <!-- Surface diffusion coefficient [m2/a] -->
+        <caerial>0.5</caerial>
+        <!-- Marine diffusion coefficient [m2/a] -->
+        <cmarine>0.5</cmarine>
+    </creep>
+    
+    <!-- Output folder path -->
+    <outfolder>output/</outfolder>
+    
+</pyBadlands:input>

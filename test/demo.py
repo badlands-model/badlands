@@ -7,22 +7,6 @@ from pyBadlands.model import Model as badlandsModel
 
 # initialise model
 model = badlandsModel()
+model.load_xml('data/demo-input.xml')
 
-# use default parameters (see model.__init__)
-
-model.load_dem('data/regularMR.csv')  # load input file, generate TIN
-
-# configure rainfall pattern
-rainVal = 1.  # Precipitation rate [m/a]
-model.rain.fill(rainVal)
-model.rain[:model.recGrid.boundsPt] = 0.
-
-# run 100kyears in 1k year intervals
-# for t in xrange(0, 100000, 1000):
-output_dir = 'output'
-for t in xrange(1, 31, 5):
-    print('run to t=%d' % t)
-    model.compute_flow(tEnd=t)
-
-    step = t / 5  # TODO: confirm what this means - increasing integer for vis?
-    model.write_output(outDir=output_dir, step=step)  # write HDF5 output
+model.run_to_time(100)  # run model for 100 years

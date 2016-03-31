@@ -3,8 +3,9 @@
 import numpy as np
 import time
 
-from pyBadlands import (diffLinear, elevationTIN, flowNetwork, FVmethod, partitionTIN,
-                        raster2TIN, visualiseFlow, visualiseTIN)
+from pyBadlands import (diffLinear, elevationTIN, flowNetwork, forceSim,
+                        FVmethod, partitionTIN, raster2TIN, visualiseFlow,
+                        visualiseTIN, xmlParser)
 
 
 class Model(object):
@@ -12,29 +13,16 @@ class Model(object):
 
     def __init__(self):
         """Constructor."""
-        # set default parameters
 
-        # Planchon & Darboux filling thickness limit [m]
-        self.fillmax = 1.
-        # Precipitation rate [m/a]
-        self.rainVal = 1.
-        # Sea level position [m]
-        self.seapos = -3450.
-        # Limit flow network computation based
-        # on relative sea level position [m]
-        self.sealimit = 100.
-        # Diffusion coefficients [m2/a]
-        self.CDa = 0.5   # aerial
-        self.CDm = 0.5   # marine
-        # Stream power law coefficients
-        self.SPLm = 0.5
-        self.SPLn = 1.
-        # Stream power law erodibility [m^(1-2*SPLm)/a]
-        self.SPLero = 1.e-5
-
-        # simulation time parameters
+        # simulation state
         self.tNow = 0.
-        self.minDT = 1.
+        self.tNextDisplay = None
+        self.outputStep = 0
+
+    def load_xml(self, filename):
+        """Load an XML configuration file."""
+        self.input = xmlParser.xmlParser(filename)
+        self.load_dem(self.input.demfile)
 
     def load_dem(self, filename):
         """Load a DEM input file."""
@@ -49,6 +37,13 @@ class Model(object):
         tempdir = tempfile.mkdtemp()
 
         recGrid = raster2TIN.raster2TIN(filename, outputDir=tempdir)
+
+        force = forceSim.forceSim(self.input.seafile, self.input.seapos,
+                                  self.input.rainMap, self.input.rainTime,
+                                  self.input.rainVal, self.input.tectFile,
+                                  self.input.tectTime, recGrid.regX,
+                                  recGrid.regY, self.input.tDisplay)
+
         tinData = np.column_stack((recGrid.tinMesh['vertices'][:, 0],
                                    recGrid.tinMesh['vertices'][:, 1]))
 
@@ -72,7 +67,7 @@ class Model(object):
         inGIDs = np.where(partitionIDs == rank)[0]
 
         if rank == 0:
-            print " - partition TIN amongst processors ",time.clock() - walltime
+            print " - partition TIN amongst processors ", time.clock() - walltime
 
         # 3. Build Finite Volume discretisation
 
@@ -115,29 +110,29 @@ class Model(object):
 
         local_elev = np.zeros(totPts)
         local_elev.fill(-1.e6)
-        local_elev[inIDs] = elevationTIN.getElevation(recGrid.regX, recGrid.regY, recGrid.regZ, FVmesh.node_coords[inIDs,:2])
+        local_elev[inIDs] = elevationTIN.getElevation(recGrid.regX, recGrid.regY, recGrid.regZ, FVmesh.node_coords[inIDs, :2])
         # comm.Allreduce(MPI.IN_PLACE, local_elev, op=MPI.MAX)  # not needed for single threaded
 
-        elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours, FVmesh.edge_length, recGrid.boundsPt, btype='slope')
+        elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours, FVmesh.edge_length, recGrid.boundsPt, btype=self.input.btype)
 
         # set default of no rain
+        # TODO CHECK THIS: rain is never being updated?
         self.rain = np.zeros(totPts, dtype=float)
 
-        self.sealevel = self.seapos
+        self.sealevel = self.input.seapos
 
         # Define variables
         self.cumdiff = np.zeros(totPts)
         self.hillslope = diffLinear()
-        self.hillslope.CDaerial = self.CDa
-        self.hillslope.CDmarine = self.CDm
+        self.hillslope.CDaerial = self.input.CDa
+        self.hillslope.CDmarine = self.input.CDm
         self.hillslope.dt_pstability(FVmesh.edge_length[inGIDs, :tMesh.maxNgbh])
 
-        # FIXME: if the user changes the flow parameters (e.g. model.SPLero = something) they won't be updated correctly until load_dem is rerun
         self.flow = flowNetwork()
-        self.flow.erodibility = self.SPLero
-        self.flow.m = self.SPLm
-        self.flow.n = self.SPLn
-        self.flow.mindt = self.minDT
+        self.flow.erodibility = self.input.SPLero
+        self.flow.m = self.input.SPLm
+        self.flow.n = self.input.SPLn
+        self.flow.mindt = self.input.minDT
 
         if rank == 0:
             print " - interpolate elevation on grid ", time.clock() - walltime
@@ -171,44 +166,44 @@ class Model(object):
             # 1. Perform pit filling
             walltime = time.clock()
 
-            fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours, self.recGrid.boundsPt, self.sealevel - self.sealimit, self.fillmax, 0.01)
+            fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours, self.recGrid.boundsPt, self.sealevel - self.input.sealimit, self.input.fillmax, 0.01)
             if rank == 0:
-                print " - depression-less algorithm PD with stack", time.clock() - walltime
+                print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
             # 2. Compute stream network
             walltime = time.clock()
             ngbhs = self.FVmesh.neighbours[self.allIDs, :]
             edges = self.FVmesh.vor_edges[self.allIDs, :]
             distances = self.FVmesh.edge_length[self.allIDs, :]
-            self.flow.SFD_receivers(fillH, self.elevation, ngbhs, edges, distances, self.allIDs, self.sealevel - self.sealimit)
+            self.flow.SFD_receivers(fillH, self.elevation, ngbhs, edges, distances, self.allIDs, self.sealevel - self.input.sealimit)
             if rank == 0:
-                print " - compute receivers parallel ", time.clock() - walltime
+                print " -   compute receivers parallel ", time.clock() - walltime
 
             # Distribute evenly local minimas to processors
             walltime = time.clock()
             self.flow.localbase = np.array_split(self.flow.base, size)[rank]
             self.flow.ordered_node_array()
             if rank == 0:
-                print " - compute stack order locally ", time.clock() - walltime
+                print " -   compute stack order locally ", time.clock() - walltime
 
             walltime = time.clock()
             # single threaded
             '''
             stackNbs = comm.allgather(len(flow.localstack))
             globalstack = np.zeros(sum(stackNbs),dtype=flow.localstack.dtype)
-            comm.Allgatherv(sendbuf=[flow.localstack, MPI.INT], 
-                         recvbuf=[globalstack, (stackNbs, None), MPI.INT]) 
+            comm.Allgatherv(sendbuf=[flow.localstack, MPI.INT],
+                         recvbuf=[globalstack, (stackNbs, None), MPI.INT])
             flow.stack = globalstack
             '''
             self.flow.stack = self.flow.localstack
             if rank == 0:
-                print " - send stack order globally ", time.clock() - walltime
+                print " -   send stack order globally ", time.clock() - walltime
 
             # 3. Compute discharge
             walltime = time.clock()
             self.flow.compute_flow(self.FVmesh.control_volumes, self.rain, True)
             if rank == 0:
-                print " - compute discharge ", time.clock() - walltime
+                print " -   compute discharge ", time.clock() - walltime
 
             # 4. Compute CFL condition
             walltime = time.clock()
@@ -216,16 +211,16 @@ class Model(object):
             self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], fillH, self.inGIDs)
 
             CFLtime = min(self.flow.CFL, self.hillslope.CFL)
-            CFLtime = max(self.minDT, CFLtime)
+            CFLtime = max(self.input.minDT, CFLtime)
             if rank == 0:
-                print " - Get CFL time step ", time.clock() - walltime
+                print " -   Get CFL time step ", time.clock() - walltime
 
             # 5. Compute sediment fluxes
             walltime = time.clock()
             # FIXME: not sure if diff_flux should be updating self.flow.diff_flux; not shown in notebook
             diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.sealevel, self.elevation, self.FVmesh.control_volumes)
             if rank == 0:
-                print " - Get hillslope fluxes ", time.clock() - walltime
+                print " -   Get hillslope fluxes ", time.clock() - walltime
 
             walltime = time.clock()
             xyMin = [self.recGrid.regX.min(), self.recGrid.regY.min()]
@@ -233,7 +228,7 @@ class Model(object):
             tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, fillH,
                              self.FVmesh.node_coords[:, :2], xyMin, xyMax, diff_flux, CFLtime, self.sealevel, True)
             if rank == 0:
-                print " - Get stream fluxes ", time.clock() - walltime
+                print " -   Get stream fluxes ", time.clock() - walltime
 
             # Update surface
             print("tstep = %s" % tstep)
@@ -287,21 +282,38 @@ class Model(object):
         # Compute flow parameters
         self.flow.compute_parameters(self.FVmesh.node_coords[:, :2])
 
-        th5file = 'tin.time'
-        txmffile = 'tin.time'
-        txdmffile = 'tin.series.xdmf'
-        fh5file = 'flow.time'
-        fxmffile = 'flow.time'
-        fxdmffile = 'flow.series.xdmf'
-
         # Write HDF5 files
-        visualiseTIN.write_hdf5(outDir, th5file, step, self.tMesh.node_coords[:, :2], self.elevation[self.allIDs],
+        visualiseTIN.write_hdf5(outDir, self.input.th5file, step, self.tMesh.node_coords[:, :2], self.elevation[self.allIDs],
                                 self.flow.discharge[self.allIDs], self.cumdiff[self.allIDs], self.outCells, rank)
-        visualiseFlow.write_hdf5(outDir, fh5file, step, self.FVmesh.node_coords[flowIDs, :2], self.elevation[flowIDs],
+        visualiseFlow.write_hdf5(outDir, self.input.fh5file, step, self.FVmesh.node_coords[flowIDs, :2], self.elevation[flowIDs],
                                 self.flow.discharge[flowIDs], self.flow.chi[flowIDs], self.flow.basinID[flowIDs], polylines, rank)
 
         # Combine HDF5 files and write time series
         if rank == 0:
-            visualiseTIN.write_xmf(outDir, txmffile, txdmffile, step, self.tNow, self.tcells, self.tnodes, th5file, size)
-            visualiseFlow.write_xmf(outDir, fxmffile, fxdmffile, step, self.tNow, fline, fnodes, fh5file, size)
+            visualiseTIN.write_xmf(outDir, self.input.txmffile, self.input.txdmffile, step, self.tNow, self.tcells, self.tnodes, self.input.th5file, size)
+            visualiseFlow.write_xmf(outDir, self.input.fxmffile, self.input.fxdmffile, step, self.tNow, fline, fnodes, self.input.fh5file, size)
             print " - Writing outputs ", time.clock() - out_time
+
+    def run_to_time(self, tEnd):
+        """Run the simulation to a specified point in time (tEnd)."""
+        # TODO: if we need to intervene with new terrain/rain maps, do that
+        # TODO: generate output at the display interval
+
+        if self.tNextDisplay is None:
+            self.tNextDisplay = self.input.tDisplay
+
+        while self.tNow < tEnd:
+            print 'tNow = %s' % self.tNow
+
+            # run the simulation for a bit
+            tStop = min(self.tNextDisplay, tEnd)
+            self.compute_flow(tEnd=tStop)
+            # up to here - add the CDF and sediment flow updates
+
+            if self.tNow >= self.tNextDisplay:
+                # time to write output
+                print '  writing output'
+                self.write_output(outDir=self.input.outDir, step=self.outputStep)
+
+                self.tNextDisplay += self.input.tDisplay
+                self.outputStep += 1
