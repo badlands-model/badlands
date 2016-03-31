@@ -34,6 +34,7 @@ class xmlParser:
         self.demfile = None
         self.btype = 'slope'
         self.fillmax = 1.
+        self.Afactor = 1.
         
         self.tStart = None
         self.tEnd = None
@@ -44,9 +45,12 @@ class xmlParser:
         self.sealimit = 100.
         self.seafile = None
         
+        self.disp3d = False
         self.tectNb = None
         self.tectTime = None
         self.tectFile = None
+        self.merge3d = None
+        self.time3d = None
         
         self.rainNb = None
         self.rainVal = None
@@ -108,6 +112,12 @@ class xmlParser:
                 self.fillmax = float(element.text)
             else:
                 self.fillmax = 1.
+            element = None
+            element = grid.find('resfactor')
+            if element is not None:
+                self.Afactor = int(element.text)
+            else:
+                self.Afactor = 1
         else:
             raise ValueError('Error in the XmL file: grid structure definition is required!')
 
@@ -179,6 +189,28 @@ class xmlParser:
         tecto = None
         tecto = root.find('tectonic')
         if tecto is not None:
+            element = None
+            element = tecto.find('disp3d')
+            if element is not None: 
+                tmp3d = int(element.text)
+                if tmp3d == 0:
+                    self.disp3d = False
+                else:
+                    self.disp3d = True
+            else:
+                self.disp3d = False
+            element = None
+            element = tecto.find('merge3d')
+            if element is not None: 
+                self.merge3d = float(element.text)
+            else:
+                self.merge3d = 0.
+            element = None
+            element = tecto.find('time3d')
+            if element is not None: 
+                self.time3d = float(element.text)
+            else:
+                self.time3d = 0.
             element = None
             element = tecto.find('events')
             if element is not None: 

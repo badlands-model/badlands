@@ -13,13 +13,13 @@ This module proposes 2 methods of triangular irregular network (TIN) partitionin
 import time
 import numpy 
 import triangle
-from pyBadlands.libUtils import FASTloop
+import FASTloop
 import mpi4py.MPI as mpi
 
 from numba import jit
 from numpy import random
-from pyzoltan.core import zoltan
-from pyzoltan.core.carray import UIntArray, DoubleArray
+#from pyzoltan.core import zoltan
+#from pyzoltan.core.carray import UIntArray, DoubleArray
 
 def get_closest_factors(size):
     """ 
@@ -339,8 +339,8 @@ def _compute_partition_ghosts(size, neighbours, partID):
             
     return ghosts
 
-@jit    
-def partitionZoltan(X, Y, neighbours):
+#@jit    
+#def partitionZoltan(X, Y, neighbours):
     """ 
     This function split the domain using Zoltan RCB algorithm. The method allows for 
     load-balanced partitioning between each CPUs. 
@@ -364,7 +364,7 @@ def partitionZoltan(X, Y, neighbours):
     variable: partID
         Numpy integer-type array filled with the ID of the partition each node belongs to.
     """
-    
+    """
     # Initialise MPI communications
     comm = mpi.COMM_WORLD
     rank = comm.Get_rank()
@@ -415,3 +415,4 @@ def partitionZoltan(X, Y, neighbours):
     ghosts = _compute_partition_ghosts(size, neighbours, partID)
     
     return partID, ghosts
+    """

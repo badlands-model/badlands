@@ -140,9 +140,6 @@ class raster2TIN:
         self.areaDel = (self.resEdges**2)*self.areaDelFactor
         self.areaDel = max(self.resEdges**2,self.areaDel)
         
-        #~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#
-        # Build edges
-        #~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#
         # North South edges
         self.nx = int((maxX-minX)/self.resEdges+1)
         e_x = numpy.linspace(minX,maxX,self.nx)
@@ -172,19 +169,11 @@ class raster2TIN:
         
         self.edgesPt = len(self.edges)
         
-        #~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#
-        # Export DEM grid parameters as numpy arrays
-        #~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#
         self.rnx = int((maxX-minX)/resDEM+1)
         self.rny = int((maxY-minY)/resDEM+1)
         self.regX = numpy.linspace(minX,maxX,self.rnx)
         self.regY = numpy.linspace(minY,maxY,self.rny)
-        self.regZ = numpy.zeros((self.rnx,self.rny), dtype=float)
-        p = 0
-        for j in range(self.rny-1,-1,-1):
-            for i in range(self.rnx):
-                self.regZ[i,j] = self.rectZ[p]
-                p += 1
+        self.regZ = numpy.reshape(self.rectZ,(self.rnx,self.rny),order='F')
         
         return
     
