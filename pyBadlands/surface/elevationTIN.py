@@ -65,7 +65,7 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
 
         if len(missedPts) > 0 :
             for p in range(len(missedPts)):
-                id = missedPts[p]
+                id = int(missedPts[p])
                 ngbhs = neighbours[id,:]
                 ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
@@ -117,7 +117,7 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
 
         if len(missedPts) > 0 :
             for p in range(0,len(missedPts)):
-                id = missedPts[p]
+                id = int(missedPts[p])
                 ngbhs = neighbours[id,:]
                 ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
