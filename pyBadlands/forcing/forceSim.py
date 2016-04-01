@@ -386,6 +386,11 @@ class forceSim:
             mergedIDs = numpy.unique(pairIDs[nonfixIDs,:].flatten())
             
             distances, indices = tree.query(mXY, k=3)
+            
+            onIDs = numpy.where(distances[:,0] == 0)[0]
+            if len(onIDs) > 0:
+                raise ValueError('Problem: IDs after merging is on previous vertex position.')
+                
             z_vals = elev[indices]
             cum_vals = cum[indices]
             z_avg = numpy.average(z_vals, weights=(1./distances**2),axis=1)

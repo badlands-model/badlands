@@ -34,7 +34,7 @@ class xmlParser:
         self.demfile = None
         self.btype = 'slope'
         self.fillmax = 1.
-        self.Afactor = 1.
+        self.Afactor = 1
         
         self.tStart = None
         self.tEnd = None
@@ -116,6 +116,8 @@ class xmlParser:
             element = grid.find('resfactor')
             if element is not None:
                 self.Afactor = int(element.text)
+                if self.Afactor < 1:
+                    self.Afactor = 1
             else:
                 self.Afactor = 1
         else:

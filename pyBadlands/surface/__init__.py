@@ -7,8 +7,9 @@
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 """
-   Implementation related to Badlands mesh algorithm.
+   Implementation relating to Badlands mesh algorithm.
 """
 
+import visSurf
 import FVmethod
 import raster2TIN
