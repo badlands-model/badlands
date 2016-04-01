@@ -18,6 +18,7 @@ class Model(object):
         self.tNow = 0.
         self.tNextDisplay = None
         self.outputStep = 0
+        self.simStarted = False
 
     def load_xml(self, filename):
         """Load an XML configuration file."""
@@ -36,13 +37,20 @@ class Model(object):
         import tempfile
         tempdir = tempfile.mkdtemp()
 
-        recGrid = raster2TIN.raster2TIN(filename, outputDir=tempdir)
+        recGrid = raster2TIN.raster2TIN(filename, outputDir=tempdir, areaDelFactor=self.input.Afactor)
+
+        self.fixIDs = recGrid.boundsPt + recGrid.edgesPt
 
         force = forceSim.forceSim(self.input.seafile, self.input.seapos,
                                   self.input.rainMap, self.input.rainTime,
                                   self.input.rainVal, self.input.tectFile,
                                   self.input.tectTime, recGrid.regX,
                                   recGrid.regY, self.input.tDisplay)
+
+        if self.input.disp3d:
+            force.time3d = self.input.time3d
+            if self.input.merge3d == 0. or self.input.merge3d > recGrid.resEdges:
+                force.merge3d = self.input.Afactor * recGrid.resEdges * 0.5
 
         tinData = np.column_stack((recGrid.tinMesh['vertices'][:, 0],
                                    recGrid.tinMesh['vertices'][:, 1]))
@@ -91,8 +99,7 @@ class Model(object):
         FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
 
         # Compute Finite Volume parameters
-        tGIDs, tNgbh, tEdgs, tVors, tVols = tMesh.construct_FV(inGIDs, allIDs,
-                                                               totPts)
+        tGIDs, tNgbh, tEdgs, tVors, tVols = tMesh.construct_FV(inGIDs, allIDs, totPts)
 
         FVmesh.neighbours[tGIDs, :tMesh.maxNgbh] = tNgbh
         FVmesh.edge_length[tGIDs, :tMesh.maxNgbh] = tEdgs
@@ -116,17 +123,13 @@ class Model(object):
         elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours, FVmesh.edge_length, recGrid.boundsPt, btype=self.input.btype)
 
         # set default of no rain
-        # TODO CHECK THIS: rain is never being updated?
         self.rain = np.zeros(totPts, dtype=float)
-
-        self.sealevel = self.input.seapos
 
         # Define variables
         self.cumdiff = np.zeros(totPts)
         self.hillslope = diffLinear()
         self.hillslope.CDaerial = self.input.CDa
         self.hillslope.CDmarine = self.input.CDm
-        self.hillslope.dt_pstability(FVmesh.edge_length[inGIDs, :tMesh.maxNgbh])
 
         self.flow = flowNetwork()
         self.flow.erodibility = self.input.SPLero
@@ -136,8 +139,6 @@ class Model(object):
 
         if rank == 0:
             print " - interpolate elevation on grid ", time.clock() - walltime
-
-        # tinData = np.column_stack((tinData, elevation))
 
         # save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
@@ -149,6 +150,8 @@ class Model(object):
         self.inIDs = inIDs
         self.inGIDs = inGIDs
         self.tMesh = tMesh
+        self.force = force
+        self.totPts = totPts
 
     def compute_flow(self, tEnd):
         """
@@ -160,85 +163,97 @@ class Model(object):
         size = 1
         rank = 0
 
-        while self.tNow <= tEnd:
-            Flow_time = time.clock()
+        Flow_time = time.clock()
 
-            # 1. Perform pit filling
-            walltime = time.clock()
+        # 1. Perform pit filling
+        walltime = time.clock()
 
-            fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours, self.recGrid.boundsPt, self.sealevel - self.input.sealimit, self.input.fillmax, 0.01)
-            if rank == 0:
-                print " -   depression-less algorithm PD with stack", time.clock() - walltime
+        # Update sea-level
+        self.force.getSea(self.tNow)
+        fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours, self.recGrid.boundsPt, self.force.sealevel - self.input.sealimit, self.input.fillmax)
+        if rank == 0:
+            print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
-            # 2. Compute stream network
-            walltime = time.clock()
-            ngbhs = self.FVmesh.neighbours[self.allIDs, :]
-            edges = self.FVmesh.vor_edges[self.allIDs, :]
-            distances = self.FVmesh.edge_length[self.allIDs, :]
-            self.flow.SFD_receivers(fillH, self.elevation, ngbhs, edges, distances, self.allIDs, self.sealevel - self.input.sealimit)
-            if rank == 0:
-                print " -   compute receivers parallel ", time.clock() - walltime
+        # 2. Compute stream network
+        walltime = time.clock()
+        ngbhs = self.FVmesh.neighbours[self.allIDs, :]
+        edges = self.FVmesh.vor_edges[self.allIDs, :]
+        distances = self.FVmesh.edge_length[self.allIDs, :]
+        self.flow.SFD_receivers(fillH, self.elevation, ngbhs, edges, distances, self.allIDs, self.force.sealevel - self.input.sealimit)
+        if rank == 0:
+            print " -   compute receivers parallel ", time.clock() - walltime
 
-            # Distribute evenly local minimas to processors
-            walltime = time.clock()
-            self.flow.localbase = np.array_split(self.flow.base, size)[rank]
-            self.flow.ordered_node_array()
-            if rank == 0:
-                print " -   compute stack order locally ", time.clock() - walltime
+        # Distribute evenly local minimas to processors
+        walltime = time.clock()
+        self.flow.localbase = np.array_split(self.flow.base, size)[rank]
+        self.flow.ordered_node_array()
+        if rank == 0:
+            print " -   compute stack order locally ", time.clock() - walltime
 
-            walltime = time.clock()
-            # single threaded
-            '''
-            stackNbs = comm.allgather(len(flow.localstack))
-            globalstack = np.zeros(sum(stackNbs),dtype=flow.localstack.dtype)
-            comm.Allgatherv(sendbuf=[flow.localstack, MPI.INT],
-                         recvbuf=[globalstack, (stackNbs, None), MPI.INT])
-            flow.stack = globalstack
-            '''
-            self.flow.stack = self.flow.localstack
-            if rank == 0:
-                print " -   send stack order globally ", time.clock() - walltime
+        walltime = time.clock()
+        # single threaded
+        '''
+        stackNbs = comm.allgather(len(flow.localstack))
+        globalstack = np.zeros(sum(stackNbs),dtype=flow.localstack.dtype)
+        comm.Allgatherv(sendbuf=[flow.localstack, MPI.INT],
+                     recvbuf=[globalstack, (stackNbs, None), MPI.INT])
+        flow.stack = globalstack
+        '''
+        self.flow.stack = self.flow.localstack
+        if rank == 0:
+            print " -   send stack order globally ", time.clock() - walltime
 
-            # 3. Compute discharge
-            walltime = time.clock()
-            self.flow.compute_flow(self.FVmesh.control_volumes, self.rain, True)
-            if rank == 0:
-                print " -   compute discharge ", time.clock() - walltime
+        # 3. Compute discharge
+        walltime = time.clock()
+        self.flow.compute_flow(self.FVmesh.control_volumes, self.rain, True)
+        if rank == 0:
+            print " -   compute discharge ", time.clock() - walltime
 
-            # 4. Compute CFL condition
-            walltime = time.clock()
+        # Here we output the dataset if force.next_disp == tNow
+        # TODO: review this in light of the rest of the loop logic
+        if self.force.next_display <= self.tNow and self.force.next_display < self.input.tEnd:
+            # get plotting function
+            #step += 1
+            self.force.next_display += self.force.time_display
 
-            self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], fillH, self.inGIDs)
+        self.exitTime = min([self.force.next_display, self.force.next_disp, self.force.next_rain])
 
-            CFLtime = min(self.flow.CFL, self.hillslope.CFL)
-            CFLtime = max(self.input.minDT, CFLtime)
-            if rank == 0:
-                print " -   Get CFL time step ", time.clock() - walltime
+        # 4. Compute CFL condition
+        walltime = time.clock()
+        self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
 
-            # 5. Compute sediment fluxes
-            walltime = time.clock()
-            # FIXME: not sure if diff_flux should be updating self.flow.diff_flux; not shown in notebook
-            diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.sealevel, self.elevation, self.FVmesh.control_volumes)
-            if rank == 0:
-                print " -   Get hillslope fluxes ", time.clock() - walltime
+        self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], fillH, self.inGIDs)
 
-            walltime = time.clock()
-            xyMin = [self.recGrid.regX.min(), self.recGrid.regY.min()]
-            xyMax = [self.recGrid.regX.max(), self.recGrid.regY.max()]
-            tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, fillH,
-                             self.FVmesh.node_coords[:, :2], xyMin, xyMax, diff_flux, CFLtime, self.sealevel, True)
-            if rank == 0:
-                print " -   Get stream fluxes ", time.clock() - walltime
+        CFLtime = min(self.flow.CFL, self.hillslope.CFL)
+        CFLtime = max(self.input.minDT, CFLtime)
+        if rank == 0:
+            print " -   Get CFL time step ", time.clock() - walltime
 
-            # Update surface
-            print("tstep = %s" % tstep)
-            # FIXME: taking a guess here; I think that tstep is how long we simulated for the sediment flux, so I'm going to add that to the current time
-            diff = sedrate * tstep
-            self.elevation = self.elevation + diff
-            self.cumdiff += diff
-            self.tNow += tstep
-            if rank == 0:
-                print " - Flow computation ", time.clock() - Flow_time
+        # 5. Compute sediment fluxes
+        # Initial cumulative elevation change
+        walltime = time.clock()
+        # FIXME: not sure if diff_flux should be updating self.flow.diff_flux; not shown in notebook
+        diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.force.sealevel, self.elevation, self.FVmesh.control_volumes)
+        if rank == 0:
+            print " -   Get hillslope fluxes ", time.clock() - walltime
+
+        walltime = time.clock()
+        xyMin = [self.recGrid.regX.min(), self.recGrid.regY.min()]
+        xyMax = [self.recGrid.regX.max(), self.recGrid.regY.max()]
+        tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, fillH,
+                         self.FVmesh.node_coords[:, :2], xyMin, xyMax, diff_flux, CFLtime, self.force.sealevel, True)
+        if rank == 0:
+            print " -   Get stream fluxes ", time.clock() - walltime
+
+        # Update surface
+        # print("tstep = %s" % tstep)
+        timestep = min(tstep, self.exitTime - self.tNow)
+        diff = sedrate * tstep
+        self.elevation += diff
+        self.cumdiff += diff
+        self.tNow += tstep
+        if rank == 0:
+            print " - Flow computation ", time.clock() - Flow_time
 
     def write_output(self, outDir, step):
         """
@@ -261,17 +276,18 @@ class Model(object):
         visYlim[1] = self.recGrid.rectY.max()
 
         # Done when TIN has been built/rebuilt
-        if not hasattr(self, 'tcells'):
-            self.outPts, self.outCells = visualiseTIN.output_cellsIDs(self.allIDs, self.inIDs, visXlim, visYlim, self.FVmesh.node_coords[:, :2], self.tMesh.cells)
-            self.tcells = np.zeros(size)
-            self.tcells[rank] = len(self.outCells)
-            # comm.Allreduce(MPI.IN_PLACE,tcells,op=MPI.MAX)
-            self.tnodes = np.zeros(size)
-            self.tnodes[rank] = len(self.allIDs)
-            # comm.Allreduce(MPI.IN_PLACE,tnodes,op=MPI.MAX)
+        outPts, outCells = visualiseTIN.output_cellsIDs(self.allIDs, self.inIDs, visXlim, visYlim,
+                                        self.FVmesh.node_coords[:, :2], self.tMesh.cells)
+        tcells = np.zeros(size)
+        tcells[rank] = len(outCells)
+        # comm.Allreduce(MPI.IN_PLACE,tcells,op=MPI.MAX)
+        tnodes = np.zeros(size)
+        tnodes[rank] = len(self.allIDs)
+        # comm.Allreduce(MPI.IN_PLACE,tnodes,op=MPI.MAX)
 
         # Done for every visualisation step
-        flowIDs, polylines = visualiseFlow.output_Polylines(self.outPts, self.flow.receivers[self.outPts], visXlim, visYlim, self.FVmesh.node_coords[:, :2])
+        flowIDs, polylines = visualiseFlow.output_Polylines(outPts, self.flow.receivers[outPts],
+                        visXlim, visYlim, self.FVmesh.node_coords[:, :2])
         fnodes = np.zeros(size)
         fnodes[rank] = len(flowIDs)
         # comm.Allreduce(MPI.IN_PLACE,fnodes,op=MPI.MAX)
@@ -283,32 +299,63 @@ class Model(object):
         self.flow.compute_parameters(self.FVmesh.node_coords[:, :2])
 
         # Write HDF5 files
-        visualiseTIN.write_hdf5(outDir, self.input.th5file, step, self.tMesh.node_coords[:, :2], self.elevation[self.allIDs],
-                                self.flow.discharge[self.allIDs], self.cumdiff[self.allIDs], self.outCells, rank)
-        visualiseFlow.write_hdf5(outDir, self.input.fh5file, step, self.FVmesh.node_coords[flowIDs, :2], self.elevation[flowIDs],
-                                self.flow.discharge[flowIDs], self.flow.chi[flowIDs], self.flow.basinID[flowIDs], polylines, rank)
+        visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh. node_coords[:,:2],
+                                self.elevation[self.allIDs], self.flow.discharge[self.allIDs], self.cumdiff[self.allIDs],
+                                outCells, rank)
+        visualiseFlow.write_hdf5(self.input.outDir, self.input.fh5file, step, self.FVmesh.node_coords[flowIDs, :2],
+                                 self.elevation[flowIDs], self.flow.discharge[flowIDs], self.flow.chi[flowIDs],
+                                 self.flow.basinID[flowIDs], polylines, rank)
 
         # Combine HDF5 files and write time series
         if rank == 0:
-            visualiseTIN.write_xmf(outDir, self.input.txmffile, self.input.txdmffile, step, self.tNow, self.tcells, self.tnodes, self.input.th5file, size)
-            visualiseFlow.write_xmf(outDir, self.input.fxmffile, self.input.fxdmffile, step, self.tNow, fline, fnodes, self.input.fh5file, size)
-            print " - Writing outputs ", time.clock() - out_time
+            visualiseTIN.write_xmf(self.input.outDir, self.input.txmffile, self.input.txdmffile,
+                                   step, self.input.tStart, tcells, tnodes, self.input.th5file, size)
+            visualiseFlow.write_xmf(self.input.outDir, self.input.fxmffile, self.input.fxdmffile,
+                                    step, self.input.tStart, fline, fnodes, self.input.fh5file, size)
+            print "   - Writing outputs ", time.clock() - out_time
 
     def run_to_time(self, tEnd):
         """Run the simulation to a specified point in time (tEnd)."""
-        # TODO: if we need to intervene with new terrain/rain maps, do that
-        # TODO: generate output at the display interval
-
-        if self.tNextDisplay is None:
+        if not self.simStarted:
+            # anything in here will be executed once at the start of time
             self.tNextDisplay = self.input.tDisplay
+
+            self.force.next_rain = self.force.T_rain[0, 0]
+            self.force.next_disp = self.force.T_disp[0, 0]
+
+            # FIXME: self.force.next_display and self.tNextDisplay are doing the same thing?
+            self.force.next_display = self.input.tStart
+            # self.force.next_display = self.input.tDisplay
+            self.exitTime = self.input.tEnd
+
+            self.simStarted = True
 
         while self.tNow < tEnd:
             print 'tNow = %s' % self.tNow
 
+            # Load Rain Map
+            if self.force.next_rain <= self.tNow and self.force.next_rain < self.input.tEnd:
+                self.rain = np.zeros(self.totPts, dtype=float)
+                self.rain[self.inIDs] = self.force.load_Rain_map(self.tNow, self.FVmesh.node_coords[self.inIDs, :2])
+                # comm.Allreduce(MPI.IN_PLACE, self.rain, op=MPI.MAX)
+
+            # Load Tectonic Grid
+            if not self.input.disp3d:
+                if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
+                    ldisp = np.zeros(self.totPts, dtype=float)
+                    ldisp.fill(-1.e6)
+                    ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow, self.FVmesh.node_coords[self.inIDs, :2])
+                    # comm.Allreduce(MPI.IN_PLACE, ldisp, op=MPI.MAX)
+                    self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours, self.FVmesh.edge_length, self.recGrid.boundsPt)
+            else:
+                if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
+                    self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
+                    self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours, self.FVmesh.edge_length, self.recGrid.boundsPt)
+                    self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff)
+
             # run the simulation for a bit
-            tStop = min(self.tNextDisplay, tEnd)
+            tStop = min([self.tNextDisplay, tEnd, self.force.next_disp, self.force.next_rain])
             self.compute_flow(tEnd=tStop)
-            # up to here - add the CDF and sediment flow updates
 
             if self.tNow >= self.tNextDisplay:
                 # time to write output
