@@ -20,7 +20,13 @@ import xml.etree.ElementTree as ETO
 
 import plotly
 from plotly.graph_objs import *
-plotly.offline.init_notebook_mode()
+
+# only load notebook mode if we're running under ipython
+try:
+    __IPYTHON__
+    plotly.offline.init_notebook_mode()
+except NameError:
+    pass
 
 class visSurf:
     """

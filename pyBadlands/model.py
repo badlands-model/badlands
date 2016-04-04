@@ -99,7 +99,7 @@ class Model(object):
         FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
 
         # Compute Finite Volume parameters
-        tGIDs, tNgbh, tEdgs, tVors, tVols = tMesh.construct_FV(inGIDs, allIDs, totPts)
+        tGIDs, tNgbh, tEdgs, tVors, tVols = tMesh.construct_FV(inGIDs, allIDs, totPts, recGrid.resEdges * self.input.Afactor)
 
         FVmesh.neighbours[tGIDs, :tMesh.maxNgbh] = tNgbh
         FVmesh.edge_length[tGIDs, :tMesh.maxNgbh] = tEdgs
