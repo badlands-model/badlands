@@ -318,7 +318,7 @@ class Model(object):
         """Run the simulation to a specified point in time (tEnd)."""
         if not self.simStarted:
             # anything in here will be executed once at the start of time
-            self.tNextDisplay = self.input.tDisplay
+            self.tNextDisplay = 0
 
             self.force.next_rain = self.force.T_rain[0, 0]
             self.force.next_disp = self.force.T_disp[0, 0]
