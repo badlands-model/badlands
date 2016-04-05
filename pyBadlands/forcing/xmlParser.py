@@ -10,6 +10,7 @@
 This module encapsulates parsing functions of Badlands XmL input file.
 """
 import os
+import glob
 import numpy 
 import xml.etree.ElementTree as ET
 
@@ -449,4 +450,10 @@ class xmlParser:
         else:
             self.outDir = os.getcwd()+'/out'
         
+        if os.path.exists(self.outDir):
+            self.outDir += '_'+str(len(glob.glob(self.outDir+str('*')))-1)
+
+        if not os.path.exists(self.outDir):
+            os.makedirs(self.outDir)
+            
         return
