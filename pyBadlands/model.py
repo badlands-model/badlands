@@ -153,7 +153,7 @@ class Model(object):
         self.force = force
         self.totPts = totPts
 
-    def compute_flow(self, tEnd, verbose=False):
+    def compute_flow(self, verbose=False):
         """
         Compute flows and update the model.
 
@@ -170,7 +170,7 @@ class Model(object):
 
         # Update sea-level
         self.force.getSea(self.tNow)
-        fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours, self.recGrid.boundsPt, self.force.sealevel - self.input.sealimit, self.input.fillmax)
+        self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours, self.recGrid.boundsPt, self.force.sealevel - self.input.sealimit, self.input.fillmax)
         if rank == 0 and verbose:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
@@ -179,7 +179,7 @@ class Model(object):
         ngbhs = self.FVmesh.neighbours[self.allIDs, :]
         edges = self.FVmesh.vor_edges[self.allIDs, :]
         distances = self.FVmesh.edge_length[self.allIDs, :]
-        self.flow.SFD_receivers(fillH, self.elevation, ngbhs, edges, distances, self.allIDs, self.force.sealevel - self.input.sealimit)
+        self.flow.SFD_receivers(self.fillH, self.elevation, ngbhs, edges, distances, self.allIDs, self.force.sealevel - self.input.sealimit)
         if rank == 0 and verbose:
             print " -   compute receivers parallel ", time.clock() - walltime
 
@@ -209,12 +209,10 @@ class Model(object):
         if rank == 0 and verbose:
             print " -   compute discharge ", time.clock() - walltime
 
-        # Here we output the dataset if force.next_disp == tNow
-        # TODO: review this in light of the rest of the loop logic
-        if self.force.next_display <= self.tNow and self.force.next_display < self.input.tEnd:
-            # get plotting function
-            #step += 1
-            self.force.next_display += self.force.time_display
+    def compute_flux(self, tEnd, verbose=False):
+        # single core
+        size = 1
+        rank = 0
 
         self.exitTime = min([self.force.next_display, self.force.next_disp, self.force.next_rain])
 
@@ -222,7 +220,7 @@ class Model(object):
         walltime = time.clock()
         self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
 
-        self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], fillH, self.inGIDs)
+        self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.fillH, self.inGIDs)
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
@@ -240,20 +238,19 @@ class Model(object):
         walltime = time.clock()
         xyMin = [self.recGrid.regX.min(), self.recGrid.regY.min()]
         xyMax = [self.recGrid.regX.max(), self.recGrid.regY.max()]
-        tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, fillH,
+        tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, self.fillH,
                          self.FVmesh.node_coords[:, :2], xyMin, xyMax, diff_flux, CFLtime, self.force.sealevel, True)
         if rank == 0 and verbose:
             print " -   Get stream fluxes ", time.clock() - walltime
 
         # Update surface
-        # print("tstep = %s" % tstep)
         timestep = min(tstep, self.exitTime - self.tNow)
         diff = sedrate * tstep
         self.elevation += diff
         self.cumdiff += diff
         self.tNow += tstep
-        if rank == 0:
-            print " - Flow computation ", time.clock() - Flow_time
+        # if rank == 0:
+        # print " - Flow computation ", time.clock() - Flow_time
 
     def write_output(self, outDir, step):
         """
@@ -330,8 +327,11 @@ class Model(object):
 
             self.simStarted = True
 
+        last_time = time.clock()
         while self.tNow < tEnd:
-            print 'tNow = %s' % self.tNow
+            diff = time.clock() - last_time
+            print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
+            last_time = time.clock()
 
             # Load Rain Map
             if self.force.next_rain <= self.tNow and self.force.next_rain < self.input.tEnd:
@@ -355,7 +355,7 @@ class Model(object):
 
             # run the simulation for a bit
             tStop = min([self.tNextDisplay, tEnd, self.force.next_disp, self.force.next_rain])
-            self.compute_flow(tEnd=tStop, verbose=False)
+            self.compute_flow(verbose=False)
 
             if self.tNow >= self.tNextDisplay:
                 # time to write output
@@ -363,3 +363,8 @@ class Model(object):
 
                 self.tNextDisplay += self.input.tDisplay
                 self.outputStep += 1
+
+            self.compute_flux(tEnd=tStop, verbose=False)
+
+        self.write_output(outDir=self.input.outDir, step=self.outputStep)
+        self.outputStep += 1
