@@ -11,23 +11,23 @@
 module flowcompute
 
   implicit none
-  
+
 contains
 
   subroutine discharge(pyStack, pyRcv, pyDischarge, pyDis, pylNodesNb, pygNodesNb)
-  
+
       integer :: pygNodesNb
       integer :: pylNodesNb
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
-      
+
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyDis
 
       integer :: n, donor, recvr
-      
+
       pyDis = pyDischarge
-      
+
       do n = pylNodesNb, 1, -1
         donor = pyStack(n) + 1
         recvr = pyRcv(donor) + 1
@@ -35,29 +35,29 @@ contains
             pyDis(recvr) = pyDis(recvr) + pyDis(donor)
         endif
       enddo
-  
+
       return
 
   end subroutine discharge
 
   subroutine parameters(pyStack, pyRcv, pyDischarge, pyXY, &
       spl_part, pyBid0, pyChi, pyBasinID, pylNodesNb, pygNodesNb)
-  
+
       integer :: pygNodesNb
       integer :: pylNodesNb
       integer,intent(in) :: pyBid0
-      real,intent(in) :: spl_part
+      real(kind=8),intent(in) :: spl_part
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
       real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
-      
+
       integer,dimension(pygNodesNb),intent(out) :: pyBasinID
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChi
 
       integer :: n, donor, recvr, bID
       real(kind=8) :: disch1, disch2, dist
-      
+
       pyChi = 0.
       pyBasinID = -1
       bID = pyBid0
@@ -75,22 +75,22 @@ contains
                 (1./(disch1))**spl_part) * dist
         endif
       enddo
-  
+
       return
 
   end subroutine parameters
-  
+
   subroutine diffcfl(pyEdges, Cdiff, cfl_dt, pyNodesNb)
-  
+
       integer :: pyNodesNb
-      real,intent(in) :: Cdiff
-      real,dimension(pyNodesNb,20),intent(in) :: pyEdges
-      
-      real,intent(out) :: cfl_dt
+      real(kind=8),intent(in) :: Cdiff
+      real(kind=8),dimension(pyNodesNb,20),intent(in) :: pyEdges
+
+      real(kind=8),intent(out) :: cfl_dt
 
       integer :: p, n
-      real :: tmp
-      
+      real(kind=8) :: tmp
+
       cfl_dt = 1.e6
       do p = 1, pyNodesNb
         n = 1
@@ -98,32 +98,32 @@ contains
            tmp = 0.05 * pyEdges(p,n)**2. / Cdiff
            cfl_dt = min(tmp,cfl_dt)
            n = n + 1
-        enddo 
+        enddo
       enddo
-  
+
       return
 
   end subroutine diffcfl
 
   subroutine flowcfl(pyIDs, pyRcv, pyXY, pyElev, pyDischarge, Cero, &
       spl_m, spl_n, cfl_dt, pylNodesNb, pygNodesNb)
-  
+
       integer :: pygNodesNb
       integer :: pylNodesNb
-      real,intent(in) :: Cero
-      real,intent(in) :: spl_m
-      real,intent(in) :: spl_n
+      real(kind=8),intent(in) :: Cero
+      real(kind=8),intent(in) :: spl_m
+      real(kind=8),intent(in) :: spl_n
       integer,dimension(pylNodesNb),intent(in) :: pyIDs
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
-      real,dimension(pygNodesNb,2),intent(in) :: pyXY
-      real,dimension(pygNodesNb),intent(in) :: pyElev
-      real,dimension(pygNodesNb),intent(in) :: pyDischarge
-      
-      real,intent(out) :: cfl_dt
+      real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
+
+      real(kind=8),intent(out) :: cfl_dt
 
       integer :: p, d, r
-      real :: dz, tmp, dist
-      
+      real(kind=8) :: dz, tmp, dist
+
       cfl_dt = 1.e6
       do p = 1, pylNodesNb
         d = pyIDs(p) + 1
@@ -135,57 +135,59 @@ contains
             cfl_dt = min(tmp,cfl_dt)
         endif
       enddo
-  
+
       return
 
   end subroutine flowcfl
-  
+
   subroutine sedflux(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
       pyMaxH, pyMaxD, pyDischarge, pyFillH, pyElev, pyDiff, Cero, &
       spl_m,spl_n,sea,dt,pyChange,newdt,pylNodesNb,pygNodesNb)
-  
+
       integer :: pylNodesNb
       integer :: pygNodesNb
-      real,intent(in) :: dt
-      real,intent(in) :: sea
-      real,intent(in) :: spl_n
-      real,intent(in) :: spl_m
-      real,intent(in) :: Cero
-      real,dimension(2),intent(in) :: pyXYmin
-      real,dimension(2),intent(in) :: pyXYmax
+      real(kind=8),intent(in) :: dt
+      real(kind=8),intent(in) :: sea
+      real(kind=8),intent(in) :: spl_n
+      real(kind=8),intent(in) :: spl_m
+      real(kind=8),intent(in) :: Cero
+      real(kind=8),dimension(2),intent(in) :: pyXYmin
+      real(kind=8),dimension(2),intent(in) :: pyXYmax
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
-      real,dimension(pygNodesNb,2),intent(in) :: pyXY
-      real,dimension(pygNodesNb),intent(in) :: pyArea
-      real,dimension(pygNodesNb),intent(in) :: pyDischarge
-      real,dimension(pygNodesNb),intent(in) :: pyMaxH
-      real,dimension(pygNodesNb),intent(in) :: pyMaxD
-      real,dimension(pygNodesNb),intent(in) :: pyFillH
-      real,dimension(pygNodesNb),intent(in) :: pyElev
-      real,dimension(pygNodesNb),intent(in) :: pyDiff
-      
-      real,intent(out) :: newdt
-      real,dimension(pygNodesNb),intent(out) :: pyChange
+      real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyArea
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyMaxH
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyMaxD
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyFillH
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
+
+      real(kind=8),intent(out) :: newdt
+      real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
 
       integer :: n, donor, recvr
-      real :: maxh, SPL, Qs, dh, mtime, waterH,dist
-      real,dimension(pygNodesNb) :: sedFluxes
-      
+      real(kind=8) :: maxh, SPL, Qs, dh, mtime, waterH,dist
+      real(kind=8),dimension(pygNodesNb) :: sedFluxes
+
       newdt = dt
       pyChange = -1.e6
       sedFluxes = 0.
-      
+
       do n = pylNodesNb, 1, -1
         SPL = 0.
         donor = pyStack(n) + 1
         recvr = pyRcv(donor) + 1
         dh = 0.95*(pyElev(donor) - pyElev(recvr))
+        if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
+          dh = pyElev(donor) - sea
         if( dh < 0.001 ) dh = 0.
         waterH = pyFillH(donor)-pyElev(donor)
-        
+
         ! Compute stream power law
         if( recvr /= donor .and. dh > 0.)then
-          if(waterH <0.001 .and. pyElev(donor) >= sea)then
+          if(waterH == 0. .and. pyElev(donor) >= sea)then
             dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
             if(dist > 0.) SPL = -Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
           endif
@@ -199,7 +201,7 @@ contains
         endif
         maxh = 0.95*maxh
         Qs = 0.
-        
+
         ! Deposition case
         if( SPL == 0. .and. pyArea(donor) > 0.)then
           if(maxh > 0. .and. pyElev(donor) < sea)then
@@ -231,23 +233,26 @@ contains
           endif
         ! Erosion case
         elseif(SPL < 0.)then
+            if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
+                newdt = min( newdt,-0.99*(pyElev(donor)-sea)/SPL)
+
             if(-SPL * newdt > pyElev(donor) - pyElev(recvr)) &
                 newdt = min( newdt,-0.99*(pyElev(donor)-pyElev(recvr))/SPL)
-            
+
             Qs = -SPL * pyArea(donor) + sedFluxes(donor)
         endif
-        
+
         ! Update sediment flux in receiver node
         sedFluxes(recvr) = sedFluxes(recvr) + Qs
-        
+
         pyChange(donor) = SPL + pyDiff(donor)
-        
+
         ! Update borders
         if(pyXY(donor,1) < pyXYmin(1) .or. pyXY(donor,2) < pyXYmin(2) .or. &
             pyXY(donor,1) > pyXYmax(1) .or. pyXY(donor,2) > pyXYmax(2) ) &
             pyChange(donor) = 0.
-        
-        ! Update base levels   
+
+        ! Update base levels
         if(donor == recvr .and. pyChange(donor) > 0.)then
             if(waterH == 0.)then
                 mtime = pyMaxD(donor) / pyChange(donor)

@@ -20,22 +20,22 @@ contains
 
         integer :: pylocalNb
         integer :: pyglobalNb
-        real,intent(in) :: sealimit
+        real(kind=8),intent(in) :: sealimit
         integer,dimension(pylocalNb),intent(in) :: pyGIDs
         integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
-        real,dimension(pyglobalNb),intent(in) :: pyZ
-        real,dimension(pyglobalNb),intent(in) :: pyElev
-        real,dimension(pylocalNb,20),intent(in) :: pyEdge
-        real,dimension(pylocalNb,20),intent(in) :: pyDist
+        real(kind=8),dimension(pyglobalNb),intent(in) :: pyZ
+        real(kind=8),dimension(pyglobalNb),intent(in) :: pyElev
+        real(kind=8),dimension(pylocalNb,20),intent(in) :: pyEdge
+        real(kind=8),dimension(pylocalNb,20),intent(in) :: pyDist
         
         integer,intent(out) :: pyBase(pyglobalNb)
         integer,intent(out) :: pyRcv(pyglobalNb)
-        real,intent(out) :: pyMaxh(pyglobalNb)
-        real,intent(out) :: pyDiff(pyglobalNb)
-        real,intent(out) :: pyMaxDep(pyglobalNb)
+        real(kind=8),intent(out) :: pyMaxh(pyglobalNb)
+        real(kind=8),intent(out) :: pyDiff(pyglobalNb)
+        real(kind=8),intent(out) :: pyMaxDep(pyglobalNb)
         
         integer :: p,k,lowestID,gid
-        real :: diffH,diffD,dh
+        real(kind=8) :: diffH,diffD,dh
         
         pyBase = -1
         pyRcv = -1

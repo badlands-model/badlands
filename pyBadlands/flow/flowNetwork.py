@@ -242,7 +242,7 @@ class flowNetwork:
 
         return
 
-    def compute_sedflux(self, Acell, elev, fillH, xycoords, xymin, xymax, diff_flux, dt, sealevel, parallel=False):
+    def compute_sedflux(self, Acell, elev, fillH, xycoords, xymin, xymax, diff_flux, dt, sealevel):
         """
         Calculates the sediment flux at each node.
 
@@ -274,18 +274,15 @@ class flowNetwork:
 
         variable : sealevel
             Real value giving the sea-level height at considered time step.
-
-        variable : parallel
-            Boolean to inform if the discharge algorithm need to be ran in parallel (True) or serial (False).
         """
 
         # Initialise MPI communications
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
-
+         
         # Compute sediment flux using libUtils
-        if(parallel):
+        if(size > 1):
             sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.localstack,self.receivers,xycoords,\
                      Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
                      self.erodibility,self.m,self.n,sealevel,dt)

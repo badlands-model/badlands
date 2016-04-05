@@ -68,7 +68,7 @@ contains
 
   end subroutine push2
 
-  subroutine filling(elevation,pyNgbs,fillTH,epsilon,pybounds,sealimit,demH,pydnodes)
+  subroutine filling2(elevation,pyNgbs,fillTH,epsilon,pybounds,sealimit,demH,pydnodes)
 
       integer :: pydnodes
       integer,intent(in) :: pybounds
@@ -108,7 +108,7 @@ contains
                   else
                       if( demH(k) > minH + epsilon )then
                           demH(k) = minH + epsilon
-                          if( demH(k) - elevation(k) >= fillTH )then
+                          if( demH(k) - elevation(k) > fillTH )then
                               demH(k) = elevation(k) + fillTH
                           else
                               call push2(k)
@@ -121,6 +121,7 @@ contains
               endif
           enddo
           if(flag)then
+              stack1 = 0
               size1 = size2
               stack1(1:size1) = stack2(1:size2)
               size2 = 0
@@ -128,6 +129,59 @@ contains
        enddo
 
        return
+
+  end subroutine filling2
+
+  subroutine filling(elevation,pyNgbs,fillTH,epsilon,pybounds,sealimit,demH,pydnodes)
+
+      integer :: pydnodes
+      integer,intent(in) :: pybounds
+      real(kind=8),intent(in) :: sealimit
+      real(kind=8),intent(in) :: fillTH
+      real(kind=8),intent(in) :: epsilon
+      real(kind=8),intent(in) :: elevation(pydnodes)
+      integer,intent(in) :: pyNgbs(pydnodes,20)
+      real(kind=8),intent(out) :: demH(pydnodes)
+
+      logical :: flag
+      integer :: p, k
+
+      flag = .true.
+      demH = 1.e6
+      demH(1:pybounds) = elevation(1:pybounds)
+      do k=pybounds+1,pydnodes
+          if( demH(k) > sealimit)then 
+              demH(k) = 1.e6
+          else
+              demH(k) = elevation(k)
+          endif
+      enddo
+
+      do while(flag)
+        flag=.false.
+        do k=1,pydnodes
+          if( demH(k) > elevation(k) )then
+            loop: do p = 1, 20 
+                if( pyNgbs(k,p) < 0) exit loop
+                if( elevation(k) >= demH(pyNgbs(k,p)+1) + epsilon )then
+                    demH(k) = elevation(k)
+                else
+                    if( demH(k) > demH(pyNgbs(k,p)+1) + epsilon )then
+                        demH(k) = demH(pyNgbs(k,p)+1) + epsilon
+                        if(demH(k) - elevation(k) > fillTH)then
+                            demH(k) = elevation(k) + fillTH
+                        else
+                            flag=.true.
+                        endif
+                    
+                    endif
+                endif
+            enddo loop
+          endif
+        enddo
+      enddo
+    
+      return
 
   end subroutine filling
 

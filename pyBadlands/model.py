@@ -16,7 +16,6 @@ class Model(object):
 
         # simulation state
         self.tNow = 0.
-        self.tNextDisplay = None
         self.outputStep = 0
         self.simStarted = False
 
@@ -74,7 +73,7 @@ class Model(object):
         # Get each partition global node ID
         inGIDs = np.where(partitionIDs == rank)[0]
 
-        if rank == 0:
+        if rank == 0 and size > 1:
             print " - partition TIN amongst processors ", time.clock() - walltime
 
         # 3. Build Finite Volume discretisation
@@ -215,7 +214,7 @@ class Model(object):
         rank = 0
 
         self.exitTime = min([self.force.next_display, self.force.next_disp, self.force.next_rain])
-
+        
         # 4. Compute CFL condition
         walltime = time.clock()
         self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
@@ -230,6 +229,7 @@ class Model(object):
         # 5. Compute sediment fluxes
         # Initial cumulative elevation change
         walltime = time.clock()
+
         # FIXME: not sure if diff_flux should be updating self.flow.diff_flux; not shown in notebook
         diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.force.sealevel, self.elevation, self.FVmesh.control_volumes)
         if rank == 0 and verbose:
@@ -238,20 +238,21 @@ class Model(object):
         walltime = time.clock()
         xyMin = [self.recGrid.regX.min(), self.recGrid.regY.min()]
         xyMax = [self.recGrid.regX.max(), self.recGrid.regY.max()]
+            
         tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, self.fillH,
-                         self.FVmesh.node_coords[:, :2], xyMin, xyMax, diff_flux, CFLtime, self.force.sealevel, True)
+                         self.FVmesh.node_coords[:, :2], xyMin, xyMax, diff_flux, CFLtime, self.force.sealevel)
         if rank == 0 and verbose:
             print " -   Get stream fluxes ", time.clock() - walltime
 
         # Update surface
-        timestep = min(tstep, self.exitTime - self.tNow)
-        diff = sedrate * tstep
+        timestep = min([tstep, tEnd, self.exitTime - self.tNow])
+        diff = sedrate * timestep
+        tID = np.where(self.fillH-self.elevation>0)[0]
+        
         self.elevation += diff
         self.cumdiff += diff
-        self.tNow += tstep
-        # if rank == 0:
-        # print " - Flow computation ", time.clock() - Flow_time
-
+        self.tNow += timestep
+        
     def write_output(self, outDir, step):
         """
         Write HDF5 output.
@@ -296,9 +297,9 @@ class Model(object):
         self.flow.compute_parameters(self.FVmesh.node_coords[:, :2])
 
         # Write HDF5 files
-        visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh. node_coords[:,:2],
+        visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh.node_coords[:,:2],
                                 self.elevation[self.allIDs], self.flow.discharge[self.allIDs], self.cumdiff[self.allIDs],
-                                outCells, rank)
+                                outCells, rank) 
         visualiseFlow.write_hdf5(self.input.outDir, self.input.fh5file, step, self.FVmesh.node_coords[flowIDs, :2],
                                  self.elevation[flowIDs], self.flow.discharge[flowIDs], self.flow.chi[flowIDs],
                                  self.flow.basinID[flowIDs], polylines, rank)
@@ -313,18 +314,12 @@ class Model(object):
 
     def run_to_time(self, tEnd):
         """Run the simulation to a specified point in time (tEnd)."""
+        
         if not self.simStarted:
-            # anything in here will be executed once at the start of time
-            self.tNextDisplay = 0
-
             self.force.next_rain = self.force.T_rain[0, 0]
             self.force.next_disp = self.force.T_disp[0, 0]
-
-            # FIXME: self.force.next_display and self.tNextDisplay are doing the same thing?
             self.force.next_display = self.input.tStart
-            # self.force.next_display = self.input.tDisplay
             self.exitTime = self.input.tEnd
-
             self.simStarted = True
 
         last_time = time.clock()
@@ -354,17 +349,19 @@ class Model(object):
                     self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff)
 
             # run the simulation for a bit
-            tStop = min([self.tNextDisplay, tEnd, self.force.next_disp, self.force.next_rain])
             self.compute_flow(verbose=False)
-
-            if self.tNow >= self.tNextDisplay:
+            
+            if self.tNow >= self.force.next_display:
                 # time to write output
                 self.write_output(outDir=self.input.outDir, step=self.outputStep)
-
-                self.tNextDisplay += self.input.tDisplay
+                self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
-
+                
+            tStop = min([self.force.next_display, tEnd, self.force.next_disp, self.force.next_rain])
             self.compute_flux(tEnd=tStop, verbose=False)
-
+        
+        diff = time.clock() - last_time
+        print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
         self.write_output(outDir=self.input.outDir, step=self.outputStep)
+        self.force.next_display += self.input.tDisplay
         self.outputStep += 1
