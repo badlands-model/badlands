@@ -309,9 +309,9 @@ class Model(object):
         # Combine HDF5 files and write time series
         if rank == 0:
             visualiseTIN.write_xmf(self.input.outDir, self.input.txmffile, self.input.txdmffile,
-                                   step, self.input.tStart, tcells, tnodes, self.input.th5file, size)
+                                   step, self.tNow, tcells, tnodes, self.input.th5file, size)
             visualiseFlow.write_xmf(self.input.outDir, self.input.fxmffile, self.input.fxdmffile,
-                                    step, self.input.tStart, fline, fnodes, self.input.fh5file, size)
+                                    step, self.tNow, fline, fnodes, self.input.fh5file, size)
             print "   - Writing outputs ", time.clock() - out_time
 
     def run_to_time(self, tEnd):
