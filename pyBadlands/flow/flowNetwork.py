@@ -297,7 +297,7 @@ class flowNetwork:
             comm.Allreduce(MPI.IN_PLACE,sedflux,op=MPI.MAX)
             tempIDs = numpy.where(sedflux < -9.5e5)
             sedflux[tempIDs] = 0.
-            newdt = min(self.mindt,newdt)
+            newdt = max(self.mindt,newdt)
             sedrate = sedflux
         else:
             sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.stack,self.receivers,xycoords,\
@@ -305,7 +305,7 @@ class flowNetwork:
                      self.erodibility,self.m,self.n,sealevel,dt)
             tempIDs = numpy.where(sedflux < -9.5e5)
             sedflux[tempIDs] = 0.
-            newdt = min(self.mindt,newdt)
+            newdt = max(self.mindt,newdt)
             sedrate = sedflux
 
         return newdt,sedrate
