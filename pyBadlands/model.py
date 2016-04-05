@@ -153,7 +153,7 @@ class Model(object):
         self.force = force
         self.totPts = totPts
 
-    def compute_flow(self, tEnd):
+    def compute_flow(self, tEnd, verbose=False):
         """
         Compute flows and update the model.
 
@@ -171,7 +171,7 @@ class Model(object):
         # Update sea-level
         self.force.getSea(self.tNow)
         fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours, self.recGrid.boundsPt, self.force.sealevel - self.input.sealimit, self.input.fillmax)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
         # 2. Compute stream network
@@ -180,14 +180,14 @@ class Model(object):
         edges = self.FVmesh.vor_edges[self.allIDs, :]
         distances = self.FVmesh.edge_length[self.allIDs, :]
         self.flow.SFD_receivers(fillH, self.elevation, ngbhs, edges, distances, self.allIDs, self.force.sealevel - self.input.sealimit)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   compute receivers parallel ", time.clock() - walltime
 
         # Distribute evenly local minimas to processors
         walltime = time.clock()
         self.flow.localbase = np.array_split(self.flow.base, size)[rank]
         self.flow.ordered_node_array()
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   compute stack order locally ", time.clock() - walltime
 
         walltime = time.clock()
@@ -200,13 +200,13 @@ class Model(object):
         flow.stack = globalstack
         '''
         self.flow.stack = self.flow.localstack
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   send stack order globally ", time.clock() - walltime
 
         # 3. Compute discharge
         walltime = time.clock()
         self.flow.compute_flow(self.FVmesh.control_volumes, self.rain, True)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   compute discharge ", time.clock() - walltime
 
         # Here we output the dataset if force.next_disp == tNow
@@ -226,7 +226,7 @@ class Model(object):
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   Get CFL time step ", time.clock() - walltime
 
         # 5. Compute sediment fluxes
@@ -234,7 +234,7 @@ class Model(object):
         walltime = time.clock()
         # FIXME: not sure if diff_flux should be updating self.flow.diff_flux; not shown in notebook
         diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.force.sealevel, self.elevation, self.FVmesh.control_volumes)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   Get hillslope fluxes ", time.clock() - walltime
 
         walltime = time.clock()
@@ -242,7 +242,7 @@ class Model(object):
         xyMax = [self.recGrid.regX.max(), self.recGrid.regY.max()]
         tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, fillH,
                          self.FVmesh.node_coords[:, :2], xyMin, xyMax, diff_flux, CFLtime, self.force.sealevel, True)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " -   Get stream fluxes ", time.clock() - walltime
 
         # Update surface
@@ -355,11 +355,10 @@ class Model(object):
 
             # run the simulation for a bit
             tStop = min([self.tNextDisplay, tEnd, self.force.next_disp, self.force.next_rain])
-            self.compute_flow(tEnd=tStop)
+            self.compute_flow(tEnd=tStop, verbose=False)
 
             if self.tNow >= self.tNextDisplay:
                 # time to write output
-                print '  writing output'
                 self.write_output(outDir=self.input.outDir, step=self.outputStep)
 
                 self.tNextDisplay += self.input.tDisplay
