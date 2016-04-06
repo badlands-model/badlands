@@ -310,7 +310,7 @@ class Model(object):
                                    step, self.tNow, tcells, tnodes, self.input.th5file, size)
             visualiseFlow.write_xmf(self.input.outDir, self.input.fxmffile, self.input.fxdmffile,
                                     step, self.tNow, fline, fnodes, self.input.fh5file, size)
-            print "   - Writing outputs ", time.clock() - out_time
+            print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, self.tNow)
 
     def run_to_time(self, tEnd):
         """Run the simulation to a specified point in time (tEnd)."""
@@ -323,9 +323,14 @@ class Model(object):
             self.simStarted = True
 
         last_time = time.clock()
+        last_output = time.clock()
         while self.tNow < tEnd:
             diff = time.clock() - last_time
-            print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
+
+            # at most, display output every 5 seconds
+            if time.clock() - last_output >= 5.0:
+                print 'tNow = %s (step took %0.02f seconds)' % (self.tNow, diff)
+                last_output = time.clock()
             last_time = time.clock()
 
             # Load Rain Map
@@ -356,6 +361,7 @@ class Model(object):
                 self.write_output(outDir=self.input.outDir, step=self.outputStep)
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
+                last_output = time.clock()
                 
             tStop = min([self.force.next_display, tEnd, self.force.next_disp, self.force.next_rain])
             self.compute_flux(tEnd=tStop, verbose=False)
