@@ -13,7 +13,7 @@ This module encapsulates functions related to Badlands stream network computatio
 import math
 import numpy
 import warnings
-import mpi4py.MPI as MPI
+import mpi4py.MPI as mpi
 
 from pyBadlands.libUtils import SFDalgo as SFD
 from pyBadlands.libUtils import FLOWalgo
@@ -26,9 +26,10 @@ class flowNetwork:
     """
 
     def __init__(self):
-
-        '''Initialization.
-        '''
+        """
+        Initialization.
+        """
+        
         self.base = None
         self.localbase = None
         self.receivers = None
@@ -59,7 +60,6 @@ class flowNetwork:
         self.diff_flux = None
         self.chi = None
         self.basinID = None
-        #self.drainage_area = None
 
         return
 
@@ -94,7 +94,7 @@ class flowNetwork:
         """
 
         # Initialise MPI communications
-        comm = MPI.COMM_WORLD
+        comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
 
@@ -103,23 +103,23 @@ class flowNetwork:
             neighbours, edges, distances, globalIDs, sea)
 
         # Send local base level globally
-        comm.Allreduce(MPI.IN_PLACE,base,op=MPI.MAX)
+        comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
         self.base = numpy.where(base >= 0)[0]
 
         # Send local receivers globally
-        comm.Allreduce(MPI.IN_PLACE,receivers,op=MPI.MAX)
+        comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
         self.receivers = receivers
 
         # Send local maximum deposition globally
-        comm.Allreduce(MPI.IN_PLACE,maxh,op=MPI.MAX)
+        comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
         self.maxh = maxh
 
         # Send local maximum deposition globally
-        comm.Allreduce(MPI.IN_PLACE,maxdep,op=MPI.MAX)
+        comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
         self.maxdep = maxdep
 
         # Send local diffusion flux globally
-        comm.Allreduce(MPI.IN_PLACE,diff_flux,op=MPI.MAX)
+        comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
         self.diff_flux = diff_flux
 
         return
@@ -186,11 +186,11 @@ class flowNetwork:
             Numpy float-type array containing the precipitation rate for each nodes (in m/a).
 
         variable : parallel
-            Boolean to inform if the discharge algorithm need to be ran in parallel (True) or serial (False).
+            Boolean to inform if the discharge algorithm need to be run in parallel (True) or serial (False).
         """
 
         # Initialise MPI communications
-        comm = MPI.COMM_WORLD
+        comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
 
@@ -202,7 +202,7 @@ class flowNetwork:
         # Compute discharge using libUtils
         if(parallel):
             discharge = FLOWalgo.flowcompute.discharge(self.localstack,self.receivers,self.discharge)
-            comm.Allreduce(MPI.IN_PLACE,discharge,op=MPI.MAX)
+            comm.Allreduce(mpi.IN_PLACE,discharge,op=mpi.MAX)
         else:
             discharge = FLOWalgo.flowcompute.discharge(self.stack,self.receivers,self.discharge)
 
@@ -221,7 +221,7 @@ class flowNetwork:
         """
 
         # Initialise MPI communications
-        comm = MPI.COMM_WORLD
+        comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
 
@@ -234,8 +234,8 @@ class flowNetwork:
         splexp = self.m / self.n
         chi, basinID = FLOWalgo.flowcompute.parameters(self.localstack,self.receivers,
                                                self.discharge,xycoords,splexp,cumbase[rank])
-        comm.Allreduce(MPI.IN_PLACE,chi,op=MPI.MAX)
-        comm.Allreduce(MPI.IN_PLACE,basinID,op=MPI.MAX)
+        comm.Allreduce(mpi.IN_PLACE,chi,op=mpi.MAX)
+        comm.Allreduce(mpi.IN_PLACE,basinID,op=mpi.MAX)
 
         self.chi = chi
         self.basinID = basinID
@@ -277,10 +277,10 @@ class flowNetwork:
         """
 
         # Initialise MPI communications
-        comm = MPI.COMM_WORLD
+        comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
-         
+
         # Compute sediment flux using libUtils
         if(size > 1):
             sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.localstack,self.receivers,xycoords,\
@@ -288,10 +288,10 @@ class flowNetwork:
                      self.erodibility,self.m,self.n,sealevel,dt)
             timestep = numpy.zeros(1)
             timestep[0] = newdt
-            comm.Allreduce(MPI.IN_PLACE,timestep,op=MPI.MIN)
+            comm.Allreduce(mpi.IN_PLACE,timestep,op=mpi.MIN)
             newdt = timestep[0]
 
-            comm.Allreduce(MPI.IN_PLACE,sedflux,op=MPI.MAX)
+            comm.Allreduce(mpi.IN_PLACE,sedflux,op=mpi.MAX)
             tempIDs = numpy.where(sedflux < -9.5e5)
             sedflux[tempIDs] = 0.
             newdt = max(self.mindt,newdt)
@@ -327,7 +327,7 @@ class flowNetwork:
         """
 
         # Initialise MPI communications
-        comm = MPI.COMM_WORLD
+        comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
 
@@ -354,7 +354,7 @@ class flowNetwork:
                 ( dz / dist )**(self.n-1.) ))
 
         # Global mimimum value for diffusion stability
-        comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
+        comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
         self.CFL = CFL[0]
 
     def dt_fstability(self, xy, elev, locIDs):
@@ -377,7 +377,7 @@ class flowNetwork:
         """
 
         # Initialise MPI communications
-        comm = MPI.COMM_WORLD
+        comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
 
@@ -388,5 +388,5 @@ class flowNetwork:
         # Global mimimum value for diffusion stability
         CFL = numpy.zeros(1)
         CFL[0] = dt
-        comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
+        comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
         self.CFL = CFL[0]

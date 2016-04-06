@@ -1,7 +1,8 @@
 # TODO: see how well this works when you need to mix ipyparallel and mpi-hidden code. hopefully %%px will work automatically! do a demo notebook to show this, perhaps
 
-import numpy as np
 import time
+import numpy as np
+import mpi4py.MPI as mpi
 
 from pyBadlands import (diffLinear, elevationTIN, flowNetwork, forceSim,
                         FVmethod, partitionTIN, raster2TIN, visualiseFlow,
@@ -124,7 +125,7 @@ class Model(object):
         local_elev.fill(-1.e6)
         local_elev[inIDs] = elevationTIN.getElevation(recGrid.regX, recGrid.regY,
                                                       recGrid.regZ, FVmesh.node_coords[inIDs, :2])
-        # comm.Allreduce(MPI.IN_PLACE, local_elev, op=MPI.MAX)  # not needed for single threaded
+        # comm.Allreduce(mpi.IN_PLACE, local_elev, op=mpi.MAX)  # not needed for single threaded
 
         elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours,
                                                          FVmesh.edge_length, recGrid.boundsPt,
@@ -294,8 +295,8 @@ class Model(object):
         '''
         stackNbs = comm.allgather(len(flow.localstack))
         globalstack = np.zeros(sum(stackNbs),dtype=flow.localstack.dtype)
-        comm.Allgatherv(sendbuf=[flow.localstack, MPI.INT],
-                     recvbuf=[globalstack, (stackNbs, None), MPI.INT])
+        comm.Allgatherv(sendbuf=[flow.localstack, mpi.INT],
+                     recvbuf=[globalstack, (stackNbs, None), mpi.INT])
         flow.stack = globalstack
         '''
         self.flow.stack = self.flow.localstack
@@ -317,9 +318,7 @@ class Model(object):
         size = 1
         rank = 0
 
-        #self.exitTime = min([self.force.next_display, self.force.next_disp, self.force.next_rain])
-
-        # 4. Compute CFL condition
+        # 1. Compute CFL condition
         walltime = time.clock()
         self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
 
@@ -327,13 +326,14 @@ class Model(object):
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
+        print CFLtime
+
         if rank == 0 and verbose:
             print " -   Get CFL time step ", time.clock() - walltime
 
         # 5. Compute sediment fluxes
         # Initial cumulative elevation change
         walltime = time.clock()
-        # FIXME: not sure if diff_flux should be updating self.flow.diff_flux; not shown in notebook
         diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.force.sealevel, self.elevation,
                                            self.FVmesh.control_volumes)
         if rank == 0 and verbose:
@@ -348,14 +348,15 @@ class Model(object):
         if rank == 0 and verbose:
             print " -   Get stream fluxes ", time.clock() - walltime
 
-        # Update surface
+        # Update surface parameters and time
         timestep = min(tstep, tEnd - self.tNow)
         diff = sedrate * tstep
         self.elevation += diff
         self.cumdiff += diff
         self.tNow += timestep
-        # if rank == 0:
-        # print " - Flow computation ", time.clock() - Flow_time
+
+        if rank == 0 and verbose:
+            print " - Flow computation ", time.clock() - Flow_time
 
     def write_output(self, outDir, step):
         """
@@ -379,20 +380,20 @@ class Model(object):
                                         self.FVmesh.node_coords[:, :2], self.tMesh.cells)
         tcells = np.zeros(size)
         tcells[rank] = len(outCells)
-        # comm.Allreduce(MPI.IN_PLACE,tcells,op=MPI.MAX)
+        # comm.Allreduce(mpi.IN_PLACE,tcells,op=mpi.MAX)
         tnodes = np.zeros(size)
         tnodes[rank] = len(self.allIDs)
-        # comm.Allreduce(MPI.IN_PLACE,tnodes,op=MPI.MAX)
+        # comm.Allreduce(mpi.IN_PLACE,tnodes,op=mpi.MAX)
 
         # Done for every visualisation step
         flowIDs, polylines = visualiseFlow.output_Polylines(outPts, self.flow.receivers[outPts],
                         visXlim, visYlim, self.FVmesh.node_coords[:, :2])
         fnodes = np.zeros(size)
         fnodes[rank] = len(flowIDs)
-        # comm.Allreduce(MPI.IN_PLACE,fnodes,op=MPI.MAX)
+        # comm.Allreduce(mpi.IN_PLACE,fnodes,op=mpi.MAX)
         fline = np.zeros(size)
         fline[rank] = len(polylines[:, 0])
-        # comm.Allreduce(MPI.IN_PLACE,fline,op=MPI.MAX)
+        # comm.Allreduce(mpi.IN_PLACE,fline,op=mpi.MAX)
 
         # Compute flow parameters
         self.flow.compute_parameters(self.FVmesh.node_coords[:, :2])
@@ -417,7 +418,7 @@ class Model(object):
         """
         Run the simulation to a specified point in time (tEnd).
         """
-        
+
         if not self.simStarted:
             # anything in here will be executed once at the start of time
             self.force.next_rain = self.force.T_rain[0, 0]
@@ -429,6 +430,7 @@ class Model(object):
 
         last_time = time.clock()
         while self.tNow < tEnd:
+
             diff = time.clock() - last_time
             print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
             last_time = time.clock()
@@ -437,8 +439,8 @@ class Model(object):
             if self.force.next_rain <= self.tNow and self.force.next_rain < self.input.tEnd:
                 self.rain = np.zeros(self.totPts, dtype=float)
                 self.rain[self.inIDs] = self.force.load_Rain_map(self.tNow,
-                                        self.FVmesh.node_coords[self.inIDs, :2])
-                # comm.Allreduce(MPI.IN_PLACE, self.rain, op=MPI.MAX)
+                                            self.FVmesh.node_coords[self.inIDs, :2])
+                # comm.Allreduce(mpi.IN_PLACE, self.rain, op=mpi.MAX)
 
             # Load Tectonic Grid
             if not self.input.disp3d:
@@ -446,8 +448,8 @@ class Model(object):
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.e6)
                     ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow,
-                                        self.FVmesh.node_coords[self.inIDs, :2])
-                    # comm.Allreduce(MPI.IN_PLACE, ldisp, op=MPI.MAX)
+                                                self.FVmesh.node_coords[self.inIDs, :2])
+                    # comm.Allreduce(mpi.IN_PLACE, ldisp, op=mpi.MAX)
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
             else:
@@ -466,7 +468,7 @@ class Model(object):
             if self.tNow >= self.force.next_display:
                 # time to write output
                 self.write_output(outDir=self.input.outDir, step=self.outputStep)
-
+                # Update next display time
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
 

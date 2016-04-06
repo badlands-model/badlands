@@ -54,7 +54,6 @@ class forceSim:
 
     float : Tdisplay
         Display interval (in years).
-
     """
 
     def __init__(self, seafile = None, sea0 = 0., MapRain = None, TimeRain = None, ValRain = None,
@@ -149,7 +148,6 @@ class forceSim:
         ----------
         variable: tinRain
             Numpy array containing the updated rainfall for the local domain.
-
         """
 
         events = numpy.where( (self.T_rain[:,1] - time) < 0)[0]
@@ -195,6 +193,7 @@ class forceSim:
         variable: disps
             Numpy array containing the updated displacements on the edges.
         """
+
         disp[:boundPts] = 1.e7
         missedPts = []
         for id in range(boundPts):
@@ -238,7 +237,6 @@ class forceSim:
         ----------
         variable: tinDisp
             Numpy array containing the updated displacement rate for the local domain.
-
         """
 
         events = numpy.where( (self.T_disp[:,1] - time) < 0)[0]
@@ -278,8 +276,8 @@ class forceSim:
 
         integer : inDs
             List of unstructured vertices contained in each partition.
-
         """
+
         # Initialise MPI communications
         comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
@@ -370,8 +368,8 @@ class forceSim:
 
         variable: newcum
             Numpy array containing the updated erosion/deposition values for the new TIN.
-
         """
+        
         telev += self.dispZ
 
         tXY = numpy.copy(self.tXY)
