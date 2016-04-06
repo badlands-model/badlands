@@ -7,7 +7,6 @@ from pyBadlands import (diffLinear, elevationTIN, flowNetwork, forceSim,
                         FVmethod, partitionTIN, raster2TIN, visualiseFlow,
                         visualiseTIN, xmlParser)
 
-
 class Model(object):
     """State object for the pyBadlands model."""
 
@@ -53,11 +52,6 @@ class Model(object):
             else:
                 force.merge3d = self.input.merge3d
 
-        tinData = np.column_stack((recGrid.tinMesh['vertices'][:, 0],
-                                   recGrid.tinMesh['vertices'][:, 1]))
-
-        # TODO: see if you can store just one of recGrid/tinData
-
         # 2. Partition the TIN
         walltime = time.clock()
 
@@ -68,8 +62,8 @@ class Model(object):
         # Perform partitioning by equivalent domain splitting
         rowProc = 1
         colProc = size
-        partitionIDs, RowProc, ColProc = partitionTIN.simple(tinData[:, 0],
-                                                             tinData[:, 1])
+        partitionIDs, RowProc, ColProc = partitionTIN.simple(recGrid.tinMesh['vertices'][:, 0],
+                                                             recGrid.tinMesh['vertices'][:, 1])
         FVmesh.partIDs = partitionIDs
 
         # Get each partition global node ID
@@ -81,7 +75,8 @@ class Model(object):
         # 3. Build Finite Volume discretisation
 
         # Define overlapping partitions
-        allIDs, localTIN = partitionTIN.overlap(tinData[:, 0], tinData[:, 1],
+        allIDs, localTIN = partitionTIN.overlap(recGrid.tinMesh['vertices'][:, 0],
+                                                recGrid.tinMesh['vertices'][:, 1],
                                                 rowProc, colProc,
                                                 2 * recGrid.resEdges,
                                                 verbose)
@@ -93,7 +88,7 @@ class Model(object):
         walltime = time.clock()
 
         # Define Finite Volume parameters
-        totPts = len(tinData[:, 0])
+        totPts = len(recGrid.tinMesh['vertices'][:, 0])
         FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int)
         FVmesh.neighbours.fill(-2)
         FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float)
@@ -148,7 +143,6 @@ class Model(object):
 
         # save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
-        self.tinData = tinData
         self.recGrid = recGrid
         self.elevation = elevation
         self.FVmesh = FVmesh
@@ -173,9 +167,6 @@ class Model(object):
                                   self.input.tectTime, self.recGrid.regX,
                                   self.recGrid.regY, self.input.tDisplay)
 
-        tinData = np.column_stack((self.recGrid.tinMesh['vertices'][:, 0],
-                                   self.recGrid.tinMesh['vertices'][:, 1]))
-
         # 2. Partition the TIN
         walltime = time.clock()
 
@@ -186,8 +177,8 @@ class Model(object):
         # Perform partitioning by equivalent domain splitting
         rowProc = 1
         colProc = size
-        partitionIDs, RowProc, ColProc = partitionTIN.simple(tinData[:, 0],
-                                                             tinData[:, 1])
+        partitionIDs, RowProc, ColProc = partitionTIN.simple(self.recGrid.tinMesh['vertices'][:, 0],
+                                                             self.recGrid.tinMesh['vertices'][:, 1])
         FVmesh.partIDs = partitionIDs
 
         # Get each partition global node ID
@@ -199,7 +190,8 @@ class Model(object):
         # 3. Build Finite Volume discretisation
 
         # Define overlapping partitions
-        allIDs, localTIN = partitionTIN.overlap(tinData[:, 0], tinData[:, 1],
+        allIDs, localTIN = partitionTIN.overlap(self.recGrid.tinMesh['vertices'][:, 0],
+                                                self.recGrid.tinMesh['vertices'][:, 1],
                                                 rowProc, colProc,
                                                 2 * self.recGrid.resEdges,
                                                 verbose)
@@ -211,7 +203,7 @@ class Model(object):
         walltime = time.clock()
 
         # Define Finite Volume parameters
-        totPts = len(tinData[:, 0])
+        totPts = len(self.recGrid.tinMesh['vertices'][:, 0])
         FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int)
         FVmesh.neighbours.fill(-2)
         FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float)
@@ -241,7 +233,6 @@ class Model(object):
 
         # save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
-        self.tinData = tinData
         self.FVmesh = FVmesh
         self.allIDs = allIDs
         self.inIDs = inIDs
