@@ -54,7 +54,7 @@ class FVmethod:
 
         return
 
-    def _FV_utils(self, allIDs):
+    def _FV_utils(self, allIDs, verbose=False):
         """
         This function constructs the Finite Volume discretisation for each local
         triangularised grid.
@@ -76,7 +76,7 @@ class FVmethod:
         # Build the voronoi diagram (dual of the delaunay)
         walltime = time.clock()
         Vor_pts, Vor_edges = triangle.voronoi(self.node_coords)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " - build the voronoi diagram ", time.clock() - walltime
 
         # Call the finite volume frame construction function from libUtils
@@ -86,7 +86,7 @@ class FVmethod:
              allIDs+1, self.localIDs+1, self.node_coords[:,0], self.node_coords[:,1],
             self.edges[:,:2]+1, self.cells[:,:3]+1, Vor_pts[:,0], Vor_pts[:,1], \
             Vor_edges[:,:2]+1)
-        if rank == 0:
+        if rank == 0 and verbose:
             print " - construct Finite Volume representation ", time.clock() - walltime
 
         # Maximum number of neighbours for each partition
@@ -283,7 +283,7 @@ class FVmethod:
 
         return exportVors
 
-    def construct_FV(self, inIDs, allIDs, totPts, res):
+    def construct_FV(self, inIDs, allIDs, totPts, res, verbose=False):
         """
         Called function to build the Finite Volume discretisation of Badlands TIN grid.
 
@@ -353,7 +353,7 @@ class FVmethod:
         # Gather voronoi edges lenghts from each region globally
         exportVors = self._gather_VorEdges(localPtsNb, shape, ngbhNbs)
 
-        if rank == 0:
+        if rank == 0 and verbose:
             print " - perform MPI communication ", time.clock() - walltime
 
         # Get global IDs of non-boundary vertex for each TIN
@@ -430,7 +430,7 @@ class FVmethod:
         #comm.Allgatherv(sendbuf=[volsFLT, mpi.FLOAT],
         #             recvbuf=[exportVols, (ngbhNbs2, None), mpi.FLOAT])
 
-        #if rank == 0:
+        #if rank == 0 and verbose:
         #    print " - perform MPI communication ", time.clock() - walltime
 
         return exportGIDs, exportNgbhIDs, exportEdges, exportVors, exportVols

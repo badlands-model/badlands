@@ -153,7 +153,7 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
 
     return partID, nbprocX, nbprocY
 
-def overlap(X, Y, nbprocX, nbprocY, overlapLen):
+def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     """
     This function defines a simple partitioning of the computational domain based on row and column
     wise decomposition and add an overlap between each domain. The method is relatively fast compared
@@ -251,7 +251,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen):
     data = numpy.column_stack((X,Y))
     localTIN = triangle.triangulate(dict(vertices=data[globIDs,:2]),' ')
 
-    if rank == 0:
+    if rank == 0 and verbose:
         print " - partition TIN including shadow zones ", time.clock() - walltime
 
     return globIDs, localTIN
