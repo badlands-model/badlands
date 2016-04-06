@@ -11,7 +11,9 @@ class Model(object):
     """State object for the pyBadlands model."""
 
     def __init__(self):
-        """Constructor."""
+        """
+        Constructor.
+        """
 
         # simulation state
         self.tNow = 0.
@@ -19,14 +21,19 @@ class Model(object):
         self.simStarted = False
 
     def load_xml(self, filename, verbose=False):
-        """Load an XML configuration file."""
+        """
+        Load an XML configuration file.
+        """
+
         self.input = xmlParser.xmlParser(filename)
         self.load_dem(self.input.demfile, verbose)
 
     def load_dem(self, filename, verbose=False):
-        """Load a DEM input file."""
-        # 1. Get DEM regular grid and create Badlands TIN.
+        """
+        Load a DEM input file.
+        """
 
+        # 1. Get DEM regular grid and create Badlands TIN.
         # single processor for now
         rank = 0
         size = 1
@@ -154,7 +161,10 @@ class Model(object):
         self.totPts = totPts
 
     def rebuildMesh(self, verbose=False):
-        """Build TIN after 3D displacements."""
+        """
+        Build TIN after 3D displacements.
+        """
+
         # single processor for now
         rank = 0
         size = 1
@@ -243,8 +253,8 @@ class Model(object):
     def compute_flow(self, verbose=False):
         """
         Compute flows and update the model.
-
         """
+
         # single core
         size = 1
         rank = 0
@@ -299,6 +309,10 @@ class Model(object):
             print " -   compute discharge ", time.clock() - walltime
 
     def compute_flux(self, tEnd, verbose=False):
+        """
+        Compute sediment fluxes.
+        """
+
         # single core
         size = 1
         rank = 0
@@ -346,9 +360,6 @@ class Model(object):
     def write_output(self, outDir, step):
         """
         Write HDF5 output.
-
-        outDir: directory to write the output to
-        step: TODO confirm what this is
         """
 
         # single core
@@ -403,7 +414,10 @@ class Model(object):
             print "   - Writing outputs ", time.clock() - out_time
 
     def run_to_time(self, tEnd):
-        """Run the simulation to a specified point in time (tEnd)."""
+        """
+        Run the simulation to a specified point in time (tEnd).
+        """
+        
         if not self.simStarted:
             # anything in here will be executed once at the start of time
             self.force.next_rain = self.force.T_rain[0, 0]
