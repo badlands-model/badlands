@@ -339,7 +339,7 @@ class Model(object):
         xyMax = [self.recGrid.regX.max(), self.recGrid.regY.max()]
         tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, self.fillH,
                                                    self.FVmesh.node_coords[:, :2], xyMin, xyMax,
-                                                   diff_flux, CFLtime, self.force.sealevel, True)
+                                                   diff_flux, CFLtime, self.force.sealevel)
         if rank == 0 and verbose:
             print " -   Get stream fluxes ", time.clock() - walltime
 
