@@ -326,7 +326,6 @@ class Model(object):
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
-        print CFLtime
 
         if rank == 0 and verbose:
             print " -   Get CFL time step ", time.clock() - walltime
