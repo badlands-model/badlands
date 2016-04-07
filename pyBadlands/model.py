@@ -1,3 +1,5 @@
+# TODO: see how well this works when you need to mix ipyparallel and mpi-hidden code. hopefully %%px will work automatically! do a demo notebook to show this, perhaps
+
 import time
 import numpy as np
 import mpi4py.MPI as mpi
@@ -13,6 +15,9 @@ class Model(object):
         """
         Constructor.
         """
+
+        self.maxDep = 100.
+        self.fillDP = True
 
         # simulation state
         self.tNow = 0.
@@ -37,11 +42,7 @@ class Model(object):
         rank = 0
         size = 1
 
-        # TODO: remove this and the outputDir stuff from raster2TIN
-        import tempfile
-        tempdir = tempfile.mkdtemp()
-
-        recGrid = raster2TIN.raster2TIN(filename, outputDir=tempdir, areaDelFactor=self.input.Afactor)
+        recGrid = raster2TIN.raster2TIN(filename, areaDelFactor=self.input.Afactor)
 
         self.fixIDs = recGrid.boundsPt + recGrid.edgesPt
 
@@ -168,15 +169,8 @@ class Model(object):
         rank = 0
         size = 1
 
+        # Build the Finite Volume representation
         self.fixIDs = self.recGrid.boundsPt + self.recGrid.edgesPt
-
-        force = forceSim.forceSim(self.input.seafile, self.input.seapos,
-                                  self.input.rainMap, self.input.rainTime,
-                                  self.input.rainVal, self.input.tectFile,
-                                  self.input.tectTime, self.recGrid.regX,
-                                  self.recGrid.regY, self.input.tDisplay)
-
-        # 2. Partition the TIN
         walltime = time.clock()
 
         FVmesh = FVmethod.FVmethod(self.recGrid.tinMesh['vertices'],
@@ -196,7 +190,7 @@ class Model(object):
         if rank == 0 and verbose:
             print " - partition TIN amongst processors ", time.clock() - walltime
 
-        # 3. Build Finite Volume discretisation
+        # Build local Finite Volume discretisation
 
         # Define overlapping partitions
         allIDs, localTIN = partitionTIN.overlap(self.recGrid.tinMesh['vertices'][:, 0],
@@ -265,9 +259,16 @@ class Model(object):
 
         # Update sea-level
         self.force.getSea(self.tNow)
-        self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
-                                                 self.recGrid.boundsPt, self.force.sealevel - self.input.sealimit,
+        self.fillH = None
+        if self.fillDP:
+            self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
+                                                 self.recGrid.boundsPt,
+                                                 self.force.sealevel - self.input.sealimit,
                                                  self.input.fillmax)
+        else:
+            self.flow.maxdep = self.maxDep
+            self.flow.maxh = 0
+
         if rank == 0 and verbose:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
@@ -278,6 +279,7 @@ class Model(object):
         distances = self.FVmesh.edge_length[self.allIDs, :]
         self.flow.SFD_receivers(self.fillH, self.elevation, ngbhs, edges, distances,
                                 self.allIDs, self.force.sealevel - self.input.sealimit)
+
         if rank == 0 and verbose:
             print " -   compute receivers parallel ", time.clock() - walltime
 
@@ -319,8 +321,10 @@ class Model(object):
         # 1. Compute CFL condition
         walltime = time.clock()
         self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
-
-        self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.fillH, self.inGIDs)
+        if self.fillDP:
+            self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.fillH, self.inGIDs)
+        else:
+            self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.elevation, self.inGIDs)
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
@@ -328,7 +332,7 @@ class Model(object):
         if rank == 0 and verbose:
             print " -   Get CFL time step ", time.clock() - walltime
 
-        # 5. Compute sediment fluxes
+        # 2. Compute sediment fluxes
         # Initial cumulative elevation change
         walltime = time.clock()
         diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.force.sealevel, self.elevation,
@@ -409,7 +413,7 @@ class Model(object):
                                    step, self.tNow, tcells, tnodes, self.input.th5file, size)
             visualiseFlow.write_xmf(self.input.outDir, self.input.fxmffile, self.input.fxdmffile,
                                     step, self.tNow, fline, fnodes, self.input.fh5file, size)
-            print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, self.tNow)
+            print "   - Writing outputs ", time.clock() - out_time
 
     def run_to_time(self, tEnd):
         """
@@ -426,14 +430,10 @@ class Model(object):
             self.simStarted = True
 
         last_time = time.clock()
-        last_output = time.clock()
         while self.tNow < tEnd:
-            diff = time.clock() - last_time
 
-            # at most, display output every 5 seconds
-            if time.clock() - last_output >= 5.0:
-                print 'tNow = %s (step took %0.02f seconds)' % (self.tNow, diff)
-                last_output = time.clock()
+            diff = time.clock() - last_time
+            print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
             last_time = time.clock()
 
             # Load Rain Map
@@ -472,7 +472,6 @@ class Model(object):
                 # Update next display time
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
-                last_output = time.clock()
 
             tStop = min([self.force.next_display, tEnd, self.force.next_disp, self.force.next_rain])
             self.compute_flux(tEnd=tStop, verbose=False)

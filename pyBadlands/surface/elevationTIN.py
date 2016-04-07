@@ -207,7 +207,6 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
 
     return elev
 
-
 def pit_filling_PD(elev, neighbours, boundPts, sea, fillTH=1., epsilon=0.01):
     """
     This function calls a depression-less algorithm from Planchon & Darboux to compute the flow pathway.
