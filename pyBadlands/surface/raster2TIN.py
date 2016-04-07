@@ -60,7 +60,7 @@ class raster2TIN:
         Default: 1
     """
     
-    def __init__(self, inputfile=None, outputDir=None, rank=0, delimiter=' ', resRecFactor=1, areaDelFactor=1):
+    def __init__(self, inputfile=None, outputDir=None, rank=0, delimiter=r'\s+', resRecFactor=1, areaDelFactor=1):
         
         if inputfile==None:
             raise RuntimeError('DEM input file name must be defined to construct Badlands irregular grid.')
