@@ -356,7 +356,7 @@ class Model(object):
 
         # Update surface parameters and time
         timestep = min(tstep, tEnd - self.tNow)
-        diff = sedrate * tstep
+        diff = sedrate * timestep
         self.elevation += diff
         self.cumdiff += diff
         self.tNow += timestep
