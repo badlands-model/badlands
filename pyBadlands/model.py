@@ -22,6 +22,7 @@ class Model(object):
         # simulation state
         self.tNow = 0.
         self.outputStep = 0
+        self.applyDisp = False
         self.simStarted = False
 
     def load_xml(self, filename, verbose=False):
@@ -261,7 +262,7 @@ class Model(object):
         self.force.getSea(self.tNow)
 
         # Update vertical displacements
-        if not self.input.disp3d:
+        if not self.input.disp3d and self.applyDisp:
             self.elevation += self.disp
 
         self.fillH = None
@@ -458,6 +459,7 @@ class Model(object):
                     # comm.Allreduce(mpi.IN_PLACE, ldisp, op=mpi.MAX)
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
+                    self.applyDisp = True
             else:
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
                     updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
