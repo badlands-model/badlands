@@ -259,6 +259,11 @@ class Model(object):
 
         # Update sea-level
         self.force.getSea(self.tNow)
+
+        # Update vertical displacements
+        if not self.input.disp3d:
+            self.elevation += self.disp
+
         self.fillH = None
         if self.fillDP:
             self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
