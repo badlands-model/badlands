@@ -29,7 +29,7 @@ class flowNetwork:
         """
         Initialization.
         """
-        
+
         self.base = None
         self.localbase = None
         self.receivers = None
@@ -99,28 +99,45 @@ class flowNetwork:
         size = comm.Get_size()
 
         # Call the SFD function from libUtils
-        base, receivers, maxh, maxdep, diff_flux = SFD.sfdcompute.directions( fillH, elev, \
-            neighbours, edges, distances, globalIDs, sea)
+        if fillH is None:
+            base, receivers, diff_flux = SFD.sfdcompute.directions_base(elev, \
+                neighbours, edges, distances, globalIDs, sea)
 
-        # Send local base level globally
-        comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
-        self.base = numpy.where(base >= 0)[0]
+            # Send local base level globally
+            comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
+            self.base = numpy.where(base >= 0)[0]
 
-        # Send local receivers globally
-        comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
-        self.receivers = receivers
+            # Send local receivers globally
+            comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
+            self.receivers = receivers
 
-        # Send local maximum deposition globally
-        comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
-        self.maxh = maxh
+            # Send local diffusion flux globally
+            comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+            self.diff_flux = diff_flux
 
-        # Send local maximum deposition globally
-        comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
-        self.maxdep = maxdep
+        else:
+            base, receivers, maxh, maxdep, diff_flux = SFD.sfdcompute.directions(fillH, elev, \
+                neighbours, edges, distances, globalIDs, sea)
 
-        # Send local diffusion flux globally
-        comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
-        self.diff_flux = diff_flux
+            # Send local base level globally
+            comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
+            self.base = numpy.where(base >= 0)[0]
+
+            # Send local receivers globally
+            comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
+            self.receivers = receivers
+
+            # Send local maximum deposition globally
+            comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
+            self.maxh = maxh
+
+            # Send local maximum deposition globally
+            comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
+            self.maxdep = maxdep
+
+            # Send local diffusion flux globally
+            comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+            self.diff_flux = diff_flux
 
         return
 
@@ -283,23 +300,32 @@ class flowNetwork:
 
         # Compute sediment flux using libUtils
         if(size > 1):
-            sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.localstack,self.receivers,xycoords,\
-                     Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
-                     self.erodibility,self.m,self.n,sealevel,dt)
+            if fillH is None:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_base(self.localstack,self.receivers, \
+                                      xycoords,Acell,xymin,xymax,self.maxdep,self.discharge,elev,diff_flux, \
+                                      self.erodibility,self.m,self.n,sealevel,dt)
+            else:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.localstack,self.receivers,xycoords, \
+                         Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
+                         self.erodibility,self.m,self.n,sealevel,dt)
             timestep = numpy.zeros(1)
             timestep[0] = newdt
             comm.Allreduce(mpi.IN_PLACE,timestep,op=mpi.MIN)
             newdt = timestep[0]
-
             comm.Allreduce(mpi.IN_PLACE,sedflux,op=mpi.MAX)
             tempIDs = numpy.where(sedflux < -9.5e5)
             sedflux[tempIDs] = 0.
             newdt = max(self.mindt,newdt)
             sedrate = sedflux
         else:
-            sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.stack,self.receivers,xycoords,\
-                     Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
-                     self.erodibility,self.m,self.n,sealevel,dt)
+            if fillH is None:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_base(self.localstack,self.receivers, \
+                                      xycoords,Acell,xymin,xymax,self.maxdep,self.discharge,elev,diff_flux, \
+                                      self.erodibility,self.m,self.n,sealevel,dt)
+            else:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.localstack,self.receivers,xycoords,\
+                         Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
+                         self.erodibility,self.m,self.n,sealevel,dt)
             tempIDs = numpy.where(sedflux < -9.5e5)
             sedflux[tempIDs] = 0.
             newdt = max(self.mindt,newdt)

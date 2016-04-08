@@ -150,7 +150,7 @@ class forceSim:
             Numpy array containing the updated rainfall for the local domain.
         """
 
-        events = numpy.where( (self.T_rain[:,1] - time) < 0)[0]
+        events = numpy.where( (self.T_rain[:,1] - time) <= 0)[0]
         event = len(events)
 
         if not (time >= self.T_rain[event,0]) and not (time < self.T_rain[event,1]):
@@ -239,7 +239,7 @@ class forceSim:
             Numpy array containing the updated displacement rate for the local domain.
         """
 
-        events = numpy.where( (self.T_disp[:,1] - time) < 0)[0]
+        events = numpy.where( (self.T_disp[:,1] - time) <= 0)[0]
         event = len(events)
 
         if not (time >= self.T_disp[event,0]) and not (time < self.T_disp[event,1]):
@@ -369,7 +369,7 @@ class forceSim:
         variable: newcum
             Numpy array containing the updated erosion/deposition values for the new TIN.
         """
-        
+
         telev += self.dispZ
 
         tXY = numpy.copy(self.tXY)

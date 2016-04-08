@@ -14,9 +14,13 @@ class Model(object):
         Constructor.
         """
 
+        self.maxDep = 100.
+        self.fillDP = True
+
         # simulation state
         self.tNow = 0.
         self.outputStep = 0
+        self.applyDisp = False
         self.simStarted = False
 
         self._rank = mpi.COMM_WORLD.rank
@@ -38,11 +42,7 @@ class Model(object):
 
         # 1. Get DEM regular grid and create Badlands TIN.
 
-        # TODO: remove this and the outputDir stuff from raster2TIN
-        import tempfile
-        tempdir = tempfile.mkdtemp()
-
-        recGrid = raster2TIN.raster2TIN(filename, outputDir=tempdir, areaDelFactor=self.input.Afactor)
+        recGrid = raster2TIN.raster2TIN(filename, areaDelFactor=self.input.Afactor)
 
         self.fixIDs = recGrid.boundsPt + recGrid.edgesPt
 
@@ -163,15 +163,8 @@ class Model(object):
         Build TIN after 3D displacements.
         """
 
+        # Build the Finite Volume representation
         self.fixIDs = self.recGrid.boundsPt + self.recGrid.edgesPt
-
-        self.force = forceSim.forceSim(self.input.seafile, self.input.seapos,
-                                       self.input.rainMap, self.input.rainTime,
-                                       self.input.rainVal, self.input.tectFile,
-                                       self.input.tectTime, self.recGrid.regX,
-                                       self.recGrid.regY, self.input.tDisplay)
-
-        # 2. Partition the TIN
         walltime = time.clock()
 
         FVmesh = FVmethod.FVmethod(self.recGrid.tinMesh['vertices'],
@@ -189,7 +182,7 @@ class Model(object):
         if self._rank == 0 and verbose:
             print " - partition TIN amongst processors ", time.clock() - walltime
 
-        # 3. Build Finite Volume discretisation
+        # Build local Finite Volume discretisation
 
         # Define overlapping partitions
         allIDs, localTIN = partitionTIN.overlap(self.recGrid.tinMesh['vertices'][:, 0],
@@ -254,9 +247,21 @@ class Model(object):
 
         # Update sea-level
         self.force.getSea(self.tNow)
-        self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
-                                                 self.recGrid.boundsPt, self.force.sealevel - self.input.sealimit,
+
+        # Update vertical displacements
+        if not self.input.disp3d and self.applyDisp:
+            self.elevation += self.disp
+
+        self.fillH = None
+        if self.fillDP:
+            self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
+                                                 self.recGrid.boundsPt,
+                                                 self.force.sealevel - self.input.sealimit,
                                                  self.input.fillmax)
+        else:
+            self.flow.maxdep = self.maxDep
+            self.flow.maxh = 0
+
         if self._rank == 0 and verbose:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
@@ -267,6 +272,7 @@ class Model(object):
         distances = self.FVmesh.edge_length[self.allIDs, :]
         self.flow.SFD_receivers(self.fillH, self.elevation, ngbhs, edges, distances,
                                 self.allIDs, self.force.sealevel - self.input.sealimit)
+
         if self._rank == 0 and verbose:
             print " -   compute receivers parallel ", time.clock() - walltime
 
@@ -301,8 +307,10 @@ class Model(object):
         # 1. Compute CFL condition
         walltime = time.clock()
         self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
-
-        self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.fillH, self.inGIDs)
+        if self.fillDP:
+            self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.fillH, self.inGIDs)
+        else:
+            self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.elevation, self.inGIDs)
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
@@ -310,7 +318,7 @@ class Model(object):
         if self._rank == 0 and verbose:
             print " -   Get CFL time step ", time.clock() - walltime
 
-        # 5. Compute sediment fluxes
+        # 2. Compute sediment fluxes
         # Initial cumulative elevation change
         walltime = time.clock()
         diff_flux = self.hillslope.sedflux(self.flow.diff_flux, self.force.sealevel, self.elevation,
@@ -329,7 +337,7 @@ class Model(object):
 
         # Update surface parameters and time
         timestep = min(tstep, tEnd - self.tNow)
-        diff = sedrate * tstep
+        diff = sedrate * timestep
         self.elevation += diff
         self.cumdiff += diff
         self.tNow += timestep
@@ -431,6 +439,7 @@ class Model(object):
                     self._comm.Allreduce(mpi.IN_PLACE, ldisp, op=mpi.MAX)
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
+                    self.applyDisp = True
             else:
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
                     updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
