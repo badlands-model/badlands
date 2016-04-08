@@ -24,7 +24,7 @@ class FVmethod:
 
     It creates the following for each node:
         1. the voronoi cell area
-        2. an ordered list of voronoi edges lenght
+        2. an ordered list of voronoi edges length
 
     Parameters
     ----------
@@ -39,20 +39,17 @@ class FVmethod:
     """
 
     def __init__(self, nodes, cells, edges):
-
         self.node_coords = nodes
         self.edges = edges
         self.cells = cells
         self.control_volumes = None
         self.neighbours = None
         self.vor_edges = None
-        self.edge_lenght = None
+        self.edge_length = None
         self.fillH = None
         self.partIDs = None
         self.maxNgbh = None
         self.localIDs = None
-
-        return
 
     def _FV_utils(self, allIDs, verbose=False):
         """
@@ -82,7 +79,7 @@ class FVmethod:
         # Call the finite volume frame construction function from libUtils
         walltime = time.clock()
         self.control_volumes, self.neighbours, self.vor_edges, \
-        self.edge_lenght, maxNgbhs = FVframe.discretisation.build( \
+        self.edge_length, maxNgbhs = FVframe.discretisation.build( \
              allIDs+1, self.localIDs+1, self.node_coords[:,0], self.node_coords[:,1],
             self.edges[:,:2]+1, self.cells[:,:3]+1, Vor_pts[:,0], Vor_pts[:,1], \
             Vor_edges[:,:2]+1)
@@ -93,8 +90,6 @@ class FVmethod:
         maxNgbh = numpy.array(maxNgbhs)
         comm.Allreduce(mpi.IN_PLACE,maxNgbh,op=mpi.MAX)
         self.maxNgbh = maxNgbh
-
-        return
 
     def _gather_GIDs(self, allIDs):
         """
@@ -227,14 +222,14 @@ class FVmethod:
         Return
         ----------
         variable : exportEdges
-            Numpy float-type array containing the lenghts to each neighbour.
+            Numpy float-type array containing the lengths to each neighbour.
         """
 
         comm = mpi.COMM_WORLD
 
         # Get local edges length declaration
         edges = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
-        edges = self.edge_lenght[self.localIDs,:self.maxNgbh]
+        edges = self.edge_length[self.localIDs,:self.maxNgbh]
         edges = numpy.ravel(edges)
         edgesFLT = edges.astype(numpy.float32)
 
@@ -264,7 +259,7 @@ class FVmethod:
         Return
         ----------
         variable : exportVors
-            Numpy float-type array containing the voronoi edge lenghts to each neighbour.
+            Numpy float-type array containing the voronoi edge lengths to each neighbour.
         """
 
         comm = mpi.COMM_WORLD
@@ -312,10 +307,10 @@ class FVmethod:
             Numpy integer-type array filled with the global neighbourhood IDs.
 
         variable : exportEdges
-            Numpy float-type array containing the lenghts to each neighbour.
+            Numpy float-type array containing the lengths to each neighbour.
 
         variable : exportVors
-            Numpy float-type array containing the voronoi edge lenghts to each neighbour.
+            Numpy float-type array containing the voronoi edge lengths to each neighbour.
 
         variable : exportVols
             Numpy float-type array containing the voronoi area for each TIN node.
@@ -346,11 +341,11 @@ class FVmethod:
         exportVols = self._gather_Area(localPtsNb)
         # Gather neighbourhood IDs from each region globally
         exportNgbhIDs, shape, ngbhNbs = self._gather_Neighbours(localPtsNb, totPts)
-        # Gather edges lenghts from each region globally
+        # Gather edges lengths from each region globally
         exportEdges = self._gather_Edges(localPtsNb, shape, ngbhNbs)
         maxdist = numpy.sqrt(2.*res**2)
         exportEdges[exportEdges > 2.*maxdist] = maxdist
-        # Gather voronoi edges lenghts from each region globally
+        # Gather voronoi edges lengths from each region globally
         exportVors = self._gather_VorEdges(localPtsNb, shape, ngbhNbs)
 
         if rank == 0 and verbose:
@@ -392,7 +387,7 @@ class FVmethod:
 
         # Get local edges length declaration
         #edges = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
-        #edges = self.edge_lenght[localIDs,:self.maxNgbh]
+        #edges = self.edge_length[localIDs,:self.maxNgbh]
         #edges = numpy.ravel(edges)
         #edgesFLT = edges.astype(numpy.float32)
 

@@ -19,7 +19,7 @@ from scipy.interpolate import interpn
 from scipy.interpolate import LinearNDInterpolator
 from scipy.interpolate import NearestNDInterpolator
 
-def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
+def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
     """
     This function defines the elevation of the TIN surface edges for 2 different types of conditions:
         1. Infinitely flat condition,
@@ -33,8 +33,8 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
     variable : neighbours
         Numpy integer-type array containing for each nodes its neigbhours IDs.
 
-    variable : edge_lenght
-        Numpy float-type array containing the lenghts to each neighbour.
+    variable : edge_length
+        Numpy float-type array containing the lengths to each neighbour.
 
     variable : boundPts
         Number of nodes on the edges of the TIN surface.
@@ -57,7 +57,7 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
             if len(ids) == 1:
                 elevation[id] = elevation[ngbhs[ids]]
             elif len(ids) > 1:
-                lselect = edge_lenght[id,ids]
+                lselect = edge_length[id,ids]
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
             else:
@@ -70,7 +70,7 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
                 ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
                     raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
-                lselect = edge_lenght[id,ids]
+                lselect = edge_length[id,ids]
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
 
@@ -82,12 +82,12 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
             ids = numpy.where(ngbhs >= boundPts)[0]
             if len(ids) == 1:
                 # Pick closest non-boundary vertice
-                ln1 = edge_lenght[id,ids[0]]
+                ln1 = edge_length[id,ids[0]]
                 id1 = ngbhs[ids[0]]
                 # Pick closest non-boundary vertice to first picked
                 ngbhs2 = neighbours[id1,:]
                 ids2 = numpy.where(ngbhs2 >= boundPts)[0]
-                lselect = edge_lenght[id1,ids2]
+                lselect = edge_length[id1,ids2]
                 if len(lselect) > 0:
                     picked = numpy.argmin(lselect)
                     id2 = ngbhs2[ids2[picked]]
@@ -97,14 +97,14 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
                     missedPts = numpy.append(missedPts,id)
             elif len(ids) > 1:
                 # Pick closest non-boundary vertice
-                lselect = edge_lenght[id,ids]
+                lselect = edge_length[id,ids]
                 picked = numpy.argmin(lselect)
                 id1 = ngbhs[ids[picked]]
                 ln1 = lselect[picked]
                 # Pick closest non-boundary vertice to first picked
                 ngbhs2 = neighbours[id1,:]
                 ids2 = numpy.where(ngbhs2 >= boundPts)[0]
-                lselect2 = edge_lenght[id1,ids2]
+                lselect2 = edge_length[id1,ids2]
                 if len(lselect2) > 0:
                     picked2 = numpy.argmin(lselect2)
                     id2 = ngbhs2[ids2[picked2]]
@@ -122,13 +122,13 @@ def _boundary_elevation(elevation, neighbours, edge_lenght, boundPts, btype):
                 ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
                     raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
-                lselect = edge_lenght[id,ids]
+                lselect = edge_length[id,ids]
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
 
     return elevation
 
-def update_border_elevation(elev, neighbours, edge_lenght, boundPts, btype='flat'):
+def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat'):
     """
     This function computes the domain boundary elevation for 3 different types of conditions:
         1. Infinitely flat condition,
@@ -143,8 +143,8 @@ def update_border_elevation(elev, neighbours, edge_lenght, boundPts, btype='flat
     variable : neighbours
         Numpy integer-type array containing for each nodes its neigbhours IDs.
 
-    variable : edge_lenght
-        Numpy float-type array containing the lenghts to each neighbour.
+    variable : edge_length
+        Numpy float-type array containing the lengths to each neighbour.
 
     variable : boundPts
         Number of nodes on the edges of the TIN surface.
@@ -172,7 +172,7 @@ def update_border_elevation(elev, neighbours, edge_lenght, boundPts, btype='flat
         if btype == 'slope':
             thetype = 1
 
-        newelev = _boundary_elevation(elev, neighbours, edge_lenght, boundPts, thetype)
+        newelev = _boundary_elevation(elev, neighbours, edge_length, boundPts, thetype)
     else:
         raise ValueError('Unknown boundary type ''%s''.' % btype)
 
