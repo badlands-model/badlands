@@ -32,7 +32,12 @@ class Model(object):
         Load an XML configuration file.
         """
 
-        self.input = xmlParser.xmlParser(filename)
+        # only the first node should create a unique output dir
+        self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=(self._rank == 0))
+
+        # sync the chosen output dir to all nodes
+        self.input.outDir = self._comm.bcast(self.input.outDir, root=0)
+
         self.load_dem(self.input.demfile, verbose)
 
     def load_dem(self, filename, verbose=False):
