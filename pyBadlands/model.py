@@ -16,10 +16,8 @@ class Model(object):
         Constructor.
         """
 
-        self.maxDep = 100.
-        self.fillDP = True
-
         # simulation state
+        self.applyDisp = False
         self.tNow = 0.
         self.outputStep = 0
         self.simStarted = False
@@ -144,6 +142,9 @@ class Model(object):
         self.flow.m = self.input.SPLm
         self.flow.n = self.input.SPLn
         self.flow.mindt = self.input.minDT
+        self.flow.bedrock = self.input.bedrock
+        self.flow.alluvial = self.input.alluvial
+        self.flow.xycoords = FVmesh.node_coords[:, :2]
 
         if rank == 0 and verbose:
             print " - interpolate elevation on grid ", time.clock() - walltime
@@ -236,6 +237,7 @@ class Model(object):
 
         # save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
+        self.flow.xycoords = FVmesh.node_coords[:, :2]
         self.FVmesh = FVmesh
         self.allIDs = allIDs
         self.inIDs = inIDs
@@ -261,20 +263,20 @@ class Model(object):
         self.force.getSea(self.tNow)
 
         # Update vertical displacements
-        if not self.input.disp3d:
+        if not self.input.disp3d and self.applyDisp:
             self.elevation += self.disp
 
         self.fillH = None
-        if self.fillDP:
+        if self.input.depo == 1 and self.input.bedrock == 0 and self.input.alluvial == 0:
             self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
                                                  self.recGrid.boundsPt,
                                                  self.force.sealevel - self.input.sealimit,
                                                  self.input.fillmax)
         else:
-            self.flow.maxdep = self.maxDep
-            self.flow.maxh = 0
+            self.flow.maxdep = 0.
+            self.flow.maxh = 0.
 
-        if rank == 0 and verbose:
+        if rank == 0 and self.fillH is not None and verbose:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
         # 2. Compute stream network
@@ -326,14 +328,21 @@ class Model(object):
         # 1. Compute CFL condition
         walltime = time.clock()
         self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
-        if self.fillDP:
-            self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.fillH, self.inGIDs)
+        if self.input.depo == 1:
+            if self.input.maxDT is not None:
+                self.flow.CFL = self.input.maxDT
+            else:
+                self.flow.dt_fstability(self.fillH, self.inGIDs)
         else:
-            self.flow.dt_fstability(self.FVmesh.node_coords[:, :2], self.elevation, self.inGIDs)
+            if self.input.maxDT is not None:
+                self.flow.CFL = self.input.maxDT
+            else:
+                self.flow.dt_fstability(self.elevation, self.inGIDs)
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
-
+        if self.input.maxDT is not None:
+            CFLtime = min(self.input.maxDT, CFLtime)
         if rank == 0 and verbose:
             print " -   Get CFL time step ", time.clock() - walltime
 
@@ -349,14 +358,13 @@ class Model(object):
         xyMin = [self.recGrid.regX.min(), self.recGrid.regY.min()]
         xyMax = [self.recGrid.regX.max(), self.recGrid.regY.max()]
         tstep, sedrate = self.flow.compute_sedflux(self.FVmesh.control_volumes, self.elevation, self.fillH,
-                                                   self.FVmesh.node_coords[:, :2], xyMin, xyMax,
-                                                   diff_flux, CFLtime, self.force.sealevel)
+                                            xyMin, xyMax,diff_flux, CFLtime, self.force.sealevel, self.cumdiff)
         if rank == 0 and verbose:
             print " -   Get stream fluxes ", time.clock() - walltime
 
         # Update surface parameters and time
         timestep = min(tstep, tEnd - self.tNow)
-        diff = sedrate * tstep
+        diff = sedrate * timestep
         self.elevation += diff
         self.cumdiff += diff
         self.tNow += timestep
@@ -402,7 +410,7 @@ class Model(object):
         # comm.Allreduce(mpi.IN_PLACE,fline,op=mpi.MAX)
 
         # Compute flow parameters
-        self.flow.compute_parameters(self.FVmesh.node_coords[:, :2])
+        self.flow.compute_parameters()
 
         # Write HDF5 files
         visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh. node_coords[:,:2],
@@ -458,6 +466,7 @@ class Model(object):
                     # comm.Allreduce(mpi.IN_PLACE, ldisp, op=mpi.MAX)
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
+                    self.applyDisp = True
             else:
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
                     updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)

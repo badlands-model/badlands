@@ -18,6 +18,7 @@ import mpi4py.MPI as mpi
 from pyBadlands.libUtils import SFDalgo as SFD
 from pyBadlands.libUtils import FLOWalgo
 from pyBadlands.libUtils import FLWnetwork
+from pyBadlands.libUtils import PDalgo
 
 class flowNetwork:
     """
@@ -30,6 +31,7 @@ class flowNetwork:
         Initialization.
         """
 
+        self.xycoords = None
         self.base = None
         self.localbase = None
         self.receivers = None
@@ -45,6 +47,8 @@ class flowNetwork:
         self.m = None
         self.n = None
         self.mindt = None
+        self.alluvial = 0.
+        self.bedrock = 0.
 
         self.sendprocID = None
         self.rcvprocID = None
@@ -227,14 +231,9 @@ class flowNetwork:
 
         return
 
-    def compute_parameters(self, xycoords):
+    def compute_parameters(self):
         """
         Calculates the catchment IDs and the Chi parameter (Willett 2014).
-
-        Parameters
-        ----------
-        variable : xycoords
-            Numpy float-type array containing X, Y coordinates of the TIN nodes.
         """
 
         # Initialise MPI communications
@@ -250,7 +249,7 @@ class flowNetwork:
         # Compute discharge using libUtils
         splexp = self.m / self.n
         chi, basinID = FLOWalgo.flowcompute.parameters(self.localstack,self.receivers,
-                                               self.discharge,xycoords,splexp,cumbase[rank])
+                                               self.discharge,self.xycoords,splexp,cumbase[rank])
         comm.Allreduce(mpi.IN_PLACE,chi,op=mpi.MAX)
         comm.Allreduce(mpi.IN_PLACE,basinID,op=mpi.MAX)
 
@@ -259,7 +258,7 @@ class flowNetwork:
 
         return
 
-    def compute_sedflux(self, Acell, elev, fillH, xycoords, xymin, xymax, diff_flux, dt, sealevel):
+    def compute_sedflux(self, Acell, elev, fillH, xymin, xymax, diff_flux, dt, sealevel, cumdiff):
         """
         Calculates the sediment flux at each node.
 
@@ -273,9 +272,6 @@ class flowNetwork:
 
         variable : fillH
             Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
-
-        variable : xycoords
-            Numpy float-type array containing X, Y coordinates of the TIN nodes.
 
         variable : xymin
             Numpy array containing the minimal XY coordinates of TIN grid (excuding border cells).
@@ -291,6 +287,9 @@ class flowNetwork:
 
         variable : sealevel
             Real value giving the sea-level height at considered time step.
+
+        variable : cumdiff
+            Numpy array containing the cumulative deposit thicknesses.
         """
 
         # Initialise MPI communications
@@ -300,14 +299,24 @@ class flowNetwork:
 
         # Compute sediment flux using libUtils
         if(size > 1):
-            if fillH is None:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_base(self.localstack,self.receivers, \
-                                      xycoords,Acell,xymin,xymax,self.maxdep,self.discharge,elev,diff_flux, \
-                                      self.erodibility,self.m,self.n,sealevel,dt)
-            else:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.localstack,self.receivers,xycoords, \
+            # Purely erosive case
+            if fillH is None and self.bedrock == 0 and self.alluvial == 0:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
+                                      self.xycoords,xymin,xymax,self.discharge,elev, \
+                                      diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
+
+            # River carrying capacity is not taken into account
+            elif self.bedrock == 0 and self.alluvial == 0:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
                          Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
                          self.erodibility,self.m,self.n,sealevel,dt)
+
+            # River carrying capacity case
+            else:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_capacity(self.localstack,self.receivers,self.xycoords,\
+                         Acell,xymin,xymax,self.discharge,elev,diff_flux,cumdiff,self.erodibility, \
+                         self.m,self.n,self.bedrock,self.alluvial,sealevel,dt)
+
             timestep = numpy.zeros(1)
             timestep[0] = newdt
             comm.Allreduce(mpi.IN_PLACE,timestep,op=mpi.MIN)
@@ -318,14 +327,23 @@ class flowNetwork:
             newdt = max(self.mindt,newdt)
             sedrate = sedflux
         else:
-            if fillH is None:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_base(self.localstack,self.receivers, \
-                                      xycoords,Acell,xymin,xymax,self.maxdep,self.discharge,elev,diff_flux, \
-                                      self.erodibility,self.m,self.n,sealevel,dt)
-            else:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux(self.localstack,self.receivers,xycoords,\
+            if fillH is None and self.bedrock == 0 and self.alluvial == 0:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
+                                      self.xycoords,xymin,xymax,self.discharge,elev, \
+                                      diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
+
+            # River carrying capacity is not taken into account
+            elif self.bedrock == 0 and self.alluvial == 0:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
                          Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
                          self.erodibility,self.m,self.n,sealevel,dt)
+
+            # River carrying capacity case
+            else:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_capacity(self.localstack,self.receivers,self.xycoords,\
+                         Acell,xymin,xymax,self.discharge,elev,diff_flux,cumdiff,self.erodibility, \
+                         self.m,self.n,self.bedrock,self.alluvial,sealevel,dt)
+
             tempIDs = numpy.where(sedflux < -9.5e5)
             sedflux[tempIDs] = 0.
             newdt = max(self.mindt,newdt)
@@ -333,7 +351,38 @@ class flowNetwork:
 
         return newdt,sedrate
 
-    def dt_pstability(self, xy, elev, locIDs):
+    def dt_fstability(self, elev, locIDs):
+        """
+        This pyfortran function computes the maximal timestep to ensure computation stability
+        of the flow processes. This CFL-like condition is computed using erodibility
+        coefficients, discharges plus elevations and distances between TIN nodes and
+        their respective reveivers.
+
+        Parameters
+        ----------
+        variable : elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        variable: locIDs
+            Numpy integer-type array containing for local nodes their global IDs.
+        """
+
+        # Initialise MPI communications
+        comm = mpi.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        # Compute the local value for time stability
+        dt = FLOWalgo.flowcompute.flowcfl(locIDs,self.receivers,self.xycoords,elev, \
+                                      self.discharge,self.erodibility,self.m,self.n)
+
+        # Global mimimum value for diffusion stability
+        CFL = numpy.zeros(1)
+        CFL[0] = dt
+        comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
+        self.CFL = CFL[0]
+
+    def dt_pstability(self, elev, locIDs):
         """
         This pure python function computes the maximal timestep to ensure computation stability
         of the flow processes. This CFL-like condition is computed using erodibility
@@ -342,9 +391,6 @@ class flowNetwork:
 
         Parameters
         ----------
-        variable : xy
-            Numpy arrays containing the XY coordinates of the TIN nodes.
-
         variable : elev
             Numpy arrays containing the elevation of the TIN nodes.
 
@@ -359,8 +405,8 @@ class flowNetwork:
 
         # Compute elevation difference and distance between receiver and donor
         dz0 = elev[locIDs] - elev[self.receivers[locIDs]]
-        dx = xy[locIDs,0] - xy[self.receivers[locIDs],0]
-        dy = xy[locIDs,1] - xy[self.receivers[locIDs],1]
+        dx = self.xycoords[locIDs,0] - self.xycoords[self.receivers[locIDs],0]
+        dy = self.xycoords[locIDs,1] - self.xycoords[self.receivers[locIDs],1]
         dist0 = numpy.sqrt(dx**2 + dy**2)
         dshg0 = self.discharge[locIDs]
 
@@ -383,23 +429,33 @@ class flowNetwork:
         comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
         self.CFL = CFL[0]
 
-    def dt_fstability(self, xy, elev, locIDs):
+    ### THIS IS NOT USED
+    def distribute_deposits(self, dt, elev, GIDs, Ngbs, Acell, sedrate, sea):
         """
-        This pyfortran function computes the maximal timestep to ensure computation stability
-        of the flow processes. This CFL-like condition is computed using erodibility
-        coefficients, discharges plus elevations and distances between TIN nodes and
-        their respective reveivers.
+        Distribute sediment on base-level over the surroundings nodes in each catchment.
 
         Parameters
         ----------
-        variable : xy
-            Numpy arrays containing the XY coordinates of the TIN nodes.
+        variable : dt
+            Real value corresponding to the maximal stability time step.
 
         variable : elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        variable: locIDs
+        variable: GIDs
             Numpy integer-type array containing for local nodes their global IDs.
+
+        variable : Ngbs
+            Numpy array containing ID of neighbor nodes.
+
+        variable : Acell
+            Numpy float-type array containing the voronoi area for each nodes (in m2)
+
+        variable : sedrate
+            Numpy float-type array containing sediment fluxes values (m/a).
+
+        variable : sea
+            Sea level elevation (m).
         """
 
         # Initialise MPI communications
@@ -407,12 +463,168 @@ class flowNetwork:
         rank = comm.Get_rank()
         size = comm.Get_size()
 
-        # Compute the local value for time stability
-        dt = FLOWalgo.flowcompute.flowcfl(locIDs,self.receivers,xy,elev,self.discharge, \
-                                      self.erodibility,self.m,self.n)
+        # Get basin starting IDs for each local partition
+        cumbase = numpy.zeros(size+1)
+        for i in range(size):
+            cumbase[i+1] = len(numpy.array_split(self.base, size)[i])+cumbase[i]+1
 
-        # Global mimimum value for diffusion stability
-        CFL = numpy.zeros(1)
-        CFL[0] = dt
-        comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
-        self.CFL = CFL[0]
+        # Compute basin IDs using libUtils for all nodes in the local partition
+        basinID = FLOWalgo.flowcompute.base_ids(self.localstack,self.receivers,cumbase[rank])
+        comm.Allreduce(mpi.IN_PLACE,basinID,op=mpi.MAX)
+
+        # Look for nodes at the edges of each basin
+        tmpID = FLOWalgo.flowcompute.basin_edges(GIDs,Ngbs[GIDs],basinID)
+        eIDs = numpy.where(tmpID >= 0)[0]
+        edgeID = tmpID[eIDs]
+
+        # Find baselevel nodes under deposition and above sea-level
+        depID = numpy.where(sedrate[GIDs]*dt > 0.1)[0]
+        tmpBase = numpy.intersect1d(self.localbase,depID)
+        tmpbID = numpy.where(elev[tmpBase] > sea)[0]
+        depBase = tmpBase[tmpbID]
+
+        # Store temporary elevation array
+        tmpElev = numpy.copy( elev )
+        lIDs = numpy.empty(len(elev), dtype=int)
+
+        # Define for all local enclosed basins the maximum volume of deposition
+        newdt = dt
+        timePD = numpy.zeros(len(depBase))
+        hBasin = []
+        idBasin = []
+        for i in range(len(depBase)):
+
+            timePD[i] = -1.
+            # Find edges nodes IDs for the given basin
+            basinEdges = numpy.where(basinID[edgeID] == basinID[depBase[i]])[0]
+            edgID = numpy.where(edgeID[basinEdges] != depBase[i])[0]
+            edgeList = edgeID[basinEdges][edgID]
+
+            # Find edges node ID with minimal elevation: it is the limit before
+            # overfilling of the basin
+            edgeMinID = numpy.argmin(tmpElev[edgeList]) # + sedrate[edgeList] * newdt)
+            overspillID = edgeList[edgeMinID]
+            overspillH = tmpElev[edgeList[edgeMinID]] #+ sedrate[edgeList[edgeMinID]] * newdt
+
+            if sedrate[depBase[i]] * newdt > overspillH - elev[depBase[i]]:
+                # Find all points in the considered enclosed basin
+                baseIDs = numpy.where(basinID == basinID[depBase[i]])[0]
+                tmpElev[baseIDs] += sedrate[baseIDs] * newdt
+                tmpElev[depBase[i]] = elev[depBase[i]]
+                if sedrate[overspillID] * newdt < 0:
+                    tmpElev[overspillID] = overspillH
+
+                # Find all points below overfilling elevation
+                depIDs = numpy.where(tmpElev[baseIDs] < overspillH)[0]
+                if sedrate[overspillID] * newdt < 0:
+                    tmpElev[overspillID] += sedrate[overspillID] * newdt
+                depositIDs = baseIDs[depIDs]
+
+                # Find edges for this set of points it will be considered as the boundary nodes
+                # for pit filling
+                basinNgbh = numpy.unique(Ngbs[depositIDs].flatten())
+                nIDs = numpy.where(basinNgbh >= 0)[0]
+                Neighbors = numpy.unique(basinNgbh[nIDs])
+                boundPts = numpy.setdiff1d(Neighbors,depositIDs)
+
+                if not (numpy.in1d(overspillID,boundPts).all()):
+                    raise ValueError('Problem defining catchment based pit filling algorithm.')
+
+                # Merge both boundary points and potential depositional points
+                allID = numpy.concatenate((boundPts, depositIDs), axis=0)
+
+                #tmp = numpy.sort(allID, axis=None)
+                #if len(tmp[numpy.diff(tmp) == 0]) > 0:
+                #    raise ValueError('Duplicate points found in the depositional points.')
+
+                # Compute sediment volume to distribute from the base level point
+                depVol = Acell[depBase[i]] * sedrate[depBase[i]] * dt
+
+                # Compute volume to reach spillover
+                hDep = overspillH - tmpElev[allID]
+                hDep = numpy.clip(hDep,0,overspillH - tmpElev[depBase[i]])
+                maxVol = numpy.sum(hDep * Acell[allID])
+
+                if depVol > maxVol:
+                    # Perform Planchon & Darboux pit filling algorithm on the given set of points
+                    epsilon = 0.001
+                    lIDs.fill(-1)
+                    lIDs[allID] = numpy.arange(len(allID))
+                    hMax = PDalgo.pdcompute.basin_filling(allID, lIDs, tmpElev,
+                                                    Ngbs[allID], epsilon, len(boundPts))
+                    idBasin.append(allID)
+                    hBasin.append(hMax)
+                    # Get the corresponding time step based on sedimentary flux
+                    hDep = hMax - tmpElev[allID]
+                    maxVol = numpy.sum(hDep * Acell[allID])
+                    if maxVol > 0:
+                        timePD[i] = Acell[depBase[i]] * sedrate[depBase[i]] / maxVol
+                        newdt = min(newdt,timePD[i])
+                        newdt = max(self.mindt,newdt)
+                    else:
+                        raise ValueError('Maximum volume of the basin is null.')
+                else:
+                    idBasin.append(allID)
+                    hBasin.append(hDep)
+            else:
+                idBasin.append([-1])
+                hBasin.append([0.])
+
+        # Force the time step to ensure stability
+        timestep = numpy.zeros(1)
+        timestep[0] = newdt
+        comm.Allreduce(mpi.IN_PLACE,timestep,op=mpi.MIN)
+        newdt = timestep[0]
+
+        # Update erosion deposition changes with the new timestep
+        distH = numpy.zeros(len(elev))
+        diff = sedrate * newdt
+
+        # Get the elevation changes using stability criteria
+        tmpElev = elev + diff
+
+        # Define for all enclosed basins the deposition thicknesses
+        for i in range(len(depBase)):
+            if idBasin[i][0] >= 0:
+                allID = idBasin[i]
+                tmpElev[depBase[i]] = elev[depBase[i]]
+
+                # Compute sediment volume to distribute from the base level point
+                depVol = Acell[depBase[i]] * diff[depBase[i]]
+
+                # Check if the requested time step is sufficient for overfilling
+                if timePD[i] <= newdt:
+                    # Thickness up to overfilling
+                    hMax = hBasin[i]
+
+                    # Get the deposition volume to reach overfilling
+                    hDep = hMax - tmpElev[allID]
+                    maxVol = numpy.sum(hDep * Acell[allID])
+
+                    # Ensure sediment volume conservation
+                    if depVol == maxVol:
+                        distH[allID] = hDep
+                    elif depVol > maxVol:
+                        hplus = (depVol - maxVol) / numpy.sum(Acell[allID])
+                        distH[allID] = hDep + hplus
+                    else:
+                        distH[allID] = hDep * depVol / maxVol
+                else:
+                    # Sort basin elevation from basin baselevel upward
+                    tmpID = numpy.argsort(tmpElev[allID])
+                    idSort = allID[tmpID]
+                    #if idSort[0] != depBase[i]:
+                    #    raise ValueError('The lowest point is not the base-level one.')
+
+                    # Fill recursively until deposition volume is reached
+                    hFill = PDalgo.pdcompute.fill_recursive(depVol, Acell[idSort], tmpElev[idSort])
+                    distH[idSort] = hFill
+
+        # Export local changes globally
+        diff = (distH + tmpElev) - elev
+        comm.Allreduce(mpi.IN_PLACE,diff,op=mpi.MAX)
+
+        #diff = sedrate * newdt
+        #newdt = dt
+
+        return newdt, diff
