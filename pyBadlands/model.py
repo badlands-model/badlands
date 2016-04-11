@@ -253,10 +253,6 @@ class Model(object):
         # Update sea-level
         self.force.getSea(self.tNow)
 
-        # Update vertical displacements
-        if not self.input.disp3d and self.applyDisp:
-            self.elevation += self.disp
-
         self.fillH = None
         if self.fillDP:
             self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
@@ -344,6 +340,7 @@ class Model(object):
         timestep = min(tstep, tEnd - self.tNow)
         diff = sedrate * timestep
         self.elevation += diff
+        self.elevation += self.disp * timestep
         self.cumdiff += diff
         self.tNow += timestep
 
@@ -420,6 +417,7 @@ class Model(object):
         last_output = time.clock()
         while self.tNow < tEnd:
             diff = time.clock() - last_time
+            self.applyDisp = False
 
             # at most, display output every 5 seconds
             if time.clock() - last_output >= 5.0:
