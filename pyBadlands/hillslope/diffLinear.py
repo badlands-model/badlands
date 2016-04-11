@@ -52,7 +52,7 @@ class diffLinear:
         rank = comm.Get_rank()
         size = comm.Get_size()
         
-        # Get the tin edges lenghts
+        # Get the tin edges lengths
         maxCD = max(self.CDaerial,self.CDmarine)
         edgedist = edgelen.flatten()
         distIDs = numpy.where(edgedist > 0.)
@@ -108,7 +108,7 @@ class diffLinear:
         ----------
         variable : diff_flux
             Numpy arrays representing for each node the sum of the ratio between the height differences 
-            and  the length of the mesh edge multiply by the lenght of the corresponding voronoi edge.
+            and  the length of the mesh edge multiply by the length of the corresponding voronoi edge.
             
         variable : sea
             Real value giving the sea-level height at considered time step.

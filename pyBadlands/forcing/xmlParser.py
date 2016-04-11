@@ -24,7 +24,11 @@ class xmlParser:
         The XmL input file name.
     """
 
-    def __init__(self, inputfile = None):
+    def __init__(self, inputfile = None, makeUniqueOutputDir=True):
+        """
+        If makeUniqueOutputDir is set, we create a uniquely-named directory for
+        the output. If it's clear, we blindly accept what's in the XML file.
+        """
 
         if inputfile==None:
             raise RuntimeError('XmL input file name must be defined to run a Badlands simulation.')
@@ -68,6 +72,7 @@ class xmlParser:
 
         self.CDa = 0.
         self.CDm = 0.
+        self.makeUniqueOutputDir = makeUniqueOutputDir
 
         self.outDir = None
         self.th5file = 'h5/tin.time'
@@ -479,8 +484,9 @@ class xmlParser:
         else:
             self.outDir = os.getcwd()+'/out'
 
-        if os.path.exists(self.outDir):
-            self.outDir += '_'+str(len(glob.glob(self.outDir+str('*')))-1)
+        if self.makeUniqueOutputDir:
+            if os.path.exists(self.outDir):
+                self.outDir += '_'+str(len(glob.glob(self.outDir+str('*')))-1)
 
         if not os.path.exists(self.outDir):
             os.makedirs(self.outDir)

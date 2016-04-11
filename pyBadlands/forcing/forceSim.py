@@ -169,7 +169,7 @@ class forceSim:
 
         return tinRain
 
-    def disp_border(self, disp, neighbours, edge_lenght, boundPts):
+    def disp_border(self, disp, neighbours, edge_length, boundPts):
         """
         This function defines the displacement of the TIN edges.
 
@@ -181,8 +181,8 @@ class forceSim:
         variable : neighbours
             Numpy integer-type array containing for each nodes its neigbhours IDs.
 
-        variable : edge_lenght
-            Numpy float-type array containing the lenghts to each neighbour.
+        variable : edge_length
+            Numpy float-type array containing the lengths to each neighbour.
 
         variable : boundPts
             Number of nodes on the edges of the TIN surface.
@@ -201,7 +201,7 @@ class forceSim:
             if len(ids) == 1:
                 disp[id] = disp[ngbhs[ids]]
             elif len(ids) > 1:
-                lselect = edge_lenght[id,ids]
+                lselect = edge_length[id,ids]
                 picked = numpy.argmin(lselect)
                 disp[id] = disp[ngbhs[ids[picked]]]
             else:
@@ -214,7 +214,7 @@ class forceSim:
                 ids = numpy.where((disp[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
                     raise ValueError('Error while getting boundary displacement for point ''%d''.' % id)
-                lselect = edge_lenght[id,ids]
+                lselect = edge_length[id,ids]
                 picked = numpy.argmin(lselect)
                 disp[id] = disp[ngbhs[ids[picked]]]
 
