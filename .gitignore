@@ -6,4 +6,8 @@ pyBadlands.egg-info/
 test/output/
 test/.ipynb_checkpoints/
 *.swp
+*.hdf5
+*.xmf
+*.xdmf
+.ipynb_checkpoints
 
