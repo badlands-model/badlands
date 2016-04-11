@@ -327,6 +327,7 @@ class flowNetwork:
             newdt = max(self.mindt,newdt)
             sedrate = sedflux
         else:
+            # Purely erosive case
             if fillH is None and self.bedrock == 0 and self.alluvial == 0:
                 sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
                                       self.xycoords,xymin,xymax,self.discharge,elev, \
