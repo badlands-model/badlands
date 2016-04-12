@@ -124,12 +124,6 @@ class xmlParser:
             else:
                 self.btype = 'slope'
             element = None
-            element = grid.find('fillmax')
-            if element is not None:
-                self.fillmax = float(element.text)
-            else:
-                self.fillmax = 1.
-            element = None
             element = grid.find('resfactor')
             if element is not None:
                 self.Afactor = int(element.text)
@@ -422,6 +416,12 @@ class xmlParser:
             else:
                 self.depo = 1
             element = None
+            element = spl.find('fillmax')
+            if element is not None:
+                self.fillmax = float(element.text)
+            else:
+                self.fillmax = 1.
+            element = None
             element = spl.find('m')
             if element is not None:
                 self.SPLm = float(element.text)
@@ -471,7 +471,7 @@ class xmlParser:
             else:
                 self.SPLn = 1.
             element = None
-            element = tc.find('erodibility')
+            element = tc.find('transport')
             if element is not None:
                 self.SPLero = float(element.text)
             else:
