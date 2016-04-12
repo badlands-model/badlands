@@ -265,7 +265,7 @@ class Model(object):
             self.flow.maxdep = 0.
             self.flow.maxh = 0.
 
-        if rank == 0 and self.fillH is not None and verbose:
+        if self._rank == 0 and self.fillH is not None and verbose:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
         # 2. Compute stream network
