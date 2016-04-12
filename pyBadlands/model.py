@@ -350,7 +350,8 @@ class Model(object):
         timestep = min(tstep, tEnd - self.tNow)
         diff = sedrate * timestep
         self.elevation += diff
-        self.elevation += self.disp * timestep
+        if self.applyDisp:
+            self.elevation += self.disp * timestep
         self.cumdiff += diff
         self.tNow += timestep
 
