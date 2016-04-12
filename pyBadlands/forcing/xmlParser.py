@@ -11,19 +11,19 @@ This module encapsulates parsing functions of Badlands XmL input file.
 """
 import os
 import glob
-import numpy 
+import numpy
 import xml.etree.ElementTree as ET
 
-class xmlParser: 
-    """ 
+class xmlParser:
+    """
     This class defines XmL input file variables.
-        
+
     Parameters
     ----------
     string : inputfile
         The XmL input file name.
     """
-    
+
     def __init__(self, inputfile = None, makeUniqueOutputDir=True):
         """
         If makeUniqueOutputDir is set, we create a uniquely-named directory for
@@ -35,59 +35,63 @@ class xmlParser:
         if not os.path.isfile(inputfile):
             raise RuntimeError('The XmL input file name cannot be found in your path.')
         self.inputfile = inputfile
-        
+
         self.demfile = None
         self.btype = 'slope'
         self.fillmax = 1.
         self.Afactor = 1
-        
+
         self.tStart = None
         self.tEnd = None
         self.tDisplay = None
         self.minDT = 1.
-        
+
         self.seapos = 0.
         self.sealimit = 100.
         self.seafile = None
-        
+
         self.disp3d = False
         self.tectNb = None
         self.tectTime = None
         self.tectFile = None
         self.merge3d = None
         self.time3d = None
-        
+
         self.rainNb = None
         self.rainVal = None
         self.rainTime = None
         self.rainMap = None
-        
+
+        self.depo = 1
         self.SPLm = 0.5
         self.SPLn = 1.
-        self.SPLero = 0.  
-            
+        self.SPLero = 0.
+        self.maxDT = None
+        self.alluvial = 0.
+        self.bedrock = 0.
+
         self.CDa = 0.
         self.CDm = 0.
-            
         self.makeUniqueOutputDir = makeUniqueOutputDir
+
         self.outDir = None
-        self.th5file = 'tin.time'
-        self.txmffile = 'tin.time'
+        self.th5file = 'h5/tin.time'
+        self.txmffile = 'xmf/tin.time'
         self.txdmffile = 'tin.series.xdmf'
-        
-        self.fh5file = 'flow.time'
-        self.fxmffile = 'flow.time'
+
+        self.fh5file = 'h5/flow.time'
+        self.fxmffile = 'xmf/flow.time'
         self.fxdmffile = 'flow.series.xdmf'
 
         self._get_XmL_Data()
-        
+
         return
-    
+
     def _get_XmL_Data(self):
         """
         Main function used to parse the XmL input file.
         """
-        
+
         # Load XmL input file
         tree = ET.parse(self.inputfile)
         root = tree.getroot()
@@ -149,7 +153,7 @@ class xmlParser:
                 raise ValueError('Error in the definition of the simulation time: start time is greater than end time!')
             element = None
             element = time.find('display')
-            if element is not None:  
+            if element is not None:
                 self.tDisplay = float(element.text)
             else:
                 raise ValueError('Error in the definition of the simulation time: display time declaration is required')
@@ -182,7 +186,7 @@ class xmlParser:
                 self.sealimit = 100.
             element = None
             element = sea.find('curve')
-            if element is not None: 
+            if element is not None:
                 self.seafile = element.text
                 if not os.path.isfile(self.seafile):
                     raise ValueError('Sea level file is missing or the given path is incorrect.')
@@ -199,7 +203,7 @@ class xmlParser:
         if tecto is not None:
             element = None
             element = tecto.find('disp3d')
-            if element is not None: 
+            if element is not None:
                 tmp3d = int(element.text)
                 if tmp3d == 0:
                     self.disp3d = False
@@ -209,19 +213,19 @@ class xmlParser:
                 self.disp3d = False
             element = None
             element = tecto.find('merge3d')
-            if element is not None: 
+            if element is not None:
                 self.merge3d = float(element.text)
             else:
                 self.merge3d = 0.
             element = None
             element = tecto.find('time3d')
-            if element is not None: 
+            if element is not None:
                 self.time3d = float(element.text)
             else:
                 self.time3d = 0.
             element = None
             element = tecto.find('events')
-            if element is not None: 
+            if element is not None:
                 tmpNb = int(element.text)
             else:
                 raise ValueError('The number of tectonic events needs to be defined.')
@@ -254,7 +258,7 @@ class xmlParser:
                         raise ValueError('Displacement file %s is missing or the given path is incorrect.'%(tmpFile[id]))
                 else:
                     raise ValueError('Displacement event %d is missing file argument.'%id)
-                id += 1 
+                id += 1
             if id != tmpNb:
                 raise ValueError('Number of events %d does not match with the number of declared displacement parameters %d.' %(tmpNb,id))
 
@@ -290,7 +294,7 @@ class xmlParser:
             if tmpTime[tmpNb-1,1] < self.tEnd:
                 self.tectFile[id] = None
                 self.tectTime[id,0] = tmpTime[tmpNb-1,1]
-                self.tectTime[id,1] = self.tEnd   
+                self.tectTime[id,1] = self.tEnd
         else:
             self.tectNb = 1
             self.tectTime = numpy.empty((self.tectNb,2))
@@ -305,7 +309,7 @@ class xmlParser:
         if precip is not None:
             element = None
             element = precip.find('climates')
-            if element is not None: 
+            if element is not None:
                 tmpNb = int(element.text)
             else:
                 raise ValueError('The number of climatic events needs to be defined.')
@@ -345,8 +349,8 @@ class xmlParser:
                 if element is not None:
                     tmpVal[id] = element.text
                 else:
-                    tmpVal[id] = 0. 
-                id += 1 
+                    tmpVal[id] = 0.
+                id += 1
             if id != tmpNb:
                 raise ValueError('Number of climates %d does not match with the number of declared rain parameters %d.' %(tmpNb,id))
 
@@ -405,27 +409,52 @@ class xmlParser:
         spl = root.find('spl')
         if spl is not None:
             element = None
+            element = spl.find('dep')
+            if element is not None:
+                self.depo = int(element.text)
+            else:
+                self.depo = 1
+            element = None
             element = spl.find('m')
-            if element is not None: 
+            if element is not None:
                 self.SPLm = float(element.text)
             else:
                 self.SPLm = 0.5
             element = None
             element = spl.find('n')
-            if element is not None: 
+            if element is not None:
                 self.SPLn = float(element.text)
             else:
                 self.SPLn = 1.
             element = None
             element = spl.find('erodibility')
-            if element is not None: 
+            if element is not None:
                 self.SPLero = float(element.text)
             else:
                 self.SPLero = 0.
+            element = None
+            element = spl.find('maxdt')
+            if element is not None:
+                self.maxDT = float(element.text)
+            else:
+                self.maxDT = None
+            element = None
+            element = spl.find('ascale')
+            if element is not None:
+                self.alluvial = float(element.text)
+            else:
+                self.alluvial = 0.
+            element = None
+            element = spl.find('bscale')
+            if element is not None:
+                self.bedrock = float(element.text)
+            else:
+                self.bedrock = 0.
         else:
-            self.SPLm = 0.5
+            self.depo = 0
+            self.SPLm = 1.
             self.SPLn = 1.
-            self.SPLero = 0.    
+            self.SPLero = 0.
 
         # Extract Linear Slope Diffusion structure parameters
         creep = None
@@ -454,12 +483,15 @@ class xmlParser:
             self.outDir = out.text
         else:
             self.outDir = os.getcwd()+'/out'
-        
+
         if self.makeUniqueOutputDir:
             if os.path.exists(self.outDir):
                 self.outDir += '_'+str(len(glob.glob(self.outDir+str('*')))-1)
 
         if not os.path.exists(self.outDir):
             os.makedirs(self.outDir)
-            
+
+        os.makedirs(self.outDir+'/h5')
+        os.makedirs(self.outDir+'/xmf')
+
         return

@@ -17,7 +17,6 @@ import triangle
 import mpi4py.MPI as mpi
 from scipy import interpolate
 from scipy.spatial import cKDTree
-from scipy.interpolate import griddata
 
 class forceSim:
     """
@@ -162,8 +161,8 @@ class forceSim:
             tinRain = numpy.zeros(len(tXY[:,0]), dtype=float)
             tinRain = self.rainVal[event]
         else:
-            rainMap = pandas.read_csv(str(self.Map_rain[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
-                               dtype=numpy.float, low_memory=False)
+            rainMap = pandas.read_csv(str(self.Map_rain[event]), sep=r'\s+', engine='c',
+                               header=None, na_filter=False, dtype=numpy.float, low_memory=False)
 
             rectRain = numpy.reshape(rainMap.values,(len(self.regX), len(self.regY)),order='F')
             tinRain = interpolate.interpn( (self.regX, self.regY), rectRain, tXY, method='linear')

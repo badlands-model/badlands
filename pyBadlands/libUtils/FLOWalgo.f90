@@ -140,9 +140,76 @@ contains
 
   end subroutine flowcfl
 
-  subroutine sedflux(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
+  subroutine sedflux_ero_only(pyStack, pyRcv, pyXY, pyXYmin, pyXYmax, pyDischarge, &
+      pyElev, pyDiff, Cero, spl_m, spl_n, sea, dt, pyChange, newdt, pylNodesNb, pygNodesNb)
+
+      integer :: pylNodesNb
+      integer :: pygNodesNb
+      real(kind=8),intent(in) :: dt
+      real(kind=8),intent(in) :: sea
+      real(kind=8),intent(in) :: spl_n
+      real(kind=8),intent(in) :: spl_m
+      real(kind=8),intent(in) :: Cero
+      real(kind=8),dimension(2),intent(in) :: pyXYmin
+      real(kind=8),dimension(2),intent(in) :: pyXYmax
+      integer,dimension(pylNodesNb),intent(in) :: pyStack
+      integer,dimension(pygNodesNb),intent(in) :: pyRcv
+      real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
+
+      real(kind=8),intent(out) :: newdt
+      real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
+
+      integer :: n, donor, recvr
+      real(kind=8) :: SPL, dh, dist
+
+      newdt = dt
+      pyChange = -1.e6
+
+      do n = pylNodesNb, 1, -1
+        SPL = 0.
+        donor = pyStack(n) + 1
+        recvr = pyRcv(donor) + 1
+        dh = 0.95*(pyElev(donor) - pyElev(recvr))
+        if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
+          dh = pyElev(donor) - sea
+        if(dh < 0.001) dh = 0.
+
+        ! Compute stream power law
+        if(recvr /= donor .and. dh > 0.)then
+          if(pyElev(donor) >= sea)then
+            dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
+            if(dist > 0.) SPL = -Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+          endif
+        endif
+
+        ! Erosion case
+        if(SPL < 0.)then
+            if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
+                newdt = min( newdt,-0.99*(pyElev(donor)-sea)/SPL)
+            if(-SPL * newdt > pyElev(donor) - pyElev(recvr)) &
+                newdt = min( newdt,-0.99*(pyElev(donor)-pyElev(recvr))/SPL)
+        endif
+
+        ! Update sediment flux in receiver node
+        pyChange(donor) = SPL + pyDiff(donor)
+
+        ! Update borders
+        if(pyXY(donor,1) < pyXYmin(1) .or. pyXY(donor,2) < pyXYmin(2) .or. &
+            pyXY(donor,1) > pyXYmax(1) .or. pyXY(donor,2) > pyXYmax(2) ) &
+            pyChange(donor) = 0.
+
+      enddo
+
+      return
+
+  end subroutine sedflux_ero_only
+
+  subroutine sedflux_nocapacity(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
       pyMaxH, pyMaxD, pyDischarge, pyFillH, pyElev, pyDiff, Cero, &
-      spl_m,spl_n,sea,dt,pyChange,newdt,pylNodesNb,pygNodesNb)
+      spl_m, spl_n, sea, dt, pyChange, newdt, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
@@ -210,7 +277,6 @@ contains
                 Qs = 0.
               else
                 SPL = maxh / newdt
-                newdt = min(newdt, maxh/SPL)
                 Qs = sedFluxes(donor) - SPL*pyArea(donor)
               endif
           ! Fill depression
@@ -221,7 +287,6 @@ contains
                   Qs = 0.
               else
                   SPL = dh / newdt
-                  newdt = min(newdt, dh/SPL)
                   Qs = sedFluxes(donor) - SPL*pyArea(donor)
               endif
           ! Base-level (sink)
@@ -265,11 +330,11 @@ contains
 
       return
 
-  end subroutine sedflux
+  end subroutine sedflux_nocapacity
 
-  subroutine sedflux_base(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
-      pyMaxH, pyDischarge, pyElev, pyDiff, Cero, &
-      spl_m,spl_n,sea,dt,pyChange,newdt,pylNodesNb,pygNodesNb)
+  subroutine sedflux_capacity(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
+      pyDischarge, pyElev, pyDiff, pyCum, Cero, spl_m, spl_n, Lb, La, sea, dt, &
+      pyChange, newdt, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
@@ -278,13 +343,15 @@ contains
       real(kind=8),intent(in) :: spl_n
       real(kind=8),intent(in) :: spl_m
       real(kind=8),intent(in) :: Cero
-      real(kind=8),intent(in) :: pyMaxH
+      real(kind=8),intent(in) :: La
+      real(kind=8),intent(in) :: Lb
       real(kind=8),dimension(2),intent(in) :: pyXYmin
       real(kind=8),dimension(2),intent(in) :: pyXYmax
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
       real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyArea
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyCum
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
@@ -293,7 +360,7 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
 
       integer :: n, donor, recvr
-      real(kind=8) :: maxh, SPL, Qs, dh, mtime, dist
+      real(kind=8) :: maxh, SPL, SQL, Qs, dh, dist
       real(kind=8),dimension(pygNodesNb) :: sedFluxes
 
       newdt = dt
@@ -302,73 +369,133 @@ contains
 
       do n = pylNodesNb, 1, -1
         SPL = 0.
+        SQL = 0.
         donor = pyStack(n) + 1
         recvr = pyRcv(donor) + 1
         dh = 0.95*(pyElev(donor) - pyElev(recvr))
         if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
           dh = pyElev(donor) - sea
-        if(dh < 0.001) dh = 0.
+        if( dh < 0.001 ) dh = 0.
 
         ! Compute stream power law
-        if(recvr /= donor .and. dh > 0.)then
-          if(pyElev(donor) >= sea)then
-            dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
-            if(dist > 0.) SPL = -Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
-          endif
-        endif
+        dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + &
+                     (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
+        if(dist > 0.) SPL = Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
 
-        maxh = pyMaxH
-        if(pyElev(donor) < sea) maxh = sea - pyElev(donor)
-        maxh = 0.99*maxh
         Qs = 0.
 
-        ! Deposition case
-        if( SPL == 0. .and. pyArea(donor) > 0.)then
-          if(maxh > 0. .and. pyElev(donor) < sea)then
-              if(sedFluxes(donor)*newdt/pyArea(donor) < maxh)then
-                SPL = sedFluxes(donor)/pyArea(donor)
-                Qs = 0.
-              else
-                SPL = maxh / newdt
-                newdt = min(newdt, maxh/SPL)
-                Qs = sedFluxes(donor) - SPL*pyArea(donor)
-              endif
-          ! Base-level (sink)
-          elseif(donor == recvr .and. pyArea(donor) > 0.)then
-            SPL = sedFluxes(donor) / pyArea(donor)
-            Qs = 0.
+        if( pyArea(donor) > 0. )then
+          SQL = ( sedFluxes(donor) - SPL ) / pyArea(donor)
+          if( pyCum(donor) > 0.1 )then
+            SQL = SQL * dist / La
           else
-            Qs = sedFluxes(donor)
+            SQL = SQL * dist / Lb
           endif
-        ! Erosion case
-        elseif(SPL < 0.)then
-            if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
-                newdt = min( newdt,-0.99*(pyElev(donor)-sea)/SPL)
 
-            if(-SPL * newdt > pyElev(donor) - pyElev(recvr)) &
-                newdt = min( newdt,-0.99*(pyElev(donor)-pyElev(recvr))/SPL)
+          if( pyElev(donor) < sea .and. sedFluxes(donor) > 0. &
+           .and. donor /= recvr)then
+            maxh = 0.98 * ( sea - pyElev(donor) )
+            if( sedFluxes(donor)*newdt / pyArea(donor) < maxh )then
+              SQL = sedFluxes(donor) / pyArea(donor)
+              Qs = 0.
+            else
+              SQL = maxh / newdt
+              Qs = sedFluxes(donor) - SQL * pyArea(donor)
+            endif
 
-            Qs = -SPL * pyArea(donor) + sedFluxes(donor)
+          elseif( SQL < 0. .and. donor /= recvr)then
+            if( -SQL * newdt > dh )then
+              SQL = -dh / newdt
+            endif
+            Qs = sedFluxes(donor) - SQL * pyArea(donor)
+
+          elseif( SQL > 0. .and. donor /= recvr)then
+            Qs = sedFluxes(donor) - SQL * pyArea(donor)
+
+          elseif( SQL == 0. .and. donor /= recvr)then
+            Qs = sedFluxes(donor)
+
+          ! Base-level
+          else
+            SQL = sedFluxes(donor) / pyArea(donor)
+            Qs = 0.
+          endif
+
         endif
 
         ! Update sediment flux in receiver node
         sedFluxes(recvr) = sedFluxes(recvr) + Qs
-        pyChange(donor) = SPL + pyDiff(donor)
+        pyChange(donor) = SQL + pyDiff(donor)
 
         ! Update borders
         if(pyXY(donor,1) < pyXYmin(1) .or. pyXY(donor,2) < pyXYmin(2) .or. &
             pyXY(donor,1) > pyXYmax(1) .or. pyXY(donor,2) > pyXYmax(2) ) &
             pyChange(donor) = 0.
 
-        ! Update base levels
-        if(donor == recvr .and. pyChange(donor) > 0.)then
-            mtime = pyMaxH / pyChange(donor)
-            newdt = min(newdt, mtime)
-        endif
       enddo
 
       return
 
-  end subroutine sedflux_base
+  end subroutine sedflux_capacity
+
+  ! THIS IS NOT USED
+  subroutine base_ids(pyStack, pyRcv, pyBid0, pyBasinID, &
+      pylNodesNb, pygNodesNb)
+
+      integer :: pygNodesNb
+      integer :: pylNodesNb
+      integer,intent(in) :: pyBid0
+      integer,dimension(pylNodesNb),intent(in) :: pyStack
+      integer,dimension(pygNodesNb),intent(in) :: pyRcv
+
+      integer,dimension(pygNodesNb),intent(out) :: pyBasinID
+
+      integer :: n, donor, recvr, bID
+
+      pyBasinID = -1
+      bID = pyBid0
+      do n = 1, pylNodesNb
+        donor = pyStack(n) + 1
+        recvr = pyRcv(donor) + 1
+        if(donor == recvr) bID = bID + 1
+        pyBasinID(donor) = bID
+      enddo
+
+      return
+
+  end subroutine base_ids
+
+  ! THIS IS NOT USED
+  subroutine basin_edges(pyGIDs, pyNgbs, pyBasinID, pyEdgesID, &
+      pylNodesNb, pygNodesNb)
+
+      integer :: pylNodesNb
+      integer :: pygNodesNb
+      integer,dimension(pylNodesNb),intent(in) :: pyGIDs
+      integer,dimension(pygNodesNb),intent(in) :: pyBasinID
+      integer,dimension(pylNodesNb,20),intent(in) :: pyNgbs
+
+      integer,dimension(pylNodesNb),intent(out) :: pyEdgesID
+
+      integer :: gid, n, k, p
+
+      pyEdgesID = -1
+      k = 0
+      do n = 1, pylNodesNb
+        gid = pyGIDs(n)+1
+        p = 1
+        lp: do while(pyNgbs(n,p) >=0 )
+          if(pyBasinID(pyNgbs(n,p)+1) /= pyBasinID(gid))then
+            k = k+1
+            pyEdgesID(k) = gid-1
+            exit lp
+          endif
+          p = p+1
+        enddo lp
+      enddo
+
+      return
+
+  end subroutine basin_edges
 
 end module flowcompute

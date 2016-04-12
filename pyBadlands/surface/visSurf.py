@@ -13,7 +13,7 @@ This class reads the TIN surface with associated parameters on output 3d surface
 import os
 import time
 import h5py
-import numpy 
+import numpy
 import errno
 from scipy.spatial import cKDTree
 import xml.etree.ElementTree as ETO
@@ -50,10 +50,10 @@ class visSurf:
 
         variable: dx
             Discretisation value in metres.
-            
+
         variable : timestep
             Time step to load.
-            
+
         variable : crange
             Min/max plotting range for cumulative erosion/deposition [m].
 
@@ -75,18 +75,18 @@ class visSurf:
         self.ny = None
         self.bbox = None
         self.timestep = timestep
-        
+
         if dx == None:
             raise RuntimeError('Discretization space value is required.')
         self.dx = dx
         self.crange = crange
 
         self._loadHDF5()
-        
-        
+
+
         return
-    
-    
+
+
     def _loadHDF5(self):
         """
         Read the HDF5 file for a given time step.
@@ -99,7 +99,7 @@ class visSurf:
         """
 
         for i in range(0, self.ncpus):
-            df = h5py.File('%s/tin.time%s.p%s.hdf5'%(self.folder, self.timestep, i), 'r')
+            df = h5py.File('%s/h5/tin.time%s.p%s.hdf5'%(self.folder, self.timestep, i), 'r')
             coords = numpy.array((df['/coords']))
             cumdiff = numpy.array((df['/cumdiff']))
             discharge = numpy.array((df['/discharge']))
@@ -125,7 +125,7 @@ class visSurf:
         self.bbox[1] = y.min()
         self.bbox[2] = x.max()
         self.bbox[3] = y.max()
-        
+
         self.x, self.y = numpy.meshgrid(self.x, self.y)
         xyi = numpy.dstack([self.x.flatten(), self.y.flatten()])[0]
         XY = numpy.column_stack((x,y))
@@ -145,22 +145,22 @@ class visSurf:
             ci[onIDs] = c[indices[onIDs,0]]
 
         self.z = numpy.reshape(zi,(self.ny,self.nx))
-        
+
         if self.crange != None:
             cclip = numpy.clip(ci, self.crange[0], self.crange[1])
             self.cumchange = numpy.reshape(cclip,(self.ny,self.nx))
         else:
             self.cumchange = numpy.reshape(ci,(self.ny,self.nx))
-            
+
         self.discharge = numpy.reshape(di,(self.ny,self.nx))
 
         logdis = self.discharge
         IDs = numpy.where(logdis<1.)
         logdis[IDs] = 1.
         self.logdischarge = numpy.log(logdis)
-        
+
         return
-    
+
     def plotSurf(self, width = 800, height = 800,
                  zmin = None, zmax = None, color = None, reverse=False,
                  dataV = 'z', subsample = 1):
@@ -189,7 +189,7 @@ class visSurf:
             Reverse color scale.
 
         variable: dataV
-            Dataset to plot choices are 'z' for elevation, 'd' for 
+            Dataset to plot choices are 'z' for elevation, 'd' for
             discharge (log-scale) and 'c' for cumulative erosion/
             deposition changes.
 
@@ -206,7 +206,7 @@ class visSurf:
         if zmax == None:
             zmax = vData.max()
 
-            
+
         if dataV == 'z':
             vData = self.z
             title='Model elevation at timestep:%d'%self.timestep
@@ -218,7 +218,7 @@ class visSurf:
             title='Model discharge (log-scale) at timestep:%d'%self.timestep
         else:
             raise RuntimeError('Requested data to visualise is unknown.')
-            
+
         data = Data([
                 Surface(
                     x = self.x[::subsample,::subsample],
