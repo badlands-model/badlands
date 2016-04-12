@@ -69,6 +69,13 @@ class xmlParser:
         self.maxDT = None
         self.alluvial = 0.
         self.bedrock = 0.
+        self.esmooth = None
+        self.dsmooth = None
+
+        self.spl = False
+        self.capacity = False
+        self.filter = False
+        self.Hillslope = False
 
         self.CDa = 0.
         self.CDm = 0.
@@ -403,11 +410,11 @@ class xmlParser:
             self.rainTime[0,1] = self.tEnd
             self.rainMap = None
 
-
         # Extract Stream Power Law structure parameters
         spl = None
-        spl = root.find('spl')
+        spl = root.find('sp_law')
         if spl is not None:
+            self.spl = True
             element = None
             element = spl.find('dep')
             if element is not None:
@@ -432,34 +439,73 @@ class xmlParser:
                 self.SPLero = float(element.text)
             else:
                 self.SPLero = 0.
-            element = None
-            element = spl.find('maxdt')
-            if element is not None:
-                self.maxDT = float(element.text)
-            else:
-                self.maxDT = None
-            element = None
-            element = spl.find('ascale')
-            if element is not None:
-                self.alluvial = float(element.text)
-            else:
-                self.alluvial = 0.
-            element = None
-            element = spl.find('bscale')
-            if element is not None:
-                self.bedrock = float(element.text)
-            else:
-                self.bedrock = 0.
+            self.maxDT = None
+            self.alluvial = 0.
+            self.bedrock = 0.
+            self.esmooth = 0.
+            self.dsmooth = 0.
         else:
             self.depo = 0
             self.SPLm = 1.
             self.SPLn = 1.
             self.SPLero = 0.
 
+        # Extract Transport Capacity model parameters
+        tc = None
+        tc = root.find('tc_law')
+        if tc is not None:
+            self.capacity = True
+            if self.spl :
+                raise ValueError('Only one of the sediment transport law can be defined.')
+            self.depo = 1
+            element = None
+            element = tc.find('m')
+            if element is not None:
+                self.SPLm = float(element.text)
+            else:
+                self.SPLm = 1.
+            element = None
+            element = tc.find('n')
+            if element is not None:
+                self.SPLn = float(element.text)
+            else:
+                self.SPLn = 1.
+            element = None
+            element = tc.find('erodibility')
+            if element is not None:
+                self.SPLero = float(element.text)
+            else:
+                self.SPLero = 0.
+            element = None
+            element = tc.find('maxdt')
+            if element is not None:
+                self.maxDT = float(element.text)
+            else:
+                self.maxDT = None
+            element = None
+            element = tc.find('ascale')
+            if element is not None:
+                self.alluvial = float(element.text)
+            else:
+                self.alluvial = 0.
+            element = None
+            element = tc.find('bscale')
+            if element is not None:
+                self.bedrock = float(element.text)
+            else:
+                self.bedrock = 0.
+        else:
+            if not self.spl:
+                self.depo = 0
+                self.SPLm = 1.
+                self.SPLn = 1.
+                self.SPLero = 0.
+
         # Extract Linear Slope Diffusion structure parameters
         creep = None
         creep = root.find('creep')
         if creep is not None:
+            self.Hillslope = True
             element = None
             element = creep.find('caerial')
             if element is not None:
@@ -475,6 +521,36 @@ class xmlParser:
         else:
             self.CDa = 0.
             self.CDm = 0.
+
+        # Extract Gaussian Filter structure parameters
+        filter = None
+        filter = root.find('filter')
+        if filter is not None:
+            self.filter = True
+            if not self.capacity:
+                element = None
+                element = filter.find('gtime')
+                if element is not None:
+                    self.maxDT = float(element.text)
+                else:
+                    raise ValueError('Gaussian filter time step needs to be defined.')
+            elif self.maxDT is None:
+                 raise ValueError('tc_law maxdt element needs to be defined.')
+            element = None
+            element = filter.find('esmooth')
+            if element is not None:
+                self.esmooth = float(element.text)
+            else:
+                self.esmooth = 0.
+            element = None
+            element = filter.find('dsmooth')
+            if element is not None:
+                self.dsmooth = float(element.text)
+            else:
+                self.dsmooth = 0.
+        else:
+            self.esmooth = None
+            self.dsmooth = None
 
         # Get output directory
         out = None

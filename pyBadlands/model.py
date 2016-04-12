@@ -147,7 +147,13 @@ class Model(object):
         self.flow.mindt = self.input.minDT
         self.flow.bedrock = self.input.bedrock
         self.flow.alluvial = self.input.alluvial
-        self.flow.xycoords = FVmesh.node_coords[:, :2]
+        self.flow.esmooth = self.input.esmooth
+        self.flow.dsmooth = self.input.dsmooth
+        self.flow.xycoords = FVmesh.node_coords[:,:2]
+        self.flow.spl = self.input.spl
+        self.flow.capacity = self.input.capacity
+        self.flow.filter = self.input.filter
+        self.flow.depo = self.input.depo
 
         if self._rank == 0 and verbose:
             print " - interpolate elevation on grid ", time.clock() - walltime
@@ -260,16 +266,21 @@ class Model(object):
             self.elevation += self.disp
 
         self.fillH = None
-        if self.input.depo == 1 and self.input.bedrock == 0 and self.input.alluvial == 0:
+
+        if self.input.depo == 0 or self.input.capacity or self.input.filter:
+            self.flow.maxdep = 0.
+            self.flow.maxh = 0.
+            if self.flow.esmooth is None and self.input.filter:
+                self.flow.esmooth = 0
+            if self.flow.dsmooth is None and self.input.filter:
+                self.flow.dsmooth = 0
+        else:
             self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
                                                  self.recGrid.boundsPt,
                                                  self.force.sealevel - self.input.sealimit,
                                                  self.input.fillmax)
-        else:
-            self.flow.maxdep = 0.
-            self.flow.maxh = 0.
 
-        if rank == 0 and self.fillH is not None and verbose:
+        if self._rank == 0 and verbose and self.input.spl and not self.input.filter:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
         # 2. Compute stream network
@@ -313,24 +324,26 @@ class Model(object):
 
         # 1. Compute CFL condition
         walltime = time.clock()
-        self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
-        if self.input.depo == 1:
-            if self.input.maxDT is not None:
-                self.flow.CFL = self.input.maxDT
-            else:
-                self.flow.dt_fstability(self.fillH, self.inGIDs)
+        if self.input.Hillslope:
+            self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
         else:
-            if self.input.maxDT is not None:
+            self.hillslope.CFL = tEnd - self.tNow
+
+        if self.input.depo == 1:
+            if self.input.filter:
+                self.flow.CFL = self.input.maxDT
+            elif self.input.spl:
+                self.flow.dt_fstability(self.fillH, self.inGIDs)
+            else:
+                self.flow.dt_fstability(self.elevation, self.inGIDs)
+        else:
+            if self.input.filter:
                 self.flow.CFL = self.input.maxDT
             else:
                 self.flow.dt_fstability(self.elevation, self.inGIDs)
 
         CFLtime = min(self.flow.CFL, self.hillslope.CFL)
         CFLtime = max(self.input.minDT, CFLtime)
-
-        if self.input.maxDT is not None:
-            CFLtime = min(self.input.maxDT, CFLtime)
-
         if self._rank == 0 and verbose:
             print " -   Get CFL time step ", time.clock() - walltime
 
@@ -353,8 +366,18 @@ class Model(object):
         # Update surface parameters and time
         timestep = min(tstep, tEnd - self.tNow)
         diff = sedrate * timestep
-        self.elevation += diff
-        self.cumdiff += diff
+
+        if self.input.filter:
+            smthdiff = self.flow.gaussian_filter(diff)
+            self.elevation += smthdiff
+            self.cumdiff += smthdiff
+        else:
+            self.elevation += diff
+            self.cumdiff += diff
+
+        if self.applyDisp:
+            self.elevation += self.disp * timestep
+
         self.tNow += timestep
 
         if self._rank == 0 and verbose:
