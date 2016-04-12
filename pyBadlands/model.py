@@ -261,10 +261,6 @@ class Model(object):
         # Update sea-level
         self.force.getSea(self.tNow)
 
-        # Update vertical displacements
-        if not self.input.disp3d and self.applyDisp:
-            self.elevation += self.disp
-
         self.fillH = None
 
         if self.input.depo == 0 or self.input.capacity or self.input.filter:
@@ -453,6 +449,7 @@ class Model(object):
         last_output = time.clock()
         while self.tNow < tEnd:
             diff = time.clock() - last_time
+            self.applyDisp = False
 
             # at most, display output every 5 seconds
             if time.clock() - last_output >= 5.0:

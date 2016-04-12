@@ -27,9 +27,17 @@ class RemoteModel(object):
     underlying parallelisation details.
     """
 
-    def __init__(self, profile='mpi'):
+    def __init__(self, profile='mpi', maxcpus=None):
+        '''
+        maxcpus: maximum number of CPUs that may be used in the MPI cluster.
+        Useful for benchmarking.
+        '''
         client = Client(profile=profile)
+
         self._view = client[:]
+        if maxcpus:
+            self._view = client[0:maxcpus]
+
         self._view.block = True
 
         self._view.execute('import os')
