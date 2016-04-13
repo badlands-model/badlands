@@ -65,7 +65,7 @@
             <dfile>data/disp1D.csv</dfile>
         </disp>
     </tectonic>
-    
+
     <!-- Precipitation structure -->
     <precipitation>
         <!-- Number of precipitation events -->
@@ -86,12 +86,12 @@
         </rain>
     </precipitation>
 
-    <!-- 
+    <!--
          Sediment transport equation: user can choose between 2 approaches:
             - stream power law model <sp_law>
-            - transport capacity model <tc_law>                   
+            - transport capacity model <tc_law>
     -->
-         
+
     <!-- Stream power law parameters:
          The stream power law is a simplified form of the usual expression of
          sediment transport by water flow, in which the transport rate is assumed
@@ -101,7 +101,7 @@
         <!-- Make the distinction between purely erosive models (0) and erosion /
             deposition ones (1). Default value is 1 -->
         <dep>1</dep>
-        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used 
+        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
               to defined maximum accumulation thickness in depression area per time
               step. Default value is set to 1. -->
         <fillmax>1.</fillmax>
@@ -117,27 +117,27 @@
               frequency, channel hydraulics. -->
         <erodibility>1.e-6</erodibility>
     </sp_law>
-        
+
     <!-- Transport capacity model parameters:
          Limited river carrying capacity law for modelling sediment transport. This
-         law is appropriate when modelling erosion/deposition by channelised flow on 
+         law is appropriate when modelling erosion/deposition by channelised flow on
          time scale larger than the recurrence time of maximum size flood. -->
-    <tc_law>  
+    <tc_law>
         <!-- The sediment transport law for the carrying capacity model is defined as
-              a non-linear relationship dependent of the river discharge and the slope.  
+              a non-linear relationship dependent of the river discharge and the slope.
               For long time scale however several authors suggest that this relation can
               be linear. Here we give the user the possibility to set either a non-linear
-              or a linear relationship. 
+              or a linear relationship.
               Default values of m and n are set to 1 (linear case). -->
         <m>1.0</m>
         <n>1.0</n>
-        <!-- Effective transport efficiency coefficient. For the linear relationship this 
-              coefficient is adimensional and contains information about lithology and 
+        <!-- Effective transport efficiency coefficient. For the linear relationship this
+              coefficient is adimensional and contains information about lithology and
               climate. -->
         <transport>5.e-2</transport>
-        <!-- A maximum time step used to perform erosion / deposition laws [a]. 
-              Usually this time step is set close to 10 for landscape evolution 
-              model. In cases where you want to force the system to use a longer 
+        <!-- A maximum time step used to perform erosion / deposition laws [a].
+              Usually this time step is set close to 10 for landscape evolution
+              model. In cases where you want to force the system to use a longer
               time step it is recommended to set the filter parameters.-->
         <maxdt>1000</maxdt>
         <!-- Length scale for erosion in alluvial channels [m]. -->
@@ -145,26 +145,26 @@
         <!-- Length scale for erosion in bedrock channels [m]. -->
         <bscale>100e3</bscale>
     </tc_law>
-    
+
     <!-- Linear slope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport
          law which states that transport rate depends linearly on topographic gradient. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
-        <caerial>0.0</caerial>
+        <caerial>0.001</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
-        <cmarine>0.0</cmarine>
+        <cmarine>0.005</cmarine>
     </creep>
 
     <!-- Filter for erosion/deposition :
          Gaussian filter used to smooth erosion and deposition thicknesses when
          the model is forced with a large simulation time step. Using this oper-
          ation implies that the resulting simulation is not conserving mass.
-         Both the stream power law and river carrying capacity models will use the 
-         gaussian filter operator if you set this filter element within your input 
+         Both the stream power law and river carrying capacity models will use the
+         gaussian filter operator if you set this filter element within your input
          file.  -->
     <filter>
-        <!-- Time step used to perform the gaussian filter smoothing. In cases 
+        <!-- Time step used to perform the gaussian filter smoothing. In cases
               where the transport capacity model is used the time step is auto-
               matically reset to the maxdt parameter. -->
         <gtime>500.0</gtime>
@@ -173,7 +173,7 @@
         <!-- Deposition smoothing standard deviation for Gaussian kernel. -->
         <dsmooth>5.</dsmooth>
     </filter>
-    
+
     <!-- Output folder path -->
     <outfolder>out</outfolder>
 
