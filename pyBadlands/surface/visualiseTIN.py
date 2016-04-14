@@ -168,7 +168,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
 
     return
 
-def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size):
+def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size):
     """
     This function writes the XmF file which is calling each HFD5 file.
 
@@ -197,6 +197,9 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
 
     variable: h5file
         First part of the hdf5 file name.
+
+    variable: sealevel
+        Sealevel elevation.
 
     variable : size
         Number of partitions.
@@ -233,6 +236,13 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Cumdiff">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/cumdiff</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
+
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="Sealevel">\n')
+        f.write('          <DataItem ItemType="Function" Function="$0 * 0.00000000001 + %f" Dimensions="%d 1">\n'%(sealevel,nodes[p]))
+        f.write('           <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/cumdiff</DataItem>\n'%(nodes[p],pfile))
+        f.write('          </DataItem>\n')
         f.write('         </Attribute>\n')
 
         f.write('      </Grid>\n')
