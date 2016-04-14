@@ -4,16 +4,14 @@
     <!-- Regular grid structure -->
     <grid>
         <!-- Digital elevation model file path -->
-        <demfile>data/climate_nodes.csv</demfile>
+        <demfile>data/deltaHR.csv</demfile>
         <!-- Boundary type: flat, slope or wall -->
         <boundary>slope</boundary>
-        <!-- Planchon & Darboux filling thickness limit [m] -->
-        <fillmax>1.</fillmax>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
              accordingly.  -->
-        <resfactor>1</resfactor>
+        <resfactor>5</resfactor>
     </grid>
 
     <!-- Simulation time structure -->
@@ -21,83 +19,36 @@
         <!-- Simulation start time [a] -->
         <start>0.</start>
         <!-- Simulation end time [a] -->
-        <end>50000000.</end>
+        <end>500000.</end>
         <!-- Minim time step [a] -->
         <mindt>1.</mindt>
         <!-- Display interval [a] -->
-        <display>10000.</display>
+        <display>5000.</display>
     </time>
 
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
-        <!-- <position>-3450.</position> -->
+        <position>0.</position>
         <!-- Sea-level curve - (optional) -->
-        <!-- <curve>data/sealvl.csv</curve> -->
+        <curve>data/sea.csv</curve>
         <!-- Limit flow network computation based on
              water depth [m] -->
-        <!-- <limit>100.</limit> -->
+        <limit>100.</limit>
     </sea>
-
-    <!-- Tectonic structure -->
-    <tectonic>
-        <!-- Is 3D displacements on ? (1:on - 0:off). Default is 0.-->
-        <disp3d>0</disp3d>
-        <!-- Only relevant when 3D displacements is on.
-             Closest distance [m] between nodes before
-             merging happens. This is optional if not given
-             the merging distance is set to half the resolution
-             of the digital elevation input file. -->
-        <!-- <merge3d>200.</merge3d> -->
-        <!-- Only relevant when 3D displacements is required.
-             This is useful if the horizontal displacements provided
-             in each maps are larger than the TIN resolution. In this
-             case, it is recommended to split each displacement periods
-             in evenly spaced intervals of given time duration [a]. -->
-        <!-- <time3d>5000.</time3d> -->
-        <!-- Number of tectonic events -->
-        <events>1</events>
-        <!-- Displacement definition -->
-        <disp>
-            <!-- Displacement start time [a] -->
-            <dstart>0.</dstart>
-            <!-- Displacement end time [a] -->
-            <dend>50000.0</dend>
-            <!-- Displacement map [m] -->
-            <dfile>data/climate_uplift.csv</dfile>
-        </disp>
-    </tectonic>
 
     <!-- Precipitation structure -->
     <precipitation>
         <!-- Number of precipitation events -->
-        <climates>2</climates>
+        <climates>1</climates>
         <!-- Precipitation definition -->
         <rain>
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>15000000.</rend>
-            <!-- Choice is given between loading a rain map <map> or
-                 giving a single value <rval> for the entire area and
-                 for the given time interval -->
-            <!-- Precipitation map [m/a] - (optional) -->
-            <map>data/climate_rain_uniform.csv</map>
+            <rend>1000000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
-            <!-- <rval>1.</rval> -->
-        </rain>
-        <rain>
-            <!-- Rain start time [a] -->
-            <rstart>15000000.</rstart>
-            <!-- Rain end time [a] -->
-            <rend>50000000.</rend>
-            <!-- Choice is given between loading a rain map <map> or
-                 giving a single value <rval> for the entire area and
-                 for the given time interval -->
-            <!-- Precipitation map [m/a] - (optional) -->
-            <map>data/climate_rain_gradient.csv</map>
-            <!-- Precipitation value [m/a] - (optional) -->
-            <!-- <rval>1.</rval> -->
+            <rval>1.</rval>
         </rain>
     </precipitation>
 
@@ -106,7 +57,14 @@
          sediment transport by water flow, in which the transport rate is assumed
          to be equal to the local carrying capacity, which is itself a function of
          boundary shear stress. -->
-    <spl>
+    <sp_law>
+        <!-- Make the distinction between purely erosive models (0) and erosion /
+            deposition ones (1). Default value is 1 -->
+        <dep>1</dep>
+        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
+              to defined maximum accumulation thickness in depression area per time
+              step. Default value is set to 1. -->
+        <fillmax>1.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.
@@ -118,18 +76,19 @@
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
         <erodibility>1.e-5</erodibility>
-    </spl>
+    </sp_law>
 
     <!-- Linear slope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport
          law which states that transport rate depends linearly on topographic gradient. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
-        <caerial>0.5</caerial>
+        <caerial>3.e-1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
-        <cmarine>0.5</cmarine>
+        <cmarine>5.e-1</cmarine>
     </creep>
 
     <!-- Output folder path -->
     <outfolder>output</outfolder>
+
 </badlands>

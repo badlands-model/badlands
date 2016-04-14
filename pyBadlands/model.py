@@ -15,7 +15,6 @@ class Model(object):
         """
 
         # simulation state
-        self.applyDisp = False
         self.tNow = 0.
         self.outputStep = 0
         self.applyDisp = False
@@ -425,7 +424,7 @@ class Model(object):
 
         # Combine HDF5 files and write time series
         if self._rank == 0:
-            visualiseTIN.write_xmf(self.input.outDir, self.input.txmffile, self.input.txdmffile, step, self.tNow, 
+            visualiseTIN.write_xmf(self.input.outDir, self.input.txmffile, self.input.txdmffile, step, self.tNow,
                                    tcells, tnodes, self.input.th5file, self.force.sealevel, self._size)
             visualiseFlow.write_xmf(self.input.outDir, self.input.fxmffile, self.input.fxdmffile,
                                     step, self.tNow, fline, fnodes, self.input.fh5file, self._size)
@@ -449,7 +448,6 @@ class Model(object):
         last_output = time.clock()
         while self.tNow < tEnd:
             diff = time.clock() - last_time
-            self.applyDisp = False
 
             # at most, display output every 5 seconds
             if time.clock() - last_output >= 5.0:
