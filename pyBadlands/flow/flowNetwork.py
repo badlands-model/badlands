@@ -14,6 +14,9 @@ import math
 import numpy
 import warnings
 import mpi4py.MPI as mpi
+from scipy.spatial import cKDTree
+from scipy.interpolate import RegularGridInterpolator
+from scipy.ndimage.filters import gaussian_filter
 
 from pyBadlands.libUtils import SFDalgo as SFD
 from pyBadlands.libUtils import FLOWalgo
@@ -49,6 +52,12 @@ class flowNetwork:
         self.mindt = None
         self.alluvial = 0.
         self.bedrock = 0.
+        self.esmooth = 0.
+        self.dsmooth = 0.
+        self.spl = False
+        self.capacity = False
+        self.filter = False
+        self.depo = 0
 
         self.sendprocID = None
         self.rcvprocID = None
@@ -64,6 +73,13 @@ class flowNetwork:
         self.diff_flux = None
         self.chi = None
         self.basinID = None
+
+        self.xgrid = None
+        self.xgrid = None
+        self.xi = None
+        self.yi = None
+        self.xyi = None
+
 
         return
 
@@ -103,7 +119,7 @@ class flowNetwork:
         size = comm.Get_size()
 
         # Call the SFD function from libUtils
-        if fillH is None:
+        if self.depo == 0 or self.capacity or self.filter:
             base, receivers, diff_flux = SFD.sfdcompute.directions_base(elev, \
                 neighbours, edges, distances, globalIDs, sea)
 
@@ -300,13 +316,19 @@ class flowNetwork:
         # Compute sediment flux using libUtils
         if(size > 1):
             # Purely erosive case
-            if fillH is None and self.bedrock == 0 and self.alluvial == 0:
+            if self.spl and self.depo == 0:
                 sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
                                       self.xycoords,xymin,xymax,self.discharge,elev, \
                                       diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
 
-            # River carrying capacity is not taken into account
-            elif self.bedrock == 0 and self.alluvial == 0:
+            # Stream power law and mass is not conserved
+            elif self.spl and self.filter:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity_quick(self.localstack,self.receivers, \
+                         self.xycoords,Acell,xymin,xymax,self.discharge,elev,diff_flux,self.erodibility, \
+                         self.m,self.n,sealevel,dt)
+
+            # Stream power law
+            elif self.spl:
                 sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
                          Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
                          self.erodibility,self.m,self.n,sealevel,dt)
@@ -328,13 +350,19 @@ class flowNetwork:
             sedrate = sedflux
         else:
             # Purely erosive case
-            if fillH is None and self.bedrock == 0 and self.alluvial == 0:
+            if self.spl and self.depo == 0:
                 sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
                                       self.xycoords,xymin,xymax,self.discharge,elev, \
                                       diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
 
-            # River carrying capacity is not taken into account
-            elif self.bedrock == 0 and self.alluvial == 0:
+            # Stream power law and mass is not conserved
+            elif self.spl and self.filter:
+                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity_quick(self.localstack,self.receivers, \
+                         self.xycoords,Acell,xymin,xymax,self.discharge,elev,diff_flux,self.erodibility, \
+                         self.m,self.n,sealevel,dt)
+
+            # Stream power law
+            elif self.spl:
                 sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
                          Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
                          self.erodibility,self.m,self.n,sealevel,dt)
@@ -351,6 +379,59 @@ class flowNetwork:
             sedrate = sedflux
 
         return newdt,sedrate
+
+    def gaussian_filter(self, diff):
+        """
+        Gaussian filter operation used to smooth erosion and deposition
+        thicknesses for large simulation time steps. Using this operation
+        implies that the resulting simulation is not conserving mass.
+
+        Parameters
+        ----------
+        variable : diff
+            Numpy arrays containing the erosion and deposition thicknesses.
+        """
+
+        if self.xgrid is None:
+            dx = self.xycoords[1,0] - self.xycoords[0,0]
+            xmin, xmax = min(self.xycoords[:,0]), max(self.xycoords[:,0])
+            ymin, ymax = min(self.xycoords[:,1]), max(self.xycoords[:,1])
+            self.xgrid = numpy.arange(xmin,xmax+dx,dx)
+            self.ygrid = numpy.arange(ymin,ymax+dx,dx)
+            self.xi, self.yi = numpy.meshgrid(self.xgrid, self.ygrid)
+            self.xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
+
+        depZ = numpy.copy(diff)
+        depZ = depZ.clip(0.)
+
+        eroZ = numpy.copy(diff)
+        eroZ = eroZ.clip(max=0.)
+
+        tree = cKDTree(self.xycoords[:,:2])
+        distances, indices = tree.query(self.xyi, k=3)
+
+        zd_vals = depZ[indices]
+        zdi = numpy.average(zd_vals,weights=(1./distances), axis=1)
+        ze_vals = eroZ[indices]
+        zei = numpy.average(ze_vals,weights=(1./distances), axis=1)
+
+        onIDs = numpy.where(distances[:,0] == 0)[0]
+        if len(onIDs) > 0:
+            zdi[onIDs] = depZ[indices[onIDs,0]]
+            zei[onIDs] = eroZ[indices[onIDs,0]]
+
+        depzi = numpy.reshape(zdi,(len(self.ygrid),len(self.xgrid)))
+        erozi = numpy.reshape(zei,(len(self.ygrid),len(self.xgrid)))
+
+        smthDep = gaussian_filter(depzi, sigma=self.dsmooth)
+        smthEro = gaussian_filter(erozi, sigma=self.esmooth)
+
+        rgi_dep = RegularGridInterpolator((self.ygrid, self.xgrid), smthDep)
+        zdepsmth = rgi_dep((self.xycoords[:,1],self.xycoords[:,0]))
+        rgi_ero = RegularGridInterpolator((self.ygrid, self.xgrid), smthEro)
+        zerosmth = rgi_ero((self.xycoords[:,1],self.xycoords[:,0]))
+
+        return zdepsmth + zerosmth
 
     def dt_fstability(self, elev, locIDs):
         """
