@@ -488,10 +488,8 @@ class xmlParser:
             if os.path.exists(self.outDir):
                 self.outDir += '_'+str(len(glob.glob(self.outDir+str('*')))-1)
 
-        if not os.path.exists(self.outDir):
             os.makedirs(self.outDir)
-
-        os.makedirs(self.outDir+'/h5')
-        os.makedirs(self.outDir+'/xmf')
+            os.makedirs(self.outDir+'/h5')
+            os.makedirs(self.outDir+'/xmf')
 
         return
