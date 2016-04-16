@@ -59,13 +59,6 @@ class flowNetwork:
         self.filter = False
         self.depo = 0
 
-        self.sendprocID = None
-        self.rcvprocID = None
-        self.rcvprocNb = None
-        self.rcvsendID = None
-        self.localGIDs = None
-        self.localNodes = 0
-
         self.discharge = None
         self.localsedflux = None
         self.maxh = None
@@ -79,7 +72,6 @@ class flowNetwork:
         self.xi = None
         self.yi = None
         self.xyi = None
-
 
         return
 

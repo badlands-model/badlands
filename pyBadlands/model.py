@@ -364,6 +364,7 @@ class Model(object):
 
         if self.input.filter:
             smthdiff = self.flow.gaussian_filter(diff)
+            smthdiff[:self.recGrid.boundsPt] = 0.
             self.elevation += smthdiff
             self.cumdiff += smthdiff
         else:

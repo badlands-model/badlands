@@ -4,11 +4,9 @@
     <!-- Regular grid structure -->
     <grid>
         <!-- Digital elevation model file path -->
-        <demfile>data/fill.csv</demfile>
+        <demfile>data/nodes.csv</demfile>
         <!-- Boundary type: flat, slope or wall -->
         <boundary>slope</boundary>
-        <!-- Planchon & Darboux filling thickness limit [m] -->
-        <fillmax>1.</fillmax>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
@@ -21,54 +19,12 @@
         <!-- Simulation start time [a] -->
         <start>0.</start>
         <!-- Simulation end time [a] -->
-        <end>100000.</end>
-        <!-- Minim time step [a] -->
-        <mindt>0.1</mindt>
+        <end>200000.</end>
+        <!-- Minimum time step [a] -->
+        <mindt>0.5</mindt>
         <!-- Display interval [a] -->
-        <display>50.</display>
+        <display>1000.</display>
     </time>
-
-    <!-- Sea-level structure -->
-    <sea>
-        <!-- Relative sea-level position [m] -->
-        <!-- <position>-3450.</position> -->
-        <!-- Sea-level curve - (optional) -->
-        <!-- <curve>data/sealvl.csv</curve> -->
-        <!-- Limit flow network computation based on
-             water depth [m] -->
-        <!-- <limit>100.</limit> -->
-    </sea>
-
-    <!-- Tectonic structure -->
-    <?ignore
-    <tectonic>
-        <!-- Is 3D displacements on ? (1:on - 0:off). Default is 0.-->
-        <disp3d>0</disp3d>
-        <!-- Only relevant when 3D displacements is on.
-             Closest distance [m] between nodes before
-             merging happens. This is optional if not given
-             the merging distance is set to half the resolution
-             of the digital elevation input file. -->
-        <!-- <merge3d>200.</merge3d> -->
-        <!-- Only relevant when 3D displacements is required.
-             This is useful if the horizontal displacements provided
-             in each maps are larger than the TIN resolution. In this
-             case, it is recommended to split each displacement periods
-             in evenly spaced intervals of given time duration [a]. -->
-        <!-- <time3d>5000.</time3d> -->
-        <!-- Number of tectonic events -->
-        <events>0</events>
-        <!-- Displacement definition -->
-        <!-- <disp> -->
-            <!-- Displacement start time [a] -->
-            <!-- <dstart>0.</dstart> -->
-            <!-- Displacement end time [a] -->
-            <!-- <dend>50000000.0</dend> -->
-            <!-- Displacement map [m] -->
-            <!-- <dfile>data/climate_uplift.csv</dfile> -->
-        <!-- </disp> -->
-    </tectonic>
-    ?>
 
     <!-- Precipitation structure -->
     <precipitation>
@@ -79,14 +35,9 @@
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>10000.</rend>
-            <!-- Choice is given between loading a rain map <map> or
-                 giving a single value <rval> for the entire area and
-                 for the given time interval -->
-            <!-- Precipitation map [m/a] - (optional) -->
-            <map>data/rainv.csv</map>
+            <rend>200000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
-            <!-- <rval>1.</rval> -->
+            <rval>1.</rval> 
         </rain>
     </precipitation>
 
@@ -95,7 +46,14 @@
          sediment transport by water flow, in which the transport rate is assumed
          to be equal to the local carrying capacity, which is itself a function of
          boundary shear stress. -->
-    <spl>
+    <sp_law>
+        <!-- Make the distinction between purely erosive models (0) and erosion /
+            deposition ones (1). Default value is 1 -->
+        <dep>1</dep>
+        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
+              to defined maximum accumulation thickness in depression area per time
+              step. Default value is set to 1. -->
+        <fillmax>2.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.
@@ -106,19 +64,38 @@
          <!-- The erodibility coefficient is scale-dependent and its value depend
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
-        <erodibility>4.e-5</erodibility>
-    </spl>
+        <erodibility>8.e-5</erodibility>
+    </sp_law>
 
     <!-- Linear slope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport
          law which states that transport rate depends linearly on topographic gradient. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
-        <caerial>1.e-2</caerial>
+        <caerial>5.e-2</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
-        <cmarine>5.e-1</cmarine>
+        <cmarine>5.e-2</cmarine>
     </creep>
-
+    
+    <!-- Filter for erosion/deposition :
+         Gaussian filter used to smooth erosion and deposition thicknesses when
+         the model is forced with a large simulation time step. Using this oper-
+         ation implies that the resulting simulation is not conserving mass.
+         Both the stream power law and river carrying capacity models will use the
+         gaussian filter operator if you set this filter element within your input
+         file.  -->
+    <filter>
+        <!-- Time step used to perform the gaussian filter smoothing. In cases
+              where the transport capacity model is used the time step is auto-
+              matically reset to the maxdt parameter. -->
+        <gtime>100.0</gtime>
+        <!-- Erosion smoothing standard deviation for Gaussian kernel. -->
+        <esmooth>0.0001</esmooth>
+        <!-- Deposition smoothing standard deviation for Gaussian kernel. -->
+        <dsmooth>8.</dsmooth>
+    </filter>
+    
     <!-- Output folder path -->
     <outfolder>output</outfolder>
+    
 </badlands>
