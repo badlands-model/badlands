@@ -416,7 +416,7 @@ class Model(object):
         self.flow.compute_parameters()
 
         # Write HDF5 files
-        visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh. node_coords[:,:2],
+        visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh.node_coords[:,:2],
                                 self.elevation[self.allIDs], self.flow.discharge[self.allIDs],
                                 self.cumdiff[self.allIDs], outCells, self._rank)
         visualiseFlow.write_hdf5(self.input.outDir, self.input.fh5file, step, self.FVmesh.node_coords[flowIDs, :2],

@@ -16,6 +16,13 @@
 
     <!-- Simulation time structure -->
     <time>
+        <!-- Restart structure -->
+        <restart>
+          <!-- Model output folder name to restart the simulation from -->
+          <rfolder>output_01</rfolder>
+          <!-- Model output file step number to restart the model from -->
+          <rstep>3</rstep>
+        </restart>
         <!-- Simulation start time [a] -->
         <start>0.</start>
         <!-- Simulation end time [a] -->
