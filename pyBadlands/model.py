@@ -31,6 +31,7 @@ class Model(object):
 
         # only the first node should create a unique output dir
         self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=(self._rank == 0))
+        self.tNow = self.input.tStart
 
         # sync the chosen output dir to all nodes
         self.input.outDir = self._comm.bcast(self.input.outDir, root=0)
@@ -120,21 +121,35 @@ class Model(object):
         inIDs = np.where(FVmesh.partIDs[recGrid.boundsPt:] == self._rank)[0]
         inIDs += recGrid.boundsPt
 
+
         local_elev = np.zeros(totPts)
         local_elev.fill(-1.e6)
-        local_elev[inIDs] = elevationTIN.getElevation(recGrid.regX, recGrid.regY,
-                                                      recGrid.regZ, FVmesh.node_coords[inIDs, :2])
-        self._comm.Allreduce(mpi.IN_PLACE, local_elev, op=mpi.MAX)
+
+        if self.input.restart:
+            local_cum = np.zeros(totPts)
+            local_cum.fill(-1.e6)
+            local_elev[inIDs],local_cum[inIDs] = recGrid.load_hdf5(self.input.rfolder,self.input.rstep,
+                                                                        FVmesh.node_coords[inIDs, :2])
+            self._comm.Allreduce(mpi.IN_PLACE, local_elev, op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE, local_cum, op=mpi.MAX)
+            self.cumdiff = local_cum
+            self.cumdiff[:recGrid.boundsPt] = 0.
+
+        else:
+
+            local_elev[inIDs] = elevationTIN.getElevation(recGrid.regX, recGrid.regY,
+                                                          recGrid.regZ, FVmesh.node_coords[inIDs, :2])
+            self._comm.Allreduce(mpi.IN_PLACE, local_elev, op=mpi.MAX)
+
+            self.cumdiff = np.zeros(totPts)
 
         elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours,
                                                          FVmesh.edge_length, recGrid.boundsPt,
                                                          btype=self.input.btype)
-
         # set default of no rain
         self.rain = np.zeros(totPts, dtype=float)
 
         # Define variables
-        self.cumdiff = np.zeros(totPts)
         self.hillslope = diffLinear()
         self.hillslope.CDaerial = self.input.CDa
         self.hillslope.CDmarine = self.input.CDm

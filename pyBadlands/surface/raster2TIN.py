@@ -11,6 +11,8 @@ This module encapsulates functions related to the creation of triangular irregul
 from raster type digital elevation model (DEM).
 """
 import os
+import glob
+import h5py
 import numpy
 import errno
 import pandas
@@ -19,6 +21,8 @@ import warnings
 import triangle
 from uuid import uuid4
 from shutil import rmtree
+from scipy import interpolate
+from scipy.spatial import cKDTree
 
 class raster2TIN:
     """
@@ -233,3 +237,66 @@ class raster2TIN:
         self.bmask[:self.boundsPt] = 1
 
         return
+
+    def load_hdf5(self, restartFolder, timestep, tXY):
+        """
+        Read the HDF5 file for a given time step.
+
+        Parameters
+        ----------
+        variable : restartFolder
+            Restart folder name.
+
+        variable : timestep
+            Time step to load.
+
+        variable : tXY
+            TIN grid local coordinates.
+
+        Return
+        ----------
+        variable: elev
+            Numpy array containing the updated elevation from the restart model.
+
+        variable: cum
+            Numpy array containing the updated erosion/deposition values from the restart model.
+        """
+
+        if os.path.exists(restartFolder):
+            folder = restartFolder+'/h5/'
+            fileCPU = 'tin.time%s.p*.hdf5'%timestep
+            restartncpus = len(glob.glob1(folder,fileCPU))
+            if restartncpus == 0:
+                raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
+        else:
+            raise ValueError('The restart folder is missing or the given path is incorrect.')
+
+
+        for i in range(0, restartncpus):
+            df = h5py.File('%s/h5/tin.time%s.p%s.hdf5'%(restartFolder, timestep, i), 'r')
+            coords = numpy.array((df['/coords']))
+            cumdiff = numpy.array((df['/cumdiff']))
+            if i == 0:
+                x, y, z = numpy.hsplit(coords, 3)
+                c = cumdiff
+            else:
+                c = numpy.append(c, cumdiff)
+                x = numpy.append(x, coords[:,0])
+                y = numpy.append(y, coords[:,1])
+                z = numpy.append(z, coords[:,2])
+
+        XY = numpy.column_stack((x,y))
+        tree = cKDTree(XY)
+        distances, indices = tree.query(tXY, k=3)
+
+        z_vals = z[indices][:,:,0]
+        elev = numpy.average(z_vals,weights=(1./distances), axis=1)
+        c_vals = c[indices][:,:,0]
+        cum = numpy.average(c_vals,weights=(1./distances), axis=1)
+
+        onIDs = numpy.where(distances[:,0] == 0)[0]
+        if len(onIDs) > 0:
+            elev[onIDs] = z[indices[onIDs,0]]
+            cum[onIDs] = c[indices[onIDs,0]]
+
+        return elev, cum

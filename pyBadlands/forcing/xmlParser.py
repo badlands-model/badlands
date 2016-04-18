@@ -141,24 +141,24 @@ class xmlParser:
         time = None
         time = root.find('time')
         if time is not None:
-
             element = None
             element = time.find('restart')
             if element is not None:
                 self.restart = True
             if self.restart:
-                element = None
-                element = time.find('rfolder')
-                if element is not None:
-                    self.rfolder = element.text
-                else:
-                    raise ValueError('Error the restart folder name needs to be defined for the restart function to work')
-                element = None
-                element = time.find('rstep')
-                if element is not None:
-                    self.rstep = int(element.text)
-                else:
-                    raise ValueError('Error the restart step number needs to be defined for the restart function to work')
+                for rst in time.iter('restart'):
+                    element = None
+                    element = rst.find('rfolder')
+                    if element is not None:
+                        self.rfolder = element.text
+                    else:
+                        raise ValueError('Error the restart folder name needs to be defined for the restart function to work')
+                    element = None
+                    element = rst.find('rstep')
+                    if element is not None:
+                        self.rstep = int(element.text)
+                    else:
+                        raise ValueError('Error the restart step number needs to be defined for the restart function to work')
             element = None
             element = time.find('start')
             if element is not None:
