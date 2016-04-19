@@ -93,6 +93,17 @@ class xmlParser:
         self.fxmffile = 'xmf/flow.time'
         self.fxdmffile = 'flow.series.xdmf'
 
+        self.flexure = False
+        self.ftime = None
+        self.fnx = None
+        self.fny = None
+        self.dmantle = None
+        self.dsediment = None
+        self.youndMod = None
+        self.elasticH = None
+        self.elasticGrid = None
+        self.flexbounds = []
+
         self._get_XmL_Data()
 
         return
@@ -542,6 +553,87 @@ class xmlParser:
         else:
             self.CDa = 0.
             self.CDm = 0.
+
+        # Flexural isostasy parameters
+        flex = None
+        flex = root.find('flexure')
+        if flex is not None:
+            self.flexure = True
+            element = None
+            element = flex.find('ftime')
+            if element is not None:
+                self.ftime = float(element.text)
+            else:
+                self.fnx = 0
+            self.ftime = min(self.ftime,self.tDisplay)
+            element = None
+            element = flex.find('fnx')
+            if element is not None:
+                self.fnx = int(element.text)
+            else:
+                self.fnx = 0
+            element = None
+            element = flex.find('fny')
+            if element is not None:
+                self.fny = int(element.text)
+            else:
+                self.fny = 0
+            element = None
+            element = flex.find('dmantle')
+            if element is not None:
+                self.dmantle = float(element.text)
+            else:
+                self.dmantle = 3300.
+            element = None
+            element = flex.find('dsediment')
+            if element is not None:
+                self.dsediment = float(element.text)
+            else:
+                self.dsediment = 2500.
+            element = None
+            element = flex.find('youngMod')
+            if element is not None:
+                self.youngMod = float(element.text)
+            else:
+                self.youngMod = 65E9
+            element = None
+            element = flex.find('elasticH')
+            if element is not None:
+                self.elasticH = float(element.text)
+            else:
+                self.elasticH = None
+            element = None
+            element = flex.find('elasticGrid')
+            if element is not None:
+                self.elasticGrid = element.text
+                if not os.path.isfile(self.elasticGrid):
+                    raise ValueError('Elastic grid file is missing or the given path is incorrect.')
+            else:
+                self.elasticGrid = None
+            element = None
+            element = flex.find('boundary_W')
+            if element is not None:
+                self.flexbounds.append(element.text)
+            else:
+                raise ValueError('West boundary condition for flexure is not defined')
+            element = None
+            element = flex.find('boundary_E')
+            if element is not None:
+                self.flexbounds.append(element.text)
+            else:
+                raise ValueError('East boundary condition for flexure is not defined')
+            element = None
+            element = flex.find('boundary_S')
+            if element is not None:
+                self.flexbounds.append(element.text)
+            else:
+                raise ValueError('South boundary condition for flexure is not defined')
+            element = None
+            element = flex.find('boundary_N')
+            if element is not None:
+                self.flexbounds.append(element.text)
+            else:
+                raise ValueError('North boundary condition for flexure is not defined')
 
         # Extract Gaussian Filter structure parameters
         filter = None

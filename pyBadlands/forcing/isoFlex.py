@@ -14,7 +14,7 @@ thickness evolution computed over the TIN.
 import os
 import numpy
 import gflex
-import mpi4py.MPI as mpi
+import pandas
 from scipy import interpolate
 from scipy.spatial import cKDTree
 from scipy.interpolate import RegularGridInterpolator
@@ -106,12 +106,15 @@ class isoFlex:
         # Sea Water Density
         self.rho_w = 1029.0
         # Basement depth
-        self.basedepth = 5000.
+        self.basedepth = 50000.
         # Elastic thickness [m]
-        if numpy.isscalar(elasticH):
-            self.flex.Te = elasticH * np.ones((self.nx, self.ny))
+        if isinstance(elasticH, basestring):
+            TeMap = pandas.read_csv(elasticH, sep=r'\s+', engine='c', header=None,
+                na_filter=False, dtype=numpy.float, low_memory=False)
+            self.flex.Te = numpy.reshape(TeMap.values, (len(self.nx), len(self.ny)), order='F')
         else:
-            self.flex.Te = elasticH
+            self.flex.Te = elasticH * np.ones((self.nx, self.ny))
+
         # Surface load stresses
         self.flex.qs = numpy.zeros((self.nx, self.ny), dtype=float)
 

@@ -169,6 +169,8 @@
          the direct solver of the 2D finite difference method with the van Wees and Cloetingh
          plate solution. -->
     <flexure>
+        <!-- Time step used to compute the isostatic flexure. -->
+        <ftime>10000.0</ftime>
         <!-- Definition of the flexural grid:
              It is possible to setup a flexural grid at a resolution higher than the one used
              for the TIN to increase computational speed. In this case you need to define the
@@ -181,9 +183,9 @@
         <!-- Mantle density [km/m3] -->
         <dmantle>3300</dmantle>
         <!-- Sediment density [km/m3] -->
-        <dmantle>2500</dmantle>
+        <dsediment>2500</dsediment>
         <!-- Young's Modulus [Pa] -->
-        <dmantle>65E9</dmantle>
+        <youngMod>65E9</youngMod>
         <!-- The lithospheric elastic thickness (Te) can be expressed as a scalar if you assume
              a uniform thickness for the model area in this case the value is given in the next
              parameter [m] - (optional) -->
@@ -208,9 +210,11 @@
                         North and South and/or both East and West. This causes, for
                         example, the edge of the eastern and western limits of the domain
                         to act like they are next to each other in an infinite loop.
-             The boundary are defined in the following order: W-E and S-N -->
-        <boundary_WE>['0Displacement0Slope','0Displacement0Slope']</boundary_WE>
-        <boundary_SN>['0Displacement0Slope','0Displacement0Slope']</boundary_SN>
+             The boundary are defined for each edges W, E, S and N. -->
+        <boundary_W>['0Displacement0Slope']</boundary_W>
+        <boundary_E>['0Displacement0Slope']</boundary_E>
+        <boundary_S>['0Displacement0Slope']</boundary_S>
+        <boundary_N>['0Displacement0Slope']</boundary_N>
     </flexure>
 
     <!-- Filter for erosion/deposition :
