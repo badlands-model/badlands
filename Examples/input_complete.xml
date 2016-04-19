@@ -163,7 +163,6 @@
         <cmarine>0.005</cmarine>
     </creep>
 
-
     <!-- Flexural isostasy parameters:
          Parameterisation of the flexural isostasy using the gFlex model from Wickert 2015.
          The current wrapper limits the functionnality of the gFlex algorithm and only uses
