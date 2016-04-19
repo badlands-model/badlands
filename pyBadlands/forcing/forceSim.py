@@ -414,8 +414,8 @@ class forceSim:
             if len(onIDs) > 0:
                 raise ValueError('Problem: IDs after merging is on previous vertex position.')
 
-            z_vals = elev[indices]
-            cum_vals = cum[indices]
+            z_vals = elev[indices][:,:,0]
+            cum_vals = cum[indices][:,:,0]
             z_avg = numpy.average(z_vals, weights=(1./distances**2),axis=1)
             cum_avg = numpy.average(cum_vals, weights=(1./distances**2),axis=1)
 
@@ -436,8 +436,8 @@ class forceSim:
         if len(newTIN['vertices'][:,0]) > len(newXY[:,0]):
             addPts = newTIN['vertices'][len(newXY[:,0]):,:2]
             dist, ids = tree.query(addPts, k=3)
-            zvals = elev[ids]
-            cumvals = cum[ids]
+            zvals = elev[ids][:,:,0]
+            cumvals = cum[ids][:,:,0]
             zavg = numpy.average(zvals, weights=(1./dist**2),axis=1)
             cumavg = numpy.average(cumvals, weights=(1./dist**2),axis=1)
             newelev = numpy.concatenate((newelev, zavg), axis=0)

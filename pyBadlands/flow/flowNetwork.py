@@ -402,9 +402,9 @@ class flowNetwork:
         tree = cKDTree(self.xycoords[:,:2])
         distances, indices = tree.query(self.xyi, k=3)
 
-        zd_vals = depZ[indices]
+        zd_vals = depZ[indices][:,:,0]
         zdi = numpy.average(zd_vals,weights=(1./distances), axis=1)
-        ze_vals = eroZ[indices]
+        ze_vals = eroZ[indices][:,:,0]
         zei = numpy.average(ze_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]
