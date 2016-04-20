@@ -29,8 +29,31 @@ class isoFlex:
         - Wickert, A. D.: Open-source modular solutions for flexural isostasy:
             gFlex v1.0, Geosci. Model Dev. Discuss., 8, 4245-4292, 2015
     """
-    def __init__(self, nx, ny, youngMod, mantleDensity, sedimentDensity,
-                    elasticT, Boundaries, xyTIN, Area):
+    def __init__(self):
+        """
+        Initialization.
+        """
+        self.nx = 0
+        self.ny = 0
+        self.xyTIN = None
+        self.xgrid = None
+        self.ygrid = None
+        self.xi = None
+        self.yi = None
+        self.xyi = None
+        self.flex = None
+        self.ball = 0.
+        self.rho_s = 2500.
+        self.rho_w = 1029.0
+        self.previous_flex = None
+        self.tree = None
+        self.Acell = None
+        self.Te = None
+
+        return
+
+    def buildGrid(self, nx, ny, youngMod, mantleDensity, sedimentDensity,
+                    elasticT, Boundaries, xyTIN, Acell):
         """
         gFlex initialisation function.
 
@@ -65,7 +88,6 @@ class isoFlex:
         # Build the flexural grid
         self.nx = nx
         self.ny = ny
-
         self.xyTIN = xyTIN
         xmin, xmax = min(self.xyTIN[:,0]), max(self.xyTIN[:,0])
         ymin, ymax = min(self.xyTIN[:,1]), max(self.xyTIN[:,1])
@@ -84,11 +106,9 @@ class isoFlex:
         self.ball = math.sqrt(0.25*(self.flex.dx*self.flex.dx + self.flex.dy*self.flex.dy))
         tindx = self.xyTIN[:,1] - self.xyTIN[:,0]
 
-        self.searchpts = max(int(self.flex.dx*self.flex.dy/(tindx*tindx)),4)
-
         # Solution method finite difference
         self.flex.Method = 'FD'
-        self.flex.Quiet = True
+        self.flex.Quiet = False
 
         # van Wees and Cloetingh (1994)
         self.flex.PlateSolutionType = 'vWC1994'
@@ -101,7 +121,7 @@ class isoFlex:
         # Infill Material Density
         self.flex.rho_fill = 0.
         # Young's Modulus
-        self.flex.E = YoungMod
+        self.flex.E = youngMod
         # Mantle Density
         self.flex.rho_m = mantleDensity
         # Sediment Density
@@ -112,19 +132,19 @@ class isoFlex:
         if isinstance(elasticT, basestring):
             TeMap = pandas.read_csv(elasticT, sep=r'\s+', engine='c', header=None,
                 na_filter=False, dtype=numpy.float, low_memory=False)
-            self.flex.Te = numpy.reshape(TeMap.values, (len(self.nx), len(self.ny)), order='F')
+            self.Te = numpy.reshape(TeMap.values, (len(self.nx), len(self.ny)), order='F')
         else:
-            self.flex.Te = elasticT * np.ones((self.nx, self.ny))
+            self.Te = elasticT * numpy.ones((self.nx, self.ny))
+        self.flex.Te = self.Te
 
         # Surface load stresses
         self.flex.qs = numpy.zeros((self.nx, self.ny), dtype=float)
 
         # Boundary conditions
-        self.flex.BC_W = str(Boundaries[0])
-        self.flex.BC_E = str(Boundaries[1])
-        self.flex.BC_S = str(Boundaries[2])
-        self.flex.BC_N = str(Boundaries[3])
-        print 'ffdeferg ',self.flex.BC_W
+        self.flex.BC_W = Boundaries[0]
+        self.flex.BC_E = Boundaries[1]
+        self.flex.BC_S = Boundaries[2]
+        self.flex.BC_N = Boundaries[3]
 
         # State of the previous flexural grid used for updating current
         # flexural displacements.
@@ -191,11 +211,11 @@ class isoFlex:
         """
 
         # Average volume of sediment and water on the flexural grid points
-        ballIDs = tree.query_ball_point(self.xyi, self.ball)
+        ballIDs = self.tree.query_ball_point(self.xyi, self.ball)
         sedload = numpy.zeros(len(self.xyi))
         waterload = numpy.zeros(len(self.xyi))
         for i in range(len(self.xyi)):
-            ids = numpy.asarray(ballIDs[i], dtype=np.int)
+            ids = numpy.asarray(ballIDs[i], dtype=numpy.int)
             inIDX = numpy.where(numpy.logical_and(self.xyTIN[ids,0] >= self.xyi[i,0] - 0.5*self.flex.dx,
                                                   self.xyTIN[ids,0] <= self.xyi[i,0] + 0.5*self.flex.dx))[0]
             inIDY = numpy.where(numpy.logical_and(self.xyTIN[ids,1] >= self.xyi[i,1] - 0.5*self.flex.dy,
@@ -207,8 +227,8 @@ class isoFlex:
             waterload[i] = numpy.sum((sea-elev[inIDs[marine]])*self.Acell[inIDs[marine]]) / (len(inIDs) * self.flex.dx * self.flex.dy)
 
         # Compute surface loads
-        qs = self.rho_w * self.flex.g * waterload + self.rho_s * self.flex.g * (self.flex.Te + sedload)
-        self.flex.qs = numpy.reshape(qs,(self.nx, self.ny))
+        self.flex.qs = self.rho_w * self.flex.g * numpy.reshape(waterload,(self.nx, self.ny))
+        self.flex.qs += self.rho_s * self.flex.g * (self.Te + numpy.reshape(sedload,(self.nx, self.ny)) )
 
         # Compute flexural isostasy with gFlex
         self._compute_flexure()

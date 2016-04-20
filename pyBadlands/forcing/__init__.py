@@ -7,9 +7,10 @@
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 """
-   Parsing of Badlands XML input file and definition of forcing 
-   parameters: climate, tectonic, sea level.
+   Parsing of Badlands XML input file and definition of forcing
+   parameters: climate, tectonic, sea level as well as isostatic flexure.
 """
 
 import xmlParser
 import forceSim
+import isoFlex

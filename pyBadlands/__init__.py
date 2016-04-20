@@ -15,10 +15,11 @@ from .surface import FVmethod
 from .surface import raster2TIN
 from .flow import visualiseFlow
 from .hillslope import diffLinear
-from .surface import elevationTIN 
-from .surface import partitionTIN 
-from .surface import visualiseTIN 
-from .surface import visSurf 
-from .forcing import xmlParser 
-from .forcing import forceSim 
+from .surface import elevationTIN
+from .surface import partitionTIN
+from .surface import visualiseTIN
+from .surface import visSurf
+from .forcing import xmlParser
+from .forcing import forceSim
+from .forcing import isoFlex 
 from .libUtils import *

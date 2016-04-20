@@ -178,7 +178,7 @@ class Model(object):
         self.flow.depo = self.input.depo
 
         if self._rank == 0 and verbose:
-        print " - interpolate elevation on grid ", time.clock() - walltime
+            print " - interpolate elevation on grid ", time.clock() - walltime
 
         # Flexural isostasy initialisation
         if self.input.flexure:
@@ -192,17 +192,20 @@ class Model(object):
             if self.input.elasticH is None:
                 elasticT = str(self.input.elasticGrid)
             else:
-                elasticT = self.input.elastic
+                elasticT = self.input.elasticH
 
-            self.flex = isoFlex.isoFlex(nx, ny, self.input.youngMod, self.input.mantleDensity,
-                    self.input.sedimentDensity, elasticT, FVmesh.node_coords[recGrid.boundsPt:,:2],
+            self.flex = isoFlex.isoFlex()
+            self.flex.buildGrid(nx, ny, self.input.youngMod, self.input.dmantle,
+                    self.input.dsediment, elasticT, self.input.flexbounds, FVmesh.node_coords[recGrid.boundsPt:,:2],
                     FVmesh.control_volumes[recGrid.boundsPt:] )
             self.tinFlex = np.zeros(totPts, dtype=float)
-            self.force.getSea(self.tNow)
-            self.tinFlex[recGrid.boundsPt:] = self.flex.get_flexure(elevation, self.cumdiff, self.force.sealevel,
+            force.getSea(self.tNow)
+
+            self.tinFlex[recGrid.boundsPt:] = self.flex.get_flexure(elevation, self.cumdiff, force.sealevel,
                                 initFlex=True)
             self.tinFlex = force.disp_border(self.tinFlex, FVmesh.neighbours, FVmesh.edge_length, recGrid.boundsPt)
             self.cumflex += self.tinFlex
+            print " - flexural isostasy ", time.clock() - walltime
 
             if self._rank == 0 and verbose:
                 print " - flexural isostasy ", time.clock() - walltime
@@ -505,7 +508,7 @@ class Model(object):
             if self.input.flexure:
                 self.force.next_flexure = self.input.tStart + self.input.ftime
             else:
-                self.force.next_flexure = self.exitTime + self.input.ftime
+                self.force.next_flexure = self.exitTime + self.input.tDisplay
             self.simStarted = True
 
         last_time = time.clock()

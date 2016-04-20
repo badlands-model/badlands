@@ -211,10 +211,10 @@
                         example, the edge of the eastern and western limits of the domain
                         to act like they are next to each other in an infinite loop.
              The boundary are defined for each edges W, E, S and N. -->
-        <boundary_W>['0Displacement0Slope']</boundary_W>
-        <boundary_E>['0Displacement0Slope']</boundary_E>
-        <boundary_S>['0Displacement0Slope']</boundary_S>
-        <boundary_N>['0Displacement0Slope']</boundary_N>
+        <boundary_W>'0Displacement0Slope'</boundary_W>
+        <boundary_E>'0Displacement0Slope'</boundary_E>
+        <boundary_S>'0Displacement0Slope'</boundary_S>
+        <boundary_N>'0Displacement0Slope'</boundary_N>
     </flexure>
 
     <!-- Filter for erosion/deposition :
