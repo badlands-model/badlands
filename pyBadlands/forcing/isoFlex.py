@@ -12,6 +12,7 @@ functions used to compute flexural isostasy response based on Badlands cumulativ
 thickness evolution computed over the TIN.
 """
 import os
+import math
 import numpy
 import gflex
 import pandas
@@ -29,7 +30,7 @@ class isoFlex:
             gFlex v1.0, Geosci. Model Dev. Discuss., 8, 4245-4292, 2015
     """
     def __init__(self, nx, ny, youngMod, mantleDensity, sedimentDensity,
-                    elasticH, Boundaries, xyTIN, cumflex):
+                    elasticT, Boundaries, xyTIN, Area):
         """
         gFlex initialisation function.
 
@@ -47,7 +48,7 @@ class isoFlex:
         variable : sedimentDensity
             Sediment density
 
-        variable : elasticH
+        variable : elasticT
             The elastic thickness. Can be scalar or an array
 
         variable : Boundaries
@@ -55,8 +56,11 @@ class isoFlex:
             Choose from '0Slope0Shear', 'Dirichlet0', '0Displacement0Slope',
                         '0Moment0Shear', 'Periodic', 'Mirror'
 
-        variable : cumflex
-            Cumulative flexural displacement.
+        variable : xyTIN
+            Numpy float-type array containing the coordinates for each nodes in the TIN (in m2)
+
+        variable : Acell
+            Numpy float-type array containing the voronoi area for each nodes (in m2)
         """
         # Build the flexural grid
         self.nx = nx
@@ -65,7 +69,6 @@ class isoFlex:
         self.xyTIN = xyTIN
         xmin, xmax = min(self.xyTIN[:,0]), max(self.xyTIN[:,0])
         ymin, ymax = min(self.xyTIN[:,1]), max(self.xyTIN[:,1])
-        np.linspace(2.0, 3.0, num=5)
         self.xgrid = numpy.linspace(xmin,xmax,num=self.nx)
         self.ygrid = numpy.linspace(ymin,ymax,num=self.ny)
         self.xi, self.yi = numpy.meshgrid(self.xgrid, self.ygrid)
@@ -78,7 +81,7 @@ class isoFlex:
         # Set-up the grid variable
         self.flex.dx = self.xgrid[1]-self.xgrid[0]
         self.flex.dy = self.ygrid[1]-self.ygrid[0]
-
+        self.ball = math.sqrt(0.25*(self.flex.dx*self.flex.dx + self.flex.dy*self.flex.dy))
         tindx = self.xyTIN[:,1] - self.xyTIN[:,0]
 
         self.searchpts = max(int(self.flex.dx*self.flex.dy/(tindx*tindx)),4)
@@ -105,31 +108,47 @@ class isoFlex:
         self.rho_s = sedimentDensity
         # Sea Water Density
         self.rho_w = 1029.0
-        # Basement depth
-        self.basedepth = 50000.
         # Elastic thickness [m]
-        if isinstance(elasticH, basestring):
-            TeMap = pandas.read_csv(elasticH, sep=r'\s+', engine='c', header=None,
+        if isinstance(elasticT, basestring):
+            TeMap = pandas.read_csv(elasticT, sep=r'\s+', engine='c', header=None,
                 na_filter=False, dtype=numpy.float, low_memory=False)
             self.flex.Te = numpy.reshape(TeMap.values, (len(self.nx), len(self.ny)), order='F')
         else:
-            self.flex.Te = elasticH * np.ones((self.nx, self.ny))
+            self.flex.Te = elasticT * np.ones((self.nx, self.ny))
 
         # Surface load stresses
         self.flex.qs = numpy.zeros((self.nx, self.ny), dtype=float)
 
-        # Boundary conditions can be:
+        # Boundary conditions
         self.flex.BC_W = str(Boundaries[0])
         self.flex.BC_E = str(Boundaries[1])
         self.flex.BC_S = str(Boundaries[2])
         self.flex.BC_N = str(Boundaries[3])
+        print 'ffdeferg ',self.flex.BC_W
 
         # State of the previous flexural grid used for updating current
         # flexural displacements.
         self.previous_flex = numpy.zeros((self.nx, self.ny), dtype=float)
 
         self.tree = cKDTree(self.xyTIN)
-        self.cumflex = cumflex
+        self.Acell = Acell
+
+        return
+
+    def update_flexure_parameters(self, xyTIN, Acell):
+        """
+        Update TIN variables after 3D displacements.
+
+        variable : xyTIN
+            Numpy float-type array containing the coordinates for each nodes in the TIN (in m2)
+
+        variable : Acell
+            Numpy float-type array containing the voronoi area for each nodes (in m2)
+        """
+
+        self.xyTIN = xyTIN
+        self.tree = cKDTree(self.xyTIN)
+        self.Acell = Acell
 
         return
 
@@ -171,25 +190,24 @@ class isoFlex:
             Numpy array containing flexural deflection values for the TIN.
         """
 
-        # Inverse distance weighting interpolation to estimate elevation
-        # and erosion/deposition values on the flexural grid
-        distances, indices = self.tree.query(self.xyi, k=self.searchpts)
-        elev_val = elev[indices][:,:,0]
-        elevFlex = numpy.average(elev_val,weights=(1./distances), axis=1)
-        cum_val = cumdiff[indices][:,:,0]
-        sedload = numpy.average(cum_val,weights=(1./distances), axis=1)
-        onIDs = numpy.where(distances[:,0] == 0)[0]
-        if len(onIDs) > 0:
-            elevFlex[onIDs] = elev[indices[onIDs,0]]
-            sedload[onIDs] = cumdiff[indices[onIDs,0]]
+        # Average volume of sediment and water on the flexural grid points
+        ballIDs = tree.query_ball_point(self.xyi, self.ball)
+        sedload = numpy.zeros(len(self.xyi))
+        waterload = numpy.zeros(len(self.xyi))
+        for i in range(len(self.xyi)):
+            ids = numpy.asarray(ballIDs[i], dtype=np.int)
+            inIDX = numpy.where(numpy.logical_and(self.xyTIN[ids,0] >= self.xyi[i,0] - 0.5*self.flex.dx,
+                                                  self.xyTIN[ids,0] <= self.xyi[i,0] + 0.5*self.flex.dx))[0]
+            inIDY = numpy.where(numpy.logical_and(self.xyTIN[ids,1] >= self.xyi[i,1] - 0.5*self.flex.dy,
+                                                  self.xyTIN[ids,1] <= self.xyi[i,1] + 0.5*self.flex.dy))[0]
+            inIDs = numpy.intersect1d(ids[inIDX], ids[inIDY])
+            sedload[i] = numpy.sum(cumdiff[inIDs]*self.Acell[inIDs]) / (len(inIDs) * self.flex.dx * self.flex.dy)
+
+            marine = numpy.where(elev[inIDs] < sea)[0]
+            waterload[i] = numpy.sum((sea-elev[inIDs[marine]])*self.Acell[inIDs[marine]]) / (len(inIDs) * self.flex.dx * self.flex.dy)
 
         # Compute surface loads
-        # Get surface load associated with sediment thickness
-        qs = self.rho_s * self.flex.g * (self.basedepth + sedload )
-        # Add surface load associated to sea water load
-        marine = numpy.where(elevFlex < sea)[0]
-        qs[marine] += self.rho_w * self.flex.g * (sea - elevFlex[marine])
-        # Combine the 2
+        qs = self.rho_w * self.flex.g * waterload + self.rho_s * self.flex.g * (self.flex.Te + sedload)
         self.flex.qs = numpy.reshape(qs,(self.nx, self.ny))
 
         # Compute flexural isostasy with gFlex
@@ -205,6 +223,5 @@ class isoFlex:
             self.previous_flex = self.flex.w
             rgi_flexure = RegularGridInterpolator((self.xgrid, self.ygrid), flex_diff)
             flexureTIN = rgi_flexure((self.xyTIN[:,0],self.xyTIN[:,1]))
-            self.cumflex += flexureTIN
 
         return flexureTIN

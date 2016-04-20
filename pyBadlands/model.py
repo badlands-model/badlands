@@ -3,8 +3,8 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from pyBadlands import (diffLinear, elevationTIN, flowNetwork, forceSim,
-                        FVmethod, partitionTIN, raster2TIN, visualiseFlow,
-                        visualiseTIN, xmlParser)
+                        FVmethod, isoFlex, partitionTIN, raster2TIN,
+                        visualiseFlow, visualiseTIN, xmlParser)
 
 class Model(object):
     """State object for the pyBadlands model."""
@@ -121,32 +121,40 @@ class Model(object):
         inIDs = np.where(FVmesh.partIDs[recGrid.boundsPt:] == self._rank)[0]
         inIDs += recGrid.boundsPt
 
-
         local_elev = np.zeros(totPts)
         local_elev.fill(-1.e6)
 
         if self.input.restart:
             local_cum = np.zeros(totPts)
             local_cum.fill(-1.e6)
-            local_elev[inIDs],local_cum[inIDs] = recGrid.load_hdf5(self.input.rfolder,self.input.rstep,
+            if self.input.flexure:
+                local_cumflex = np.zeros(totPts)
+                local_cumflex.fill(-1.e6)
+                local_elev[inIDs],local_cum[inIDs],local_cumflex[inIDs] = recGrid.load_hdf5_flex(self.input.rfolder,
+                                                                        self.input.rstep,FVmesh.node_coords[inIDs, :2])
+            else:
+                local_elev[inIDs],local_cum[inIDs] = recGrid.load_hdf5(self.input.rfolder,self.input.rstep,
                                                                         FVmesh.node_coords[inIDs, :2])
             self._comm.Allreduce(mpi.IN_PLACE, local_elev, op=mpi.MAX)
             self._comm.Allreduce(mpi.IN_PLACE, local_cum, op=mpi.MAX)
             self.cumdiff = local_cum
             self.cumdiff[:recGrid.boundsPt] = 0.
-
+            if self.input.flexure:
+                self._comm.Allreduce(mpi.IN_PLACE, local_cumflex, op=mpi.MAX)
+                self.cumflex = local_cumflex
+                self.cumflex[:recGrid.boundsPt] = 0.
         else:
-
             local_elev[inIDs] = elevationTIN.getElevation(recGrid.regX, recGrid.regY,
                                                           recGrid.regZ, FVmesh.node_coords[inIDs, :2])
             self._comm.Allreduce(mpi.IN_PLACE, local_elev, op=mpi.MAX)
-
             self.cumdiff = np.zeros(totPts)
+            if self.input.flexure:
+                self.cumflex = np.zeros(totPts)
 
         elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours,
                                                          FVmesh.edge_length, recGrid.boundsPt,
                                                          btype=self.input.btype)
-        # set default of no rain
+        # Set default to no rain
         self.rain = np.zeros(totPts, dtype=float)
 
         # Define variables
@@ -170,9 +178,36 @@ class Model(object):
         self.flow.depo = self.input.depo
 
         if self._rank == 0 and verbose:
-            print " - interpolate elevation on grid ", time.clock() - walltime
+        print " - interpolate elevation on grid ", time.clock() - walltime
 
-        # save state for subsequent calls
+        # Flexural isostasy initialisation
+        if self.input.flexure:
+            walltime = time.clock()
+            nx = self.input.fnx
+            ny = self.input.fny
+            if nx == 0:
+                nx = recGrid.nx
+            if ny == 0:
+                ny = recGrid.ny
+            if self.input.elasticH is None:
+                elasticT = str(self.input.elasticGrid)
+            else:
+                elasticT = self.input.elastic
+
+            self.flex = isoFlex.isoFlex(nx, ny, self.input.youngMod, self.input.mantleDensity,
+                    self.input.sedimentDensity, elasticT, FVmesh.node_coords[recGrid.boundsPt:,:2],
+                    FVmesh.control_volumes[recGrid.boundsPt:] )
+            self.tinFlex = np.zeros(totPts, dtype=float)
+            self.force.getSea(self.tNow)
+            self.tinFlex[recGrid.boundsPt:] = self.flex.get_flexure(elevation, self.cumdiff, self.force.sealevel,
+                                initFlex=True)
+            self.tinFlex = force.disp_border(self.tinFlex, FVmesh.neighbours, FVmesh.edge_length, recGrid.boundsPt)
+            self.cumflex += self.tinFlex
+
+            if self._rank == 0 and verbose:
+                print " - flexural isostasy ", time.clock() - walltime
+
+        # Save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
         self.recGrid = recGrid
         self.elevation = elevation
@@ -207,8 +242,6 @@ class Model(object):
 
         if self._rank == 0 and verbose:
             print " - partition TIN amongst processors ", time.clock() - walltime
-
-        # Build local Finite Volume discretisation
 
         # Define overlapping partitions
         allIDs, localTIN = partitionTIN.overlap(self.recGrid.tinMesh['vertices'][:, 0],
@@ -247,12 +280,18 @@ class Model(object):
         inIDs = np.where(FVmesh.partIDs[self.recGrid.boundsPt:] == self._rank)[0]
         inIDs += self.recGrid.boundsPt
 
-        # set default of no rain
+        # Set default with no rain
         self.rain = np.zeros(totPts, dtype=float)
         self.rain[inIDs] = self.force.load_Rain_map(self.tNow,
                                         FVmesh.node_coords[inIDs, :2])
 
-        # save state for subsequent calls
+        # Update flexural isostasy
+        if self.input.flexure:
+            self.tinFlex = np.zeros(totPts, dtype=float)
+            self.fex.update_flexure_parameters(FVmesh.node_coords[recGrid.boundsPt:,:2],
+                                               FVmesh.control_volumes[recGrid.boundsPt:])
+
+        # Save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
         self.flow.xycoords = FVmesh.node_coords[:, :2]
         self.FVmesh = FVmesh
@@ -261,6 +300,7 @@ class Model(object):
         self.inGIDs = inGIDs
         self.tMesh = tMesh
         self.totPts = totPts
+
 
     def compute_flow(self, verbose=False):
         """
@@ -431,9 +471,14 @@ class Model(object):
         self.flow.compute_parameters()
 
         # Write HDF5 files
-        visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh.node_coords[:,:2],
-                                self.elevation[self.allIDs], self.flow.discharge[self.allIDs],
-                                self.cumdiff[self.allIDs], outCells, self._rank)
+        if self.input.flexure:
+            visualiseTIN.write_hdf5_flexure(self.input.outDir, self.input.th5file, step, self.tMesh.node_coords[:,:2],
+                                    self.elevation[self.allIDs], self.flow.discharge[self.allIDs], self.cumdiff[self.allIDs],
+                                    self.cumflex[self.allIDs], outCells, self._rank)
+        else:
+            visualiseTIN.write_hdf5(self.input.outDir, self.input.th5file, step, self.tMesh.node_coords[:,:2],
+                                    self.elevation[self.allIDs], self.flow.discharge[self.allIDs],
+                                    self.cumdiff[self.allIDs], outCells, self._rank)
         visualiseFlow.write_hdf5(self.input.outDir, self.input.fh5file, step, self.FVmesh.node_coords[flowIDs, :2],
                                  self.elevation[flowIDs], self.flow.discharge[flowIDs], self.flow.chi[flowIDs],
                                  self.flow.basinID[flowIDs], polylines, self._rank)
@@ -441,7 +486,7 @@ class Model(object):
         # Combine HDF5 files and write time series
         if self._rank == 0:
             visualiseTIN.write_xmf(self.input.outDir, self.input.txmffile, self.input.txdmffile, step, self.tNow,
-                                   tcells, tnodes, self.input.th5file, self.force.sealevel, self._size)
+                                   tcells, tnodes, self.input.th5file, self.force.sealevel, self._size, self.input.flexure)
             visualiseFlow.write_xmf(self.input.outDir, self.input.fxmffile, self.input.fxdmffile,
                                     step, self.tNow, fline, fnodes, self.input.fh5file, self._size)
             print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, self.tNow)
@@ -452,12 +497,15 @@ class Model(object):
         """
 
         if not self.simStarted:
-            # anything in here will be executed once at the start of time
+            # Anything in here will be executed once at the start of time
             self.force.next_rain = self.force.T_rain[0, 0]
             self.force.next_disp = self.force.T_disp[0, 0]
             self.force.next_display = self.input.tStart
             self.exitTime = self.input.tEnd
-
+            if self.input.flexure:
+                self.force.next_flexure = self.input.tStart + self.input.ftime
+            else:
+                self.force.next_flexure = self.exitTime + self.input.ftime
             self.simStarted = True
 
         last_time = time.clock()
@@ -465,7 +513,7 @@ class Model(object):
         while self.tNow < tEnd:
             diff = time.clock() - last_time
 
-            # at most, display output every 5 seconds
+            # At most, display output every 5 seconds
             if time.clock() - last_output >= 5.0:
                 print 'tNow = %s (step took %0.02f seconds)' % (self.tNow, diff)
                 last_output = time.clock()
@@ -493,14 +541,33 @@ class Model(object):
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
                     updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
                     if updateMesh:
-                        self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours,
+                        self.force.dispZ = self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours,
                                            self.FVmesh.edge_length, self.recGrid.boundsPt)
-                        self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(
-                            self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff)
+                        if self.input.flexure:
+                            self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex = self.force.apply_XY_dispacements_flexure(
+                                self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex)
+                        else:
+                            self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(
+                                self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff)
                         self.rebuildMesh()
 
-            # run the simulation for a bit
+            # Run the simulation for a bit
             self.compute_flow(verbose=False)
+
+            # Isostatic flexure
+            if self.tNow >= self.force.next_flexure:
+                self.force.getSea(self.tNow)
+                # Compute flexural isostasy
+                self.tinFlex[self.recGrid.boundsPt:] = self.flex.get_flexure(self.elevation, self.cumdiff,
+                                                                             self.force.sealevel,initFlex=False)
+                # Get border values
+                self.tinFlex = self.force.disp_border(self.tinFlex, self.FVmesh.neighbours,
+                                                      self.FVmesh.edge_length, self.recGrid.boundsPt)
+                # Update flexural parameters
+                self.elevation += self.tinFlex
+                self.cumflex += self.tinFlex
+                # Update next flexure time
+                self.force.next_flexure += self.input.ftime
 
             if self.tNow >= self.force.next_display:
                 # time to write output

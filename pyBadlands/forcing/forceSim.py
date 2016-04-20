@@ -84,6 +84,7 @@ class forceSim:
         self.time3d = None
 
         self.next_display = None
+        self.next_flexure = None
         self.time_display = Tdisplay
 
         if self.seafile != None:
@@ -447,3 +448,128 @@ class forceSim:
             raise ValueError('Problem building the TIN after 3D displacements.')
 
         return newTIN, newelev, newcum
+
+    def apply_XY_dispacements_flexure(self, area, fixIDs, telev, tcum, tflex):
+        """
+        Apply horizontal displacements and check if any points need to be merged.
+
+        Parameters
+        ----------
+        float : area
+            Averaged area of the irregular grid delaunay cells.
+
+        integer : fixIDs
+            Number of unstructured vertices which needs to stay fix (edges and borders nodes).
+
+        float : elev
+            Numpy array with elevation of previous TIN nodes.
+
+        float : cum
+            Numpy array with erosion/deposition values from previous TIN nodes.
+
+        float : tflex
+            Numpy array with cumulative flexural values from previous TIN nodes.
+
+        Return
+        ----------
+        variable: tinMesh
+            Delaunay mesh generated after displacements.
+
+        variable: newelev
+            Numpy array containing the updated elevation for the new TIN.
+
+        variable: newcum
+            Numpy array containing the updated erosion/deposition values for the new TIN.
+
+        variable: newcumf
+            Numpy array containing the updated cumulative flexural values for the new TIN.
+        """
+
+        telev += self.dispZ
+
+        tXY = numpy.copy(self.tXY)
+        tXY[fixIDs:,0] += self.dispX[fixIDs:]
+        tXY[fixIDs:,1] += self.dispY[fixIDs:]
+
+        dx = tXY[1,0] - tXY[0,0]
+        minX = min(tXY[:fixIDs,0]) + dx
+        minY = min(tXY[:fixIDs,1]) + dx
+        maxX = max(tXY[:fixIDs,0]) - dx
+        maxY = max(tXY[:fixIDs,1]) - dx
+
+        xID = numpy.where(numpy.logical_or( tXY[fixIDs:,0] <= minX, tXY[fixIDs:,0] >= maxX))[0]
+        yID = numpy.where(numpy.logical_or( tXY[fixIDs:,1] <= minY, tXY[fixIDs:,1] >= maxY))[0]
+        tIDs = numpy.concatenate((xID, yID), axis=0)
+        tID = numpy.unique(tIDs)
+        tID += fixIDs
+        if len(tID) > 0:
+            self.tXY = numpy.delete(self.tXY, tID, 0)
+            elev = numpy.delete(telev, tID, 0)
+            cum = numpy.delete(tcum, tID, 0)
+            cumf = numpy.delete(tflex, tID, 0)
+        else:
+            self.tXY = tXY
+            elev = telev
+            cum = tcum
+            cumf = tflex
+
+        tree = cKDTree(self.tXY)
+        pairs = tree.query_pairs(self.merge3d)
+
+        if len(pairs) > 0:
+            pairIDs = numpy.array(list(pairs))
+            nonfixIDs = numpy.where(numpy.logical_and( pairIDs[:,0] >= fixIDs, pairIDs[:,1] >= fixIDs))[0]
+
+            mXY = numpy.empty(shape=[len(nonfixIDs),2], dtype=float)
+            mXY[:,0] = 0.5*(self.tXY[pairIDs[nonfixIDs,0],0] + self.tXY[pairIDs[nonfixIDs,1],0])
+            mXY[:,1] = 0.5*(self.tXY[pairIDs[nonfixIDs,0],1] + self.tXY[pairIDs[nonfixIDs,1],1])
+
+            mergedIDs = numpy.unique(pairIDs[nonfixIDs,:].flatten())
+
+            distances, indices = tree.query(mXY, k=3)
+
+            onIDs = numpy.where(distances[:,0] == 0)[0]
+            if len(onIDs) > 0:
+                raise ValueError('Problem: IDs after merging is on previous vertex position.')
+
+            z_vals = elev[indices][:,:,0]
+            cum_vals = cum[indices][:,:,0]
+            cumf_vals = cumf[indices][:,:,0]
+            z_avg = numpy.average(z_vals, weights=(1./distances**2),axis=1)
+            cum_avg = numpy.average(cum_vals, weights=(1./distances**2),axis=1)
+            cumf_avg = numpy.average(cumf_vals, weights=(1./distances**2),axis=1)
+
+            newXY = numpy.delete(self.tXY, mergedIDs, 0)
+            newelev = numpy.delete(elev, mergedIDs, 0)
+            newcum = numpy.delete(cum, mergedIDs, 0)
+            newcumf = numpy.delete(cumf, mergedIDs, 0)
+
+            newXY = numpy.concatenate((newXY, mXY), axis=0)
+            newelev = numpy.concatenate((newelev, z_avg), axis=0)
+            newcum = numpy.concatenate((newcum, cum_avg), axis=0)
+            newcumf = numpy.concatenate((newcumf, cumf_avg), axis=0)
+        else:
+            newXY = self.tXY
+            newelev = elev
+            newcum = cum
+            newcumf = cumf
+
+        newTIN = triangle.triangulate( dict(vertices=newXY),'Da'+str(area))
+
+        if len(newTIN['vertices'][:,0]) > len(newXY[:,0]):
+            addPts = newTIN['vertices'][len(newXY[:,0]):,:2]
+            dist, ids = tree.query(addPts, k=3)
+            zvals = elev[ids][:,:,0]
+            cumvals = cum[ids][:,:,0]
+            cumfvals = cumf[ids][:,:,0]
+            zavg = numpy.average(zvals, weights=(1./dist**2),axis=1)
+            cumavg = numpy.average(cumvals, weights=(1./dist**2),axis=1)
+            cumfavg = numpy.average(cumfvals, weights=(1./dist**2),axis=1)
+            newelev = numpy.concatenate((newelev, zavg), axis=0)
+            newcum = numpy.concatenate((newcum, cumavg), axis=0)
+            newcumf = numpy.concatenate((newcumf, cumfavg), axis=0)
+
+        elif len(newTIN['vertices'][:,0]) < len(newXY):
+            raise ValueError('Problem building the TIN after 3D displacements.')
+
+        return newTIN, newelev, newcum, newcumf

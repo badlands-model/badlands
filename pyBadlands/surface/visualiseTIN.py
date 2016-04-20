@@ -130,6 +130,63 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, cumdiff, cell
         f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
 
+def write_hdf5_flexure(folder, h5file, step, coords, elevation, discharge, cumdiff, cumflex, cells, rank):
+    """
+    This function writes for each processor the HDF5 file containing surface information.
+
+    Parameters
+    ----------
+    variable : folder
+        Name of the output folder.
+
+    variable: h5file
+        First part of the hdf5 file name.
+
+    variable: step
+        Output visualisation step.
+
+    variable : coords
+        Numpy float-type array containing X, Y coordinates of the local TIN nodes.
+
+    variable : elevation
+        Numpy float-type array containing Z coordinates of the local TIN nodes.
+
+    variable : discharge
+        Numpy float-type array containing the discharge values of the local TIN.
+
+    variable : cumdiff
+        Numpy float-type array containing the cumulative elevation changes values of the local TIN.
+
+    variable : cumdiff
+        Numpy float-type array containing the cumulative flexural changes values of the local TIN.
+
+    variable: cells
+        Numpy integer-type array filled with the global cell IDs.
+
+    variable : rank
+        ID of the local partition.
+    """
+
+    h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
+    with h5py.File(h5file, "w") as f:
+
+        # Write node coordinates and elevation
+        f.create_dataset('coords',shape=(len(elevation),3), dtype='float32', compression='gzip')
+        f["coords"][:,:2] = coords
+        f["coords"][:,2] = elevation
+
+        f.create_dataset('cells',shape=(len(cells[:,0]),3), dtype='int32', compression='gzip')
+        f["cells"][:,:] = cells
+
+        f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["discharge"][:,0] = discharge
+
+        f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["cumdiff"][:,0] = cumdiff
+
+        f.create_dataset('cumflex',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["cumflex"][:,0] = cumflex
+
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """
     This function writes the XDmF file which is calling the XmF file.
@@ -168,7 +225,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
 
     return
 
-def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size):
+def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size, flexOn):
     """
     This function writes the XmF file which is calling each HFD5 file.
 
@@ -203,6 +260,9 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
 
     variable : size
         Number of partitions.
+
+    variable : flexOn
+        Boolean for flexural isostasy.
     """
 
     xmf_file = folder+'/'+xmffile+str(step)+'.xmf'
@@ -237,6 +297,12 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/cumdiff</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
+
+        if flexOn:
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="Cumflex">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/cumflex</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
 
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Sealevel">\n')
         f.write('          <DataItem ItemType="Function" Function="$0 * 0.00000000001 + %f" Dimensions="%d 1">\n'%(sealevel,nodes[p]))
