@@ -195,20 +195,17 @@ class Model(object):
                 elasticT = self.input.elasticH
 
             self.flex = isoFlex.isoFlex()
-            self.flex.buildGrid(nx, ny, self.input.youngMod, self.input.dmantle,
-                    self.input.dsediment, elasticT, self.input.flexbounds, FVmesh.node_coords[recGrid.boundsPt:,:2],
-                    FVmesh.control_volumes[recGrid.boundsPt:] )
+            self.flex.buildGrid(nx, ny, self.input.youngMod, self.input.dmantle, self.input.dsediment,
+                elasticT, self.input.flexbounds, FVmesh.node_coords[:,:2])
+
             self.tinFlex = np.zeros(totPts, dtype=float)
             force.getSea(self.tNow)
-
-            self.tinFlex[recGrid.boundsPt:] = self.flex.get_flexure(elevation, self.cumdiff, force.sealevel,
-                                initFlex=True)
+            self.tinFlex = self.flex.get_flexure(elevation, self.cumdiff, force.sealevel,
+                                recGrid.boundsPt, initFlex=True)
             self.tinFlex = force.disp_border(self.tinFlex, FVmesh.neighbours, FVmesh.edge_length, recGrid.boundsPt)
             self.cumflex += self.tinFlex
-            print " - flexural isostasy ", time.clock() - walltime
-
-            if self._rank == 0 and verbose:
-                print " - flexural isostasy ", time.clock() - walltime
+            if self._rank == 0:
+                print "   - Compute flexural isostasy ", time.clock() - walltime
 
         # Save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
@@ -291,8 +288,7 @@ class Model(object):
         # Update flexural isostasy
         if self.input.flexure:
             self.tinFlex = np.zeros(totPts, dtype=float)
-            self.fex.update_flexure_parameters(FVmesh.node_coords[recGrid.boundsPt:,:2],
-                                               FVmesh.control_volumes[recGrid.boundsPt:])
+            self.flex.update_flexure_parameters(FVmesh.node_coords[:,:2])
 
         # Save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
@@ -559,10 +555,10 @@ class Model(object):
 
             # Isostatic flexure
             if self.tNow >= self.force.next_flexure:
+                flextime = time.clock()
                 self.force.getSea(self.tNow)
-                # Compute flexural isostasy
-                self.tinFlex[self.recGrid.boundsPt:] = self.flex.get_flexure(self.elevation, self.cumdiff,
-                                                                             self.force.sealevel,initFlex=False)
+                self.tinFlex = self.flex.get_flexure(self.elevation, self.cumdiff,
+                            self.recGrid.boundsPt,self.force.sealevel,initFlex=False)
                 # Get border values
                 self.tinFlex = self.force.disp_border(self.tinFlex, self.FVmesh.neighbours,
                                                       self.FVmesh.edge_length, self.recGrid.boundsPt)
@@ -571,6 +567,8 @@ class Model(object):
                 self.cumflex += self.tinFlex
                 # Update next flexure time
                 self.force.next_flexure += self.input.ftime
+                if self._rank == 0:
+                    print "   - Compute flexural isostasy ", time.clock() - flextime
 
             if self.tNow >= self.force.next_display:
                 # time to write output
@@ -587,10 +585,10 @@ class Model(object):
         print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
         # Isostatic flexure
         if self.input.flexure:
+            flextime = time.clock()
             self.force.getSea(self.tNow)
-            # Compute flexural isostasy
-            self.tinFlex[self.recGrid.boundsPt:] = self.flex.get_flexure(self.elevation, self.cumdiff,
-                                                                         self.force.sealevel,initFlex=False)
+            self.tinFlex = self.flex.get_flexure(self.elevation, self.cumdiff,
+                        self.recGrid.boundsPt,self.force.sealevel,initFlex=False)
             # Get border values
             self.tinFlex = self.force.disp_border(self.tinFlex, self.FVmesh.neighbours,
                                                   self.FVmesh.edge_length, self.recGrid.boundsPt)
@@ -599,6 +597,8 @@ class Model(object):
             self.cumflex += self.tinFlex
             # Update next flexure time
             self.force.next_flexure += self.input.ftime
+            if self._rank == 0:
+                print "   - Compute flexural isostasy ", time.clock() - flextime
         # Output
         self.write_output(outDir=self.input.outDir, step=self.outputStep)
         self.force.next_display += self.input.tDisplay
