@@ -580,11 +580,26 @@ class Model(object):
                 self.outputStep += 1
                 last_output = time.clock()
 
-            tStop = min([self.force.next_display, tEnd, self.force.next_disp, self.force.next_rain])
+            tStop = min([self.force.next_display, self.force.next_flexure, tEnd, self.force.next_disp, self.force.next_rain])
             self.compute_flux(tEnd=tStop, verbose=False)
 
         diff = time.clock() - last_time
         print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
+        # Isostatic flexure
+        if self.input.flexure:
+            self.force.getSea(self.tNow)
+            # Compute flexural isostasy
+            self.tinFlex[self.recGrid.boundsPt:] = self.flex.get_flexure(self.elevation, self.cumdiff,
+                                                                         self.force.sealevel,initFlex=False)
+            # Get border values
+            self.tinFlex = self.force.disp_border(self.tinFlex, self.FVmesh.neighbours,
+                                                  self.FVmesh.edge_length, self.recGrid.boundsPt)
+            # Update flexural parameters
+            self.elevation += self.tinFlex
+            self.cumflex += self.tinFlex
+            # Update next flexure time
+            self.force.next_flexure += self.input.ftime
+        # Output
         self.write_output(outDir=self.input.outDir, step=self.outputStep)
         self.force.next_display += self.input.tDisplay
         self.outputStep += 1

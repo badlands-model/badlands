@@ -108,7 +108,7 @@ class isoFlex:
 
         # Solution method finite difference
         self.flex.Method = 'FD'
-        self.flex.Quiet = False
+        self.flex.Quiet = True
 
         # van Wees and Cloetingh (1994)
         self.flex.PlateSolutionType = 'vWC1994'
@@ -135,7 +135,6 @@ class isoFlex:
             self.Te = numpy.reshape(TeMap.values, (len(self.nx), len(self.ny)), order='F')
         else:
             self.Te = elasticT * numpy.ones((self.nx, self.ny))
-        self.flex.Te = self.Te
 
         # Surface load stresses
         self.flex.qs = numpy.zeros((self.nx, self.ny), dtype=float)
@@ -176,6 +175,8 @@ class isoFlex:
         """
         Use gFlex module to compute flexure from surface load.
         """
+
+        self.flex.Te = self.Te
 
         self.flex.initialize()
 
