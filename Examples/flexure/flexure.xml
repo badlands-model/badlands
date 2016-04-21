@@ -6,12 +6,12 @@
         <!-- Digital elevation model file path -->
         <demfile>data/nodes.csv</demfile>
         <!-- Boundary type: flat, slope or wall -->
-        <boundary>slope</boundary>
+        <boundary>flat</boundary>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
              accordingly.  -->
-        <resfactor>1</resfactor>
+        <resfactor>2</resfactor>
     </grid>
 
     <!-- Simulation time structure -->
@@ -19,13 +19,24 @@
         <!-- Simulation start time [a] -->
         <start>0.</start>
         <!-- Simulation end time [a] -->
-        <end>200000.</end>
+        <end>1000000.</end>
         <!-- Minimum time step [a] -->
-        <mindt>0.5</mindt>
+        <mindt>1.</mindt>
         <!-- Display interval [a] -->
-        <display>1000.</display>
+        <display>20000.</display>
     </time>
-
+    
+    <!-- Sea-level structure -->
+    <sea>
+        <!-- Relative sea-level position [m] -->
+        <position>-120.</position>
+        <!-- Sea-level curve - (optional) -->
+        <!--curve>data/sealvl.csv</curve-->
+        <!-- Limit flow network computation based on
+             water depth [m] -->
+        <limit>50.</limit>
+    </sea>
+    
     <!-- Precipitation structure -->
     <precipitation>
         <!-- Number of precipitation events -->
@@ -35,12 +46,12 @@
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>200000.</rend>
+            <rend>1000000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
             <rval>1.</rval>
         </rain>
     </precipitation>
-
+    
     <!-- Stream power law parameters:
          The stream power law is a simplified form of the usual expression of
          sediment transport by water flow, in which the transport rate is assumed
@@ -53,7 +64,7 @@
         <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
               to defined maximum accumulation thickness in depression area per time
               step. Default value is set to 1. -->
-        <fillmax>2.</fillmax>
+        <fillmax>1.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.
@@ -64,7 +75,7 @@
          <!-- The erodibility coefficient is scale-dependent and its value depend
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
-        <erodibility>8.e-5</erodibility>
+        <erodibility>1.e-6</erodibility>
     </sp_law>
 
     <!-- Linear slope diffusion parameters:
@@ -72,30 +83,12 @@
          law which states that transport rate depends linearly on topographic gradient. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
-        <caerial>5.e-2</caerial>
+        <caerial>1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
-        <cmarine>5.e-2</cmarine>
+        <cmarine>2</cmarine>
     </creep>
 
-    <!-- Filter for erosion/deposition :
-         Gaussian filter used to smooth erosion and deposition thicknesses when
-         the model is forced with a large simulation time step. Using this oper-
-         ation implies that the resulting simulation is not conserving mass.
-         Both the stream power law and river carrying capacity models will use the
-         gaussian filter operator if you set this filter element within your input
-         file.  -->
-    <filter>
-        <!-- Time step used to perform the gaussian filter smoothing. In cases
-              where the transport capacity model is used the time step is auto-
-              matically reset to the maxdt parameter. -->
-        <gtime>100.0</gtime>
-        <!-- Erosion smoothing standard deviation for Gaussian kernel. -->
-        <esmooth>0.0001</esmooth>
-        <!-- Deposition smoothing standard deviation for Gaussian kernel. -->
-        <dsmooth>8.</dsmooth>
-    </filter>
-
-
+    <?ignore
     <!-- Flexural isostasy parameters:
          Parameterisation of the flexural isostasy using the gFlex model from Wickert 2015.
          The current wrapper limits the functionnality of the gFlex algorithm and only uses
@@ -103,16 +96,16 @@
          plate solution. -->
     <flexure>
         <!-- Time step used to compute the isostatic flexure. -->
-        <ftime>10000.0</ftime>
+        <ftime>20000.0</ftime>
         <!-- Definition of the flexural grid:
              It is possible to setup a flexural grid at a resolution higher than the one used
              for the TIN to increase computational speed. In this case you need to define the
              discretization along X and Y axis. By default the same resolution as the one given
              for the DEM file is used and the following 2 parameters are not required. -->
         <!-- Number of points along the X-axis - (optional)-->
-        <fnx>121</fnx>
+        <fnx>250</fnx>
         <!-- Number of points along the Y-axis - (optional)-->
-        <fny>121</fny>
+        <fny>100</fny>
         <!-- Mantle density [km/m3] -->
         <dmantle>3300</dmantle>
         <!-- Sediment density [km/m3] -->
@@ -122,7 +115,13 @@
         <!-- The lithospheric elastic thickness (Te) can be expressed as a scalar if you assume
              a uniform thickness for the model area in this case the value is given in the next
              parameter [m] - (optional) -->
-        <elasticH>15000.</elasticH>
+        <elasticH>8000.</elasticH>
+        <!-- In case where the lithospheric elastic thickness (Te) varies on the simulated region
+             you might want to use a grid defining for each points on the flexural grid the estimate
+             Te value [m]. You will need to ensure that the grid dimensions match the number of
+             points given for the flexural grid resolution - (optional) -->
+        <elasticGrid>data/TeGrid.csv</elasticGrid>
+        
         <!-- Finite difference boundary conditions:
               + 0Displacement0Slope: 0-displacement-0-slope boundary condition
               + 0Moment0Shear: "Broken plate" boundary condition: second and
@@ -139,13 +138,14 @@
                         example, the edge of the eastern and western limits of the domain
                         to act like they are next to each other in an infinite loop.
              The boundary are defined for each edges W, E, S and N. -->
-        <boundary_W>0Displacement0Slope</boundary_W>
-        <boundary_E>0Displacement0Slope</boundary_E>
-        <boundary_S>0Displacement0Slope</boundary_S>
-        <boundary_N>0Displacement0Slope</boundary_N>
+        <boundary_W>Mirror</boundary_W>
+        <boundary_E>Mirror</boundary_E>
+        <boundary_S>Mirror</boundary_S>
+        <boundary_N>Mirror</boundary_N>
     </flexure>
+    ?>
 
     <!-- Output folder path -->
-    <outfolder>output</outfolder>
+    <outfolder>flex_Te</outfolder>
 
 </badlands>
