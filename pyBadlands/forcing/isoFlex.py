@@ -145,7 +145,7 @@ class isoFlex:
         if isinstance(elasticT, basestring):
             TeMap = pandas.read_csv(elasticT, sep=r'\s+', engine='c', header=None,
                 na_filter=False, dtype=numpy.float, low_memory=False)
-            self.Te = numpy.reshape(TeMap.values, (len(self.ny), len(self.nx)), order='F')
+            self.Te = numpy.reshape(TeMap.values, (self.ny, self.nx))
         else:
             self.Te = elasticT * numpy.ones((self.ny, self.nx))
 
