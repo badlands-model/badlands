@@ -289,9 +289,14 @@ class raster2TIN:
         tree = cKDTree(XY)
         distances, indices = tree.query(tXY, k=3)
 
-        z_vals = z[indices][:,:,0]
+        if len(z[indices].shape) == 3:
+            z_vals = z[indices][:,:,0]
+            c_vals = c[indices][:,:,0]
+        else:
+            z_vals = z[indices]
+            c_vals = c[indices]
+
         elev = numpy.average(z_vals,weights=(1./distances), axis=1)
-        c_vals = c[indices][:,:,0]
         cum = numpy.average(c_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]
@@ -358,11 +363,17 @@ class raster2TIN:
         tree = cKDTree(XY)
         distances, indices = tree.query(tXY, k=3)
 
-        z_vals = z[indices][:,:,0]
+        if len(z[indices].shape) == 3:
+            z_vals = z[indices][:,:,0]
+            c_vals = c[indices][:,:,0]
+            f_vals = f[indices][:,:,0]
+        else:
+            z_vals = z[indices]
+            c_vals = c[indices]
+            f_vals = f[indices]
+
         elev = numpy.average(z_vals,weights=(1./distances), axis=1)
-        c_vals = c[indices][:,:,0]
         cum = numpy.average(c_vals,weights=(1./distances), axis=1)
-        f_vals = f[indices][:,:,0]
         cumf = numpy.average(f_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]

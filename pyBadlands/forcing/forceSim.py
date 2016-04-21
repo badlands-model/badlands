@@ -415,8 +415,13 @@ class forceSim:
             if len(onIDs) > 0:
                 raise ValueError('Problem: IDs after merging is on previous vertex position.')
 
-            z_vals = elev[indices][:,:,0]
-            cum_vals = cum[indices][:,:,0]
+            if len(elev[indices].shape) == 3:
+                z_vals = elev[indices][:,:,0]
+                cum_vals = cum[indices][:,:,0]
+            else:
+                z_vals = elev[indices]
+                cum_vals = cum[indices]
+
             z_avg = numpy.average(z_vals, weights=(1./distances**2),axis=1)
             cum_avg = numpy.average(cum_vals, weights=(1./distances**2),axis=1)
 
@@ -532,9 +537,15 @@ class forceSim:
             if len(onIDs) > 0:
                 raise ValueError('Problem: IDs after merging is on previous vertex position.')
 
-            z_vals = elev[indices][:,:,0]
-            cum_vals = cum[indices][:,:,0]
-            cumf_vals = cumf[indices][:,:,0]
+            if len(elev[indices].shape) == 3:
+                z_vals = elev[indices][:,:,0]
+                cum_vals = cum[indices][:,:,0]
+                cumf_vals = cumf[indices][:,:,0]
+            else:
+                z_vals = elev[indices]
+                cum_vals = cum[indices]
+                cumf_vals = cumf[indices]
+
             z_avg = numpy.average(z_vals, weights=(1./distances**2),axis=1)
             cum_avg = numpy.average(cum_vals, weights=(1./distances**2),axis=1)
             cumf_avg = numpy.average(cumf_vals, weights=(1./distances**2),axis=1)

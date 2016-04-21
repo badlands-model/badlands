@@ -131,11 +131,18 @@ class visSurf:
         XY = numpy.column_stack((x,y))
         tree = cKDTree(XY)
         distances, indices = tree.query(xyi, k=3)
-        z_vals = z[indices][:,:,0]
+        
+        if len(z[indices].shape) == 3:
+            z_vals = z[indices][:,:,0]
+            d_vals = d[indices][:,:,0]
+            c_vals = c[indices][:,:,0]
+        else:
+            z_vals = z[indices]
+            d_vals = d[indices]
+            c_vals = c[indices]
+
         zi = numpy.average(z_vals,weights=(1./distances), axis=1)
-        d_vals = d[indices][:,:,0]
         di = numpy.average(d_vals,weights=(1./distances), axis=1)
-        c_vals = c[indices][:,:,0]
         ci = numpy.average(c_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]

@@ -228,9 +228,15 @@ class isoFlex:
         sedload = numpy.zeros(len(self.xyi))
         waterload = numpy.zeros(len(self.xyi))
         distances, indices = self.tree.query(self.xyi, k=self.searchpts)
-        elev_vals = elev[indices]
+
+        if len(elev[indices].shape) == 3:
+            elev_vals = elev[indices][:,:,0]
+            cum_vals = cumdiff[indices][:,:,0]
+        else:
+            elev_vals = elev[indices]
+            cum_vals = cumdiff[indices]
+
         felev = numpy.average(elev_vals,weights=(1./distances), axis=1)
-        cum_vals = cumdiff[indices]
         fcum = numpy.average(cum_vals,weights=(1./distances), axis=1)
         onIDs = numpy.where(distances[:,0] == 0)[0]
         if len(onIDs) > 0:
