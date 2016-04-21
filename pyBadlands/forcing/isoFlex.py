@@ -145,12 +145,12 @@ class isoFlex:
         if isinstance(elasticT, basestring):
             TeMap = pandas.read_csv(elasticT, sep=r'\s+', engine='c', header=None,
                 na_filter=False, dtype=numpy.float, low_memory=False)
-            self.Te = numpy.reshape(TeMap.values, (len(self.nx), len(self.ny)), order='F')
+            self.Te = numpy.reshape(TeMap.values, (len(self.ny), len(self.nx)), order='F')
         else:
-            self.Te = elasticT * numpy.ones((self.nx, self.ny))
+            self.Te = elasticT * numpy.ones((self.ny, self.nx))
 
         # Surface load stresses
-        self.flex.qs = numpy.zeros((self.nx, self.ny), dtype=float)
+        self.flex.qs = numpy.zeros((self.ny, self.nx), dtype=float)
 
         # Boundary conditions
         self.flex.BC_W = Boundaries[0]
@@ -160,7 +160,7 @@ class isoFlex:
 
         # State of the previous flexural grid used for updating current
         # flexural displacements.
-        self.previous_flex = numpy.zeros((self.nx, self.ny), dtype=float)
+        self.previous_flex = numpy.zeros((self.ny, self.nx), dtype=float)
 
         self.tree = cKDTree(self.xyTIN)
         #self.Acell = Acell
@@ -195,7 +195,7 @@ class isoFlex:
 
         return
 
-    def get_flexure(self, elev, cumdiff, boundsPt, sea, initFlex=False):
+    def get_flexure(self, elev, cumdiff, sea, boundsPt, initFlex=False):
         """
         From TIN erosion/deposition values and sea-level compute the
         surface load on the flexural grid.
@@ -227,7 +227,6 @@ class isoFlex:
         ballIDs = self.tree.query_ball_point(self.xyi, self.ball)
         sedload = numpy.zeros(len(self.xyi))
         waterload = numpy.zeros(len(self.xyi))
-
         distances, indices = self.tree.query(self.xyi, k=self.searchpts)
         elev_vals = elev[indices]
         felev = numpy.average(elev_vals,weights=(1./distances), axis=1)
@@ -255,8 +254,8 @@ class isoFlex:
             waterload[i] = numpy.sum((sea-elev[inIDs[marine]])*self.Acell[inIDs[marine]]) / self.Area[i]
         '''
         # Compute surface loads
-        self.flex.qs = self.rho_w * self.flex.g * numpy.reshape(waterload,(self.nx, self.ny))
-        self.flex.qs += self.rho_s * self.flex.g * (self.Te + numpy.reshape(sedload,(self.nx, self.ny)) )
+        self.flex.qs = self.rho_w * self.flex.g * numpy.reshape(waterload,(self.ny, self.nx))
+        self.flex.qs += self.rho_s * self.flex.g * (self.Te + numpy.reshape(sedload,(self.ny, self.nx)) )
         # Compute flexural isostasy with gFlex
         self._compute_flexure()
 
@@ -269,7 +268,7 @@ class isoFlex:
             flexureTIN = numpy.zeros(len(self.xyTIN[:,0]))
             flex_diff = self.flex.w - self.previous_flex
             self.previous_flex = self.flex.w
-            rgi_flexure = RegularGridInterpolator((self.xgrid, self.ygrid), flex_diff)
-            flexureTIN[boundsPt:] = rgi_flexure((self.xyTIN[boundsPt:,0],self.xyTIN[boundsPt:,1]))
+            rgi_flexure = RegularGridInterpolator((self.ygrid, self.xgrid), flex_diff)
+            flexureTIN[boundsPt:] = rgi_flexure((self.xyTIN[boundsPt:,1],self.xyTIN[boundsPt:,0]))
 
         return flexureTIN

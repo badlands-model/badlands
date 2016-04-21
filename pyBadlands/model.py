@@ -558,7 +558,7 @@ class Model(object):
                 flextime = time.clock()
                 self.force.getSea(self.tNow)
                 self.tinFlex = self.flex.get_flexure(self.elevation, self.cumdiff,
-                            self.recGrid.boundsPt,self.force.sealevel,initFlex=False)
+                            self.force.sealevel,self.recGrid.boundsPt,initFlex=False)
                 # Get border values
                 self.tinFlex = self.force.disp_border(self.tinFlex, self.FVmesh.neighbours,
                                                       self.FVmesh.edge_length, self.recGrid.boundsPt)
@@ -588,7 +588,7 @@ class Model(object):
             flextime = time.clock()
             self.force.getSea(self.tNow)
             self.tinFlex = self.flex.get_flexure(self.elevation, self.cumdiff,
-                        self.recGrid.boundsPt,self.force.sealevel,initFlex=False)
+                        self.force.sealevel,self.recGrid.boundsPt,initFlex=False)
             # Get border values
             self.tinFlex = self.force.disp_border(self.tinFlex, self.FVmesh.neighbours,
                                                   self.FVmesh.edge_length, self.recGrid.boundsPt)
