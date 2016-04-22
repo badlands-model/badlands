@@ -3,8 +3,7 @@
 *.so
 pyBadlands.egg-info/
 *.mod
-test/output/
-test/.ipynb_checkpoints/
+Examples/.ipynb_checkpoints/
 *.swp
 *.hdf5
 *.xmf
