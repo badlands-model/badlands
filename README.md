@@ -2,8 +2,9 @@ pyBadlands - the Python version of Badlands
 =====
 
 <div align="center">
-    <img width=300 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/riseofthephoenix.png" alt="Rise of the Phoenix" title="Example of Landscape evolution with Badlands"</img>
+    <img width=300 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/sketch.png" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
 </div>
+_A schematic of 2D landscape evolution model illustrating the main variables and forces simulated with Badlands: z is the surface elevation, r refers to rainfall, sl to sea-level fluctuations, f to the flexural isostasy and u to tectonic forces (both horizontal and vertical)._
 
 ## Overview
 
