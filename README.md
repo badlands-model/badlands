@@ -1,4 +1,4 @@
-pyBadlands - The Python version of Badlands
+pyBadlands - the Python version of Badlands
 =====
 
 <div align="center">
