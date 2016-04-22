@@ -117,8 +117,9 @@ class flowNetwork:
 
             # Send local base level globally
             comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
-            self.base = numpy.where(base >= 0)[0]
-
+            bpos = numpy.where(base >= 0)[0]
+            self.base = numpy.random.shuffle(bpos)
+            
             # Send local receivers globally
             comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
             self.receivers = receivers
@@ -133,7 +134,8 @@ class flowNetwork:
 
             # Send local base level globally
             comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
-            self.base = numpy.where(base >= 0)[0]
+            bpos = numpy.where(base >= 0)[0]
+            self.base = numpy.random.shuffle(bpos)
 
             # Send local receivers globally
             comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
