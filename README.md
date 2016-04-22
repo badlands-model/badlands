@@ -16,8 +16,6 @@ The latest pyBadlands version is the one that’s in our Github [repository](htt
 
 However, the easiest way to get started is with the [Docker container](https://hub.docker.com/u/badlandsmodel/) using [Kitematic](https://docs.docker.com/kitematic/userguide/). Once **Kitematic** is installed on your computer, open it and look for **pybadlands-demo** via the *search* menu.
 
-The easiest way to install and run the **Companion** is by loading the associated [Docker container](http://hub.docker.com/u/badlandsmodel/dashboard/) using [Kitematic](https://docs.docker.com/kitematic/userguide/). Once **Kitematic** is installed on your computer, open it and look for **badlands-companion** via the *search* menu.  
-
 If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](https://github.com/badlands-model/pyBadlands-Dependencies-Docker/blob/master/Dockerfile) & [**code**](https://github.com/badlands-model/pyBadlands-Docker-Demo/blob/master/Dockerfile)) is the best documentation of the required packages.
 
 ## The specs...
