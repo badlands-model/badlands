@@ -22,8 +22,8 @@ If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](http
 ## The specs...
 
 The model is based on the following characteristics: 
-* The finite volume approach from Tucker et al. (2001) based on the dual Delaunay-Voronoi framework is used to solve the continuity equation explicitly, 
-* Node ordering is perform efficiently based on the work from Braun & Willett (2013),
+* The finite volume approach from [**Tucker et al. (2001)**](http://www.sciencedirect.com/science/article/pii/S0098300400001345) based on the dual Delaunay-Voronoi framework is used to solve the continuity equation explicitly, 
+* Node ordering is perform efficiently based on the work from [**Braun & Willett (2013)**](http://www.sciencedirect.com/science/article/pii/S0169555X12004618),
 * Drainage network partitioning. 
 
 A set of functions for _pre_ & _post_-processing for **Badlands** input and output are available in a github [**Companion**](https://github.com/badlands-model/pyBadlands-Companion) repository which is already shiped with the Badlands docker container.
