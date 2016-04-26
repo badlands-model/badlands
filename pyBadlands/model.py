@@ -6,6 +6,12 @@ from pyBadlands import (diffLinear, elevationTIN, flowNetwork, forceSim,
                         FVmethod, isoFlex, partitionTIN, raster2TIN,
                         visualiseFlow, visualiseTIN, xmlParser)
 
+# profiling support
+import cProfile
+import os
+import pstats
+import StringIO
+
 class Model(object):
     """State object for the pyBadlands model."""
 
@@ -490,10 +496,17 @@ class Model(object):
                                     step, self.tNow, fline, fnodes, self.input.fh5file, self._size)
             print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, self.tNow)
 
-    def run_to_time(self, tEnd):
+    def run_to_time(self, tEnd, profile=False):
         """
         Run the simulation to a specified point in time (tEnd).
+
+        If profile is True, dump cProfile output to /tmp.
         """
+
+        if profile:
+            pid = os.getpid()
+            pr = cProfile.Profile()
+            pr.enable()
 
         if not self.simStarted:
             # Anything in here will be executed once at the start of time
@@ -603,3 +616,11 @@ class Model(object):
         self.write_output(outDir=self.input.outDir, step=self.outputStep)
         self.force.next_display += self.input.tDisplay
         self.outputStep += 1
+
+        if profile:
+            pr.disable()
+            s = StringIO.StringIO()
+            sortby = 'cumulative'
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.dump_stats('/tmp/profile-%d' % pid)
+
