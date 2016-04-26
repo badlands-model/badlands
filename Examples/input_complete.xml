@@ -73,23 +73,69 @@
         </disp>
     </tectonic>
 
-    <!-- Precipitation structure -->
+    <!-- Precipitation structure
+         The following methods can be used:
+            - an uniform precipitation value for the entire region [m/a]
+            - a map containing precipitation values for each nodes of the regular grid
+            - an orographic precipitation computed using Smith & Barstad theory (2004)
+    -->
     <precipitation>
         <!-- Number of precipitation events -->
-        <climates>1</climates>
-        <!-- Precipitation definition -->
+        <climates>3</climates>
+        <!-- Uniform precipitation definition -->
         <rain>
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
             <rend>100000.</rend>
-            <!-- Choice is given between loading a rain map <map> or
-                 giving a single value <rval> for the entire area and
-                 for the given time interval -->
-            <!-- Precipitation map [m/a] - (optional) -->
-            <!--map>data/rainLR.csv</map-->
-            <!-- Precipitation value [m/a] - (optional) -->
+            <!-- Precipitation value [m/a] -->
             <rval>1.</rval>
+        </rain>
+        <!-- Precipitation map definition -->
+        <rain>
+            <!-- Rain start time [a] -->
+            <rstart>100000.</rstart>
+            <!-- Rain end time [a] -->
+            <rend>200000.</rend>
+            <!-- Precipitation map [m/a] -->
+            <map>data/rainLR.csv</map>
+        </rain>
+        <!-- Orographic precipitation model definition -->
+        <rain>
+            <!-- Rain computation time step [a] -->
+            <ortime>5000.</ortime>
+            <!-- Rain start time [a] -->
+            <rstart>100000.</rstart>
+            <!-- Rain end time [a] -->
+            <rend>200000.</rend>
+            <!-- Background precipitation value [m/a] -->
+            <rbgd>1.</rbgd>
+            <!-- Minimal precipitation value [m/a] -->
+            <rmin>0.2</rmin>
+            <!-- Maximal precipitation value [m/a] -->
+            <rmax>4.</rmax>
+            <!-- Wind velocity along X (W-E) direction [m/s] -->
+            <windx>-3.</windx>
+            <!-- Wind velocity along Y (S-N) direction [m/s] -->
+            <windy>2.</windy>
+            <!-- Maximal precipitation value [m/a] -->
+            <rmax>4.</rmax>
+            <!-- Time conversion from cloud water to hydrometeors
+                 range from 200 to 2000 [s]. Optional default is set
+                 to 1000 s -->
+            <tauc>1000.</tauc>
+            <!-- Time for hydrometeor fallout range from 200 to 2000 [s].
+                 Optional default is set to 1000 s -->
+            <tauf>1000.</tauf>
+            <!-- Moist stability frequency range from 0 to 0.01 [/s].
+                 Optional default is set to 0.005 /s -->
+            <nm>0.005</nm>
+            <!-- Uplift sensitivity factor range from 0.001 to 0.02 [kg/m3].
+                 Optional default is set to 0.005 kg/m3 -->
+            <cw>0.005</cw>
+            <!-- Depth of the moist layer range from 1000 to 5000 [m].
+                 Optional default is set to 3000 m -->
+            <hw>3000.</hw>
         </rain>
     </precipitation>
 
