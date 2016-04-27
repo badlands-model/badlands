@@ -102,12 +102,12 @@
         </rain>
         <!-- Orographic precipitation model definition -->
         <rain>
-            <!-- Rain computation time step [a] -->
-            <ortime>5000.</ortime>
             <!-- Rain start time [a] -->
             <rstart>100000.</rstart>
             <!-- Rain end time [a] -->
             <rend>200000.</rend>
+            <!-- Rain computation time step [a] -->
+            <ortime>5000.</ortime>
             <!-- Background precipitation value [m/a] -->
             <rbgd>1.</rbgd>
             <!-- Minimal precipitation value [m/a] -->
@@ -118,8 +118,6 @@
             <windx>-3.</windx>
             <!-- Wind velocity along Y (S-N) direction [m/s] -->
             <windy>2.</windy>
-            <!-- Maximal precipitation value [m/a] -->
-            <rmax>4.</rmax>
             <!-- Time conversion from cloud water to hydrometeors
                  range from 200 to 2000 [s]. Optional default is set
                  to 1000 s -->

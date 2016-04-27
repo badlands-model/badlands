@@ -57,7 +57,11 @@ class Model(object):
 
         force = forceSim.forceSim(self.input.seafile, self.input.seapos,
                                   self.input.rainMap, self.input.rainTime,
-                                  self.input.rainVal, self.input.tectFile,
+                                  self.input.rainVal, self.input.orographic,
+                                  self.input.rbgd, self.input.rmin, self.input.rmax ,
+                                  self.input.windx, self.input.windy, self.input.tauc,
+                                  self.input.tauf, self.input.nm, self.input.cw,
+                                  self.input.hw, self.input.ortime, self.input.tectFile,
                                   self.input.tectTime, recGrid.regX,
                                   recGrid.regY, self.input.tDisplay)
 
@@ -161,6 +165,7 @@ class Model(object):
                                                          FVmesh.edge_length, recGrid.boundsPt,
                                                          btype=self.input.btype)
         # Set default to no rain
+        self.force.update_force_TIN(FVmesh.node_coords[:,:2])
         self.rain = np.zeros(totPts, dtype=float)
 
         # Define variables
@@ -287,9 +292,9 @@ class Model(object):
         inIDs += self.recGrid.boundsPt
 
         # Set default with no rain
+        self.force.update_force_TIN(FVmesh.node_coords[:,:2])
         self.rain = np.zeros(totPts, dtype=float)
-        self.rain[inIDs] = self.force.load_Rain_map(self.tNow,
-                                        FVmesh.node_coords[inIDs, :2])
+        self.rain[inIDs] = self.force.get_Rain(self.tNow,self.elevation)
 
         # Update flexural isostasy
         if self.input.flexure:
@@ -531,11 +536,10 @@ class Model(object):
                 last_output = time.clock()
             last_time = time.clock()
 
-            # Load Rain Map
+            # Load Rain regime
             if self.force.next_rain <= self.tNow and self.force.next_rain < self.input.tEnd:
                 self.rain = np.zeros(self.totPts, dtype=float)
-                self.rain[self.inIDs] = self.force.load_Rain_map(self.tNow,
-                                            self.FVmesh.node_coords[self.inIDs, :2])
+                self.rain[self.inIDs] = self.force.get_Rain(self.tNow,self.elevation)
                 self._comm.Allreduce(mpi.IN_PLACE, self.rain, op=mpi.MAX)
 
             # Load Tectonic Grid
@@ -543,8 +547,7 @@ class Model(object):
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.e6)
-                    ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow,
-                                                self.FVmesh.node_coords[self.inIDs, :2])
+                    ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow)
                     self._comm.Allreduce(mpi.IN_PLACE, ldisp, op=mpi.MAX)
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
@@ -623,4 +626,3 @@ class Model(object):
             sortby = 'cumulative'
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.dump_stats('/tmp/profile-%d' % pid)
-

@@ -15,6 +15,8 @@ import numpy
 import pandas
 import triangle
 import mpi4py.MPI as mpi
+from pyBadlands.libUtils import ORmodel
+from scipy.ndimage.filters import gaussian_filter
 from scipy import interpolate
 from scipy.spatial import cKDTree
 
@@ -39,6 +41,42 @@ class forceSim:
     float : ValRain
         Value of precipitation rate for each rain event in m/a.
 
+    bool : orographic
+        Numpy boolean array defining orographic calculation if any.
+
+    float : rbgd
+        Numpy array of background precipitation.
+
+    float : rmin
+        Numpy array of minimal precipitation.
+
+    float : rmax
+        Numpy array of maximal precipitation.
+
+    float : windx
+        Numpy array of wind velocity along X.
+
+    float : windy
+        Numpy array of wind velocity along Y.
+
+    float : tauc
+        Numpy array of time conversion from cloud water to hydrometeors.
+
+    float : tauf
+        Numpy array of time for hydrometeor fallout.
+
+    float : nm
+        Numpy array of moist stability frequency.
+
+    float : cw
+        Numpy array of uplift sensitivity factor.
+
+    float : hw
+        Numpy array of depth of the moist layer.
+
+    float : ortime
+        Numpy array of rain computation time step.
+
     string : MapDisp
         Numpy array containing the cumulative displacement map file names.
 
@@ -56,13 +94,39 @@ class forceSim:
     """
 
     def __init__(self, seafile = None, sea0 = 0., MapRain = None, TimeRain = None, ValRain = None,
-                 MapDisp = None, TimeDisp = None, regX = None, regY = None, Tdisplay = 0.):
+                 orographic = None, rbgd = None, rmin = None, rmax = None, windx = None, windy = None,
+                 tauc = None, tauf = None, nm = None, cw = None, hw = None, ortime = None, MapDisp = None,
+                 TimeDisp = None, regX = None, regY = None, Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
+        self.yi, self.xi = numpy.meshgrid(regY, regX, indexing='xy')
+        self.xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
+        self.tree = None
+        self.dx = None
+
+
+        print len(regX),len(regY), self.xyi.shape
+        print self.xyi[0,0],self.xyi[0,1],self.xyi[1,0]
+        print self.xyi[:,0].max(),self.xyi[0,:].max()
+
+        raise ValueError('Prout.')
+
         self.Map_rain = MapRain
         self.rainVal = ValRain
         self.T_rain = TimeRain
+        self.orographic = orographic
+        self.rbgd = rbgd
+        self.rmin = rmin
+        self.rmax = rmax
+        self.windx = windx
+        self.windy = windy
+        self.tauc = tauc
+        self.tauf = tauf
+        self.nm = nm
+        self.cw = cw
+        self.hw = hw
+        self.ortime = ortime
         self.next_rain = None
 
         self.Map_disp = MapDisp
@@ -132,17 +196,30 @@ class forceSim:
 
         return
 
-    def load_Rain_map(self, time, tXY):
+    def update_force_TIN(self, tXY):
         """
-        Load rain map for a given period and perform interpolation from regular grid to unstructured TIN one.
+        Update TIN variables after 3D displacements.
+
+        variable : tXY
+            Numpy float-type array containing the coordinates for each nodes in the TIN (in m2)
+        """
+        self.tXY = tXY
+        self.tree = cKDTree(self.tXY)
+        self.dx = self.tXY[1,0] - self.tXY[0,0]
+
+        return
+
+    def get_Rain(self, time, elev):
+        """
+        Get rain value for a given period and perform interpolation from regular grid to unstructured TIN one.
 
         Parameters
         ----------
         float : time
             Requested time interval rain map to load.
 
-        float : tXY
-            Unstructured grid (TIN) XY coordinates.
+        float : elev
+            Unstructured grid (TIN) Z coordinates.
 
         Return
         ----------
@@ -156,17 +233,65 @@ class forceSim:
         if not (time >= self.T_rain[event,0]) and not (time < self.T_rain[event,1]):
             raise ValueError('Problem finding the rain map to load!')
 
-        self.next_rain = self.T_rain[event,1]
 
+
+        if self.orographic[event]:
+            tinRain = self.build_OrographicRain_map(elev)
+            self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
         if self.Map_rain[event] == None:
-            tinRain = numpy.zeros(len(tXY[:,0]), dtype=float)
+            tinRain = numpy.zeros(len(self.tXY[:,0]), dtype=float)
             tinRain = self.rainVal[event]
+            self.next_rain = self.T_rain[event,1]
         else:
             rainMap = pandas.read_csv(str(self.Map_rain[event]), sep=r'\s+', engine='c',
                                header=None, na_filter=False, dtype=numpy.float, low_memory=False)
 
             rectRain = numpy.reshape(rainMap.values,(len(self.regX), len(self.regY)),order='F')
-            tinRain = interpolate.interpn( (self.regX, self.regY), rectRain, tXY, method='linear')
+            tinRain = interpolate.interpn( (self.regX, self.regY), rectRain, self.tXY, method='linear')
+            self.next_rain = self.T_rain[event,1]
+
+        return tinRain
+
+    def build_OrographicRain_map(self, elev):
+        """
+        Build rain map using SMith & Barstad (2004) model for a given period and perform interpolation from regular grid to
+        unstructured TIN one.
+
+        Parameters
+        ----------
+        float : elev
+            Unstructured grid (TIN) Z coordinates.
+
+        Return
+        ----------
+        variable: tinRain
+            Numpy array containing the updated rainfall for the local domain.
+        """
+
+        # Interpolate elevation on regular grid
+        distances, indices = self.tree.query(self.xyi, k=8)
+        if len(elev[indices].shape) == 3:
+            elev_vals = elev[indices][:,:,0]
+        else:
+            elev_vals = elev[indices]
+        oelev = numpy.average(elev_vals,weights=(1./distances), axis=1)
+        onIDs = numpy.where(distances[:,0] == 0)[0]
+        if len(onIDs) > 0:
+            oelev[onIDs] = elev[indices[onIDs,0]]
+        oelev -= self.sealevel
+        oelev = oelev.clip(0)
+        regZ = numpy.reshape(oelev,(len(self.regX), len(self.regY)),order='F')
+
+        # Use Smith & Barstad model
+        rectRain = ORmodel.orographicrain.build(regZ, self.dx, self.windx[event], self.windy[event],
+            self.rmin[event], self.rmax[event], self.rbgd[event], self.nm[event], self.cw[event],
+            self.hw[event], self.tauc[event], self.tauf[event])
+
+        # Apply smoothing here
+        smthRain = gaussian_filter(rectRain, sigma=3)
+
+        # Interpolate
+        tinRain = interpolate.interpn( (self.regX, self.regY), smthRain, self.tXY, method='linear')
 
         return tinRain
 
@@ -221,7 +346,7 @@ class forceSim:
 
         return disp
 
-    def load_Tecto_map(self, time, tXY):
+    def load_Tecto_map(self, time):
         """
         Load vertical displacement map for a given period and perform interpolation from regular grid to unstructured TIN one.
 
@@ -229,9 +354,6 @@ class forceSim:
         ----------
         float : time
             Requested time interval rain map to load.
-
-        float : tXY
-            Unstructured grid (TIN) XY coordinates.
 
         Return
         ----------
@@ -252,7 +374,7 @@ class forceSim:
                                dtype=numpy.float, low_memory=False)
 
             rectDisp = numpy.reshape(dispMap.values,(len(self.regX), len(self.regY)),order='F')
-            tinDisp = interpolate.interpn( (self.regX, self.regY), rectDisp, tXY, method='linear')
+            tinDisp = interpolate.interpn( (self.regX, self.regY), rectDisp, self.tXY, method='linear')
             dt = (self.T_disp[event,1] - self.T_disp[event,0])
             if dt <= 0:
                 raise ValueError('Problem computing the displacements rate for event %d.'%event)

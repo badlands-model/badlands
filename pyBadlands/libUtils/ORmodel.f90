@@ -12,7 +12,7 @@
 
 module orographicrain
 
-  use ormodel
+  use oromodel
 
   implicit none
 
