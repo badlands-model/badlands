@@ -375,6 +375,8 @@ class xmlParser:
             tmphw = numpy.empty(tmpNb)
             id = 0
             for clim in precip.iter('rain'):
+                if id >= tmpNb:
+                    raise ValueError('The number of climatic events does not match the number of defined climates.')
                 element = None
                 element = clim.find('rstart')
                 if element is not None:

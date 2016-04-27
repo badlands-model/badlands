@@ -165,7 +165,7 @@ class Model(object):
                                                          FVmesh.edge_length, recGrid.boundsPt,
                                                          btype=self.input.btype)
         # Set default to no rain
-        self.force.update_force_TIN(FVmesh.node_coords[:,:2])
+        force.update_force_TIN(FVmesh.node_coords[:,:2])
         self.rain = np.zeros(totPts, dtype=float)
 
         # Define variables
@@ -294,7 +294,7 @@ class Model(object):
         # Set default with no rain
         self.force.update_force_TIN(FVmesh.node_coords[:,:2])
         self.rain = np.zeros(totPts, dtype=float)
-        self.rain[inIDs] = self.force.get_Rain(self.tNow,self.elevation)
+        self.rain[inIDs] = self.force.get_Rain(self.tNow,self.elevation, inIDs)
 
         # Update flexural isostasy
         if self.input.flexure:
@@ -539,7 +539,7 @@ class Model(object):
             # Load Rain regime
             if self.force.next_rain <= self.tNow and self.force.next_rain < self.input.tEnd:
                 self.rain = np.zeros(self.totPts, dtype=float)
-                self.rain[self.inIDs] = self.force.get_Rain(self.tNow,self.elevation)
+                self.rain[self.inIDs] = self.force.get_Rain(self.tNow, self.elevation, self.inIDs)
                 self._comm.Allreduce(mpi.IN_PLACE, self.rain, op=mpi.MAX)
 
             # Load Tectonic Grid
@@ -547,7 +547,7 @@ class Model(object):
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.e6)
-                    ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow)
+                    ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow,self.inIDs)
                     self._comm.Allreduce(mpi.IN_PLACE, ldisp, op=mpi.MAX)
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)

@@ -100,17 +100,10 @@ class forceSim:
 
         self.regX = regX
         self.regY = regY
-        self.yi, self.xi = numpy.meshgrid(regY, regX, indexing='xy')
+        self.xi, self.yi = numpy.meshgrid(regX, regY, indexing='xy')
         self.xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
         self.tree = None
         self.dx = None
-
-
-        print len(regX),len(regY), self.xyi.shape
-        print self.xyi[0,0],self.xyi[0,1],self.xyi[1,0]
-        print self.xyi[:,0].max(),self.xyi[0,:].max()
-
-        raise ValueError('Prout.')
 
         self.Map_rain = MapRain
         self.rainVal = ValRain
@@ -209,7 +202,7 @@ class forceSim:
 
         return
 
-    def get_Rain(self, time, elev):
+    def get_Rain(self, time, elev, inIDs):
         """
         Get rain value for a given period and perform interpolation from regular grid to unstructured TIN one.
 
@@ -220,6 +213,9 @@ class forceSim:
 
         float : elev
             Unstructured grid (TIN) Z coordinates.
+
+        integer : inDs
+            List of unstructured vertices contained in each partition.
 
         Return
         ----------
@@ -233,13 +229,11 @@ class forceSim:
         if not (time >= self.T_rain[event,0]) and not (time < self.T_rain[event,1]):
             raise ValueError('Problem finding the rain map to load!')
 
-
-
         if self.orographic[event]:
-            tinRain = self.build_OrographicRain_map(elev)
+            tinRain = self.build_OrographicRain_map(elev, inIDs)
             self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
         if self.Map_rain[event] == None:
-            tinRain = numpy.zeros(len(self.tXY[:,0]), dtype=float)
+            tinRain = numpy.zeros(len(self.tXY[inIDs,0]), dtype=float)
             tinRain = self.rainVal[event]
             self.next_rain = self.T_rain[event,1]
         else:
@@ -247,12 +241,12 @@ class forceSim:
                                header=None, na_filter=False, dtype=numpy.float, low_memory=False)
 
             rectRain = numpy.reshape(rainMap.values,(len(self.regX), len(self.regY)),order='F')
-            tinRain = interpolate.interpn( (self.regX, self.regY), rectRain, self.tXY, method='linear')
+            tinRain = interpolate.interpn( (self.regX, self.regY), rectRain, self.tXY[inIDs,:], method='linear')
             self.next_rain = self.T_rain[event,1]
 
         return tinRain
 
-    def build_OrographicRain_map(self, elev):
+    def build_OrographicRain_map(self, elev, inIDs):
         """
         Build rain map using SMith & Barstad (2004) model for a given period and perform interpolation from regular grid to
         unstructured TIN one.
@@ -261,6 +255,9 @@ class forceSim:
         ----------
         float : elev
             Unstructured grid (TIN) Z coordinates.
+
+        integer : inDs
+            List of unstructured vertices contained in each partition.
 
         Return
         ----------
@@ -291,7 +288,7 @@ class forceSim:
         smthRain = gaussian_filter(rectRain, sigma=3)
 
         # Interpolate
-        tinRain = interpolate.interpn( (self.regX, self.regY), smthRain, self.tXY, method='linear')
+        tinRain = interpolate.interpn( (self.regX, self.regY), smthRain, self.tXY[inIDs,:], method='linear')
 
         return tinRain
 
@@ -346,7 +343,7 @@ class forceSim:
 
         return disp
 
-    def load_Tecto_map(self, time):
+    def load_Tecto_map(self, time, inIDs):
         """
         Load vertical displacement map for a given period and perform interpolation from regular grid to unstructured TIN one.
 
@@ -354,6 +351,9 @@ class forceSim:
         ----------
         float : time
             Requested time interval rain map to load.
+
+        integer : inDs
+            List of unstructured vertices contained in each partition.
 
         Return
         ----------
@@ -374,7 +374,7 @@ class forceSim:
                                dtype=numpy.float, low_memory=False)
 
             rectDisp = numpy.reshape(dispMap.values,(len(self.regX), len(self.regY)),order='F')
-            tinDisp = interpolate.interpn( (self.regX, self.regY), rectDisp, self.tXY, method='linear')
+            tinDisp = interpolate.interpn( (self.regX, self.regY), rectDisp, self.tXY[inIDs,:], method='linear')
             dt = (self.T_disp[event,1] - self.T_disp[event,0])
             if dt <= 0:
                 raise ValueError('Problem computing the displacements rate for event %d.'%event)
@@ -412,7 +412,7 @@ class forceSim:
         dispY = numpy.zeros(totPts, dtype=float)
         dispZ = numpy.zeros(totPts, dtype=float)
 
-        dpXY = tXY[inIDs]
+        dpXY = tXY[inIDs,:]
         locPts = len(inIDs)
 
         events = numpy.where( (self.T_disp[:,1] - time) <= 0)[0]
