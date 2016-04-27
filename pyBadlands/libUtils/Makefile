@@ -41,7 +41,11 @@ FNET_LMOD = FLWnetwork
 FV_FMOD = FVclass
 FV_LMOD = FVframe
 
-all: ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so 
+# Orographic precipitation computation
+OR_FMOD = ORclass
+OR_LMOD = ORmodel
+
+all: ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so
 
 	@echo ""
 	@echo ""
@@ -68,7 +72,7 @@ ${SFD_LMOD}.so: ${SFD_LMOD}.f90
 
 ${FLOW_LMOD}.so: ${FLOW_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -m ${FLOW_LMOD} $<
-    
+
 ${LOOP_LMOD}.so: ${LOOP_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -m ${LOOP_LMOD} $<
 
@@ -83,6 +87,13 @@ ${FV_FMOD}.so: ${FV_FMOD}.f90
 
 ${FV_LMOD}.so: ${FV_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${FV_FMOD} -m ${FV_LMOD} $<
-    
+
+${OR_FMOD}.so: ${OR_FMOD}.f90
+	${F90} ${FFLAGS} -o lib${OR_FMOD}.so $<
+
+${OR_LMOD}.so: ${OR_LMOD}.f90
+	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${OR_FMOD} -m ${OR_LMOD} $<
+
+
 clean:
 	rm -fv *~ *.bak *.o *.mod *.original *.so
