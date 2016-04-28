@@ -230,9 +230,9 @@ class forceSim:
             raise ValueError('Problem finding the rain map to load!')
 
         if self.orographic[event]:
-            tinRain = self.build_OrographicRain_map(elev, inIDs)
+            tinRain = self.build_OrographicRain_map(event, elev, inIDs)
             self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
-        if self.Map_rain[event] == None:
+        elif self.Map_rain[event] == None:
             tinRain = numpy.zeros(len(self.tXY[inIDs,0]), dtype=float)
             tinRain = self.rainVal[event]
             self.next_rain = self.T_rain[event,1]
@@ -246,13 +246,16 @@ class forceSim:
 
         return tinRain
 
-    def build_OrographicRain_map(self, elev, inIDs):
+    def build_OrographicRain_map(self, event, elev, inIDs):
         """
         Build rain map using SMith & Barstad (2004) model for a given period and perform interpolation from regular grid to
         unstructured TIN one.
 
         Parameters
         ----------
+        float : event
+            rain event number.
+
         float : elev
             Unstructured grid (TIN) Z coordinates.
 
@@ -278,9 +281,8 @@ class forceSim:
         oelev -= self.sealevel
         oelev = oelev.clip(0)
         regZ = numpy.reshape(oelev,(len(self.regX), len(self.regY)),order='F')
-
         # Use Smith & Barstad model
-        rectRain = ORmodel.orographicrain.build(regZ, self.dx, self.windx[event], self.windy[event],
+        rectRain = ORmodel.orographicrain.compute(regZ, self.dx, self.windx[event], self.windy[event],
             self.rmin[event], self.rmax[event], self.rbgd[event], self.nm[event], self.cw[event],
             self.hw[event], self.tauc[event], self.tauf[event])
 
