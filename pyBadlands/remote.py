@@ -1,3 +1,5 @@
+import os
+
 from ipyparallel import Client
 
 
@@ -40,8 +42,6 @@ class RemoteModel(object):
 
         self._view.block = True
 
-        self._view.execute('import os')
-        self._view.execute('cwd = os.getcwd()')
 
         self._view.execute('from pyBadlands.model import Model')
         self._view.execute('model = Model()')
@@ -51,6 +51,9 @@ class RemoteModel(object):
 
     def load_xml(self, filename, verbose=False):
         try:
+            cwd = os.getcwd()
+            self._view.execute('import os')
+            self._view.execute('os.chdir("%s")' % cwd)
             self._view.execute('model.load_xml(filename="%s", verbose=%s)' % (filename, verbose))
         except Exception, e:
             import pdb; pdb.set_trace()
@@ -60,3 +63,4 @@ class RemoteModel(object):
             self._view.execute('model.run_to_time(%s)' % tEnd)
         except Exception, e:
             import pdb; pdb.set_trace()
+
