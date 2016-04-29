@@ -78,7 +78,7 @@ def output_cellsIDs(allIDs, inIDs, visXlim, visYlim, coords, cells):
 
     return allIDs[allInside], outcell[localCell2] + 1
 
-def write_hdf5(folder, h5file, step, coords, elevation, discharge, cumdiff, cells, rank):
+def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cells, rank, rainOn):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -99,6 +99,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, cumdiff, cell
     variable : elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
 
+    variable : rain
+        Numpy float-type array containing rain value of the local TIN nodes.
+
     variable : discharge
         Numpy float-type array containing the discharge values of the local TIN.
 
@@ -110,6 +113,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, cumdiff, cell
 
     variable : rank
         ID of the local partition.
+
+    variable : rainOn
+        Boolean for orographic precipitation.
     """
 
     h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
@@ -123,14 +129,17 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, cumdiff, cell
         f.create_dataset('cells',shape=(len(cells[:,0]),3), dtype='int32', compression='gzip')
         f["cells"][:,:] = cells
 
-
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
+
+        if rainOn:
+            f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["precipitation"][:,0] = rain
 
         f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
 
-def write_hdf5_flexure(folder, h5file, step, coords, elevation, discharge, cumdiff, cumflex, cells, rank):
+def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumflex, cells, rank, rainOn):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -150,6 +159,9 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, discharge, cumdi
 
     variable : elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
+
+    variable : rain
+        Numpy float-type array containing rain value of the local TIN nodes.
 
     variable : discharge
         Numpy float-type array containing the discharge values of the local TIN.
@@ -165,6 +177,9 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, discharge, cumdi
 
     variable : rank
         ID of the local partition.
+
+    variable : rainOn
+        Boolean for orographic precipitation.
     """
 
     h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
@@ -180,6 +195,10 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, discharge, cumdi
 
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
+
+        if rainOn:
+            f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["precipitation"][:,0] = rain
 
         f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
@@ -225,7 +244,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
 
     return
 
-def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size, flexOn):
+def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size, flexOn, rainOn):
     """
     This function writes the XmF file which is calling each HFD5 file.
 
@@ -263,6 +282,9 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
 
     variable : flexOn
         Boolean for flexural isostasy.
+
+    variable : rainOn
+        Boolean for orographic precipitation.
     """
 
     xmf_file = folder+'/'+xmffile+str(step)+'.xmf'
@@ -302,6 +324,12 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
             f.write('         <Attribute Type="Scalar" Center="Node" Name="Cumflex">\n')
             f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
             f.write('Dimensions="%d 1">%s:/cumflex</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
+
+        if rainOn:
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="Rain">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/precipitation</DataItem>\n'%(nodes[p],pfile))
             f.write('         </Attribute>\n')
 
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Sealevel">\n')

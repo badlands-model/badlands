@@ -63,7 +63,19 @@ class xmlParser:
         self.rainNb = None
         self.rainVal = None
         self.rainTime = None
-        self.rainMap = None
+        self.oroRain = False
+        self.orographic = None
+        self.ortime = None
+        self.rbgd = None
+        self.rmin = None
+        self.rmax = None
+        self.windx = None
+        self.windy = None
+        self.tauc = 1000.
+        self.tauf = 1000.
+        self.nm = 0.005
+        self.cw = 0.005
+        self.hw = 3000.
 
         self.depo = 1
         self.SPLm = 0.5
@@ -348,9 +360,23 @@ class xmlParser:
                 raise ValueError('The number of climatic events needs to be defined.')
             tmpVal = numpy.empty(tmpNb)
             tmpMap = numpy.empty(tmpNb,dtype=object)
+            tmpOro = numpy.empty(tmpNb,dtype=bool)
             tmpTime = numpy.empty((tmpNb,2))
+            tmpoTime = numpy.empty(tmpNb)
+            tmprbgd = numpy.empty(tmpNb)
+            tmprmin = numpy.empty(tmpNb)
+            tmprmax = numpy.empty(tmpNb)
+            tmpwdx = numpy.empty(tmpNb)
+            tmpwdy = numpy.empty(tmpNb)
+            tmptauc = numpy.empty(tmpNb)
+            tmptauf = numpy.empty(tmpNb)
+            tmpnm = numpy.empty(tmpNb)
+            tmpcw = numpy.empty(tmpNb)
+            tmphw = numpy.empty(tmpNb)
             id = 0
             for clim in precip.iter('rain'):
+                if id >= tmpNb:
+                    raise ValueError('The number of climatic events does not match the number of defined climates.')
                 element = None
                 element = clim.find('rstart')
                 if element is not None:
@@ -376,13 +402,81 @@ class xmlParser:
                         raise ValueError('Rain map file %s is missing or the given path is incorrect.'%(tmpMap[id]))
                 else:
                     tmpMap[id] = None
-
                 element = None
                 element = clim.find('rval')
                 if element is not None:
-                    tmpVal[id] = element.text
+                    tmpVal[id] = float(element.text)
                 else:
                     tmpVal[id] = 0.
+                element = None
+                element = clim.find('ortime')
+                if element is not None:
+                    tmpoTime[id] = float(element.text)
+                    tmpOro[id] = True
+                    self.oroRain = True
+                else:
+                    tmpoTime[id] = 0.
+                    tmpOro[id] = False
+                element = None
+                element = clim.find('rbgd')
+                if element is not None:
+                    tmprbgd[id] = float(element.text)
+                else:
+                    tmprbgd[id] = 0.
+                element = None
+                element = clim.find('rmin')
+                if element is not None:
+                    tmprmin[id] = float(element.text)
+                else:
+                    tmprmin[id] = 0.
+                element = None
+                element = clim.find('rmax')
+                if element is not None:
+                    tmprmax[id] = float(element.text)
+                else:
+                    tmprmax[id] = 0.
+                element = None
+                element = clim.find('windx')
+                if element is not None:
+                    tmpwdx[id] = float(element.text)
+                else:
+                    tmpwdx[id] = 0.
+                element = None
+                element = clim.find('windy')
+                if element is not None:
+                    tmpwdy[id] = float(element.text)
+                else:
+                    tmpwdy[id] = 0.
+                element = None
+                element = clim.find('tauc')
+                if element is not None:
+                    tmptauc[id] = float(element.text)
+                else:
+                    tmptauc[id] = 1000.
+                element = None
+                element = clim.find('tauf')
+                if element is not None:
+                    tmptauf[id] = float(element.text)
+                else:
+                    tmptauf[id] = 1000.
+                element = None
+                element = clim.find('nm')
+                if element is not None:
+                    tmpnm[id] = float(element.text)
+                else:
+                    tmpnm[id] = 0.005
+                element = None
+                element = clim.find('cw')
+                if element is not None:
+                    tmpcw[id] = float(element.text)
+                else:
+                    tmpcw[id] = 0.005
+                element = None
+                element = clim.find('hw')
+                if element is not None:
+                    tmphw[id] = float(element.text)
+                else:
+                    tmphw[id] = 3000.
                 id += 1
             if id != tmpNb:
                 raise ValueError('Number of climates %d does not match with the number of declared rain parameters %d.' %(tmpNb,id))
@@ -399,16 +493,54 @@ class xmlParser:
             self.rainVal = numpy.empty(self.rainNb)
             self.rainMap = numpy.empty(self.rainNb,dtype=object)
             self.rainTime = numpy.empty((self.rainNb,2))
+            self.orographic = numpy.empty(self.rainNb,dtype=bool)
+            self.ortime = numpy.empty(self.rainNb)
+            self.rbgd = numpy.empty(self.rainNb)
+            self.rmin = numpy.empty(self.rainNb)
+            self.rmax = numpy.empty(self.rainNb)
+            self.windx = numpy.empty(self.rainNb)
+            self.windy = numpy.empty(self.rainNb)
+            self.tauc = numpy.empty(self.rainNb)
+            self.tauf = numpy.empty(self.rainNb)
+            self.nm = numpy.empty(self.rainNb)
+            self.cw = numpy.empty(self.rainNb)
+            self.hw = numpy.empty(self.rainNb)
+
             id = 0
             if tmpTime[id,0] > self.tStart:
                 self.rainMap[id] = None
+                self.orographic[id] = False
                 self.rainVal[id] = 0.
+                self.rbgd[id] = 0.
+                self.rmin[id] = 0.
+                self.rmax[id] = 0.
+                self.windx[id] = 0.
+                self.windy[id] = 0.
+                self.tauc[id] = 1000.
+                self.tauf[id] = 1000.
+                self.nm[id] = 0.005
+                self.cw[id] = 0.005
+                self.hw[id] = 3000.
                 self.rainTime[id,0] = self.tStart
                 self.rainTime[id,1] = tmpTime[0,0]
+                self.ortime[id] = tmpTime[0,0] - self.tStart
                 id += 1
             self.rainMap[id] = tmpMap[0]
             self.rainTime[id,:] = tmpTime[0,:]
             self.rainVal[id] = tmpVal[0]
+            self.orographic[id] = tmpOro[0]
+            self.ortime[id] = tmpoTime[0]
+            self.rbgd[id] = tmprbgd[0]
+            self.rmin[id] = tmprmin[0]
+            self.rmax[id] = tmprmax[0]
+            self.windx[id] = tmpwdx[0]
+            self.windy[id] = tmpwdy[0]
+            self.tauc[id] = tmptauc[0]
+            self.tauf[id] = tmptauf[0]
+            self.nm[id] = tmpnm[0]
+            self.cw[id] = tmpcw[0]
+            self.hw[id] = tmphw[0]
+
             id += 1
             for p in range(1,tmpNb):
                 if tmpTime[p,0] > tmpTime[p-1,1]:
@@ -416,25 +548,88 @@ class xmlParser:
                     self.rainVal[id] = 0.
                     self.rainTime[id,0] = tmpTime[p-1,1]
                     self.rainTime[id,1] = tmpTime[p,0]
+                    self.rbgd[id] = 0.
+                    self.rmin[id] = 0.
+                    self.rmax[id] = 0.
+                    self.windx[id] = 0.
+                    self.windy[id] = 0.
+                    self.tauc[id] = 1000.
+                    self.tauf[id] = 1000.
+                    self.nm[id] = 0.005
+                    self.cw[id] = 0.005
+                    self.hw[id] = 3000.
+                    self.ortime[id] = tmpTime[p,0] - tmpTime[p-1,1]
                     id += 1
                 self.rainMap[id] = tmpMap[p]
                 self.rainTime[id,:] = tmpTime[p,:]
                 self.rainVal[id] = tmpVal[p]
+                self.orographic[id] = tmpOro[p]
+                self.ortime[id] = tmpoTime[p]
+                self.rbgd[id] = tmprbgd[p]
+                self.rmin[id] = tmprmin[p]
+                self.rmax[id] = tmprmax[p]
+                self.windx[id] = tmpwdx[p]
+                self.windy[id] = tmpwdy[p]
+                self.tauc[id] = tmptauc[p]
+                self.tauf[id] = tmptauf[p]
+                self.nm[id] = tmpnm[p]
+                self.cw[id] = tmpcw[p]
+                self.hw[id] = tmphw[p]
                 id += 1
             if tmpTime[tmpNb-1,1] < self.tEnd:
                 self.rainMap[id] = None
                 self.rainVal[id] = 0.
                 self.rainTime[id,0] = tmpTime[tmpNb-1,1]
                 self.rainTime[id,1] = self.tEnd
+                self.orographic[id] = False
+                self.rainVal[id] = 0.
+                self.rbgd[id] = 0.
+                self.rmin[id] = 0.
+                self.rmax[id] = 0.
+                self.windx[id] = 0.
+                self.windy[id] = 0.
+                self.tauc[id] = 1000.
+                self.tauf[id] = 1000.
+                self.nm[id] = 0.005
+                self.cw[id] = 0.005
+                self.hw[id] = 3000.
+                self.rainTime[id,0] = self.tStart
+                self.rainTime[id,1] = tmpTime[0,0]
+                self.ortime[id] = self.tEnd - tmpTime[tmpNb-1,1]
         else:
             self.rainNb = 1
             self.rainVal = numpy.empty(self.rainNb)
             self.rainTime = numpy.empty((self.rainNb,2))
             self.rainMap = numpy.empty((self.rainNb),dtype=object)
+            self.orographic = numpy.empty(self.rainNb,dtype=bool)
+            self.ortime = numpy.empty(self.rainNb)
+            self.rbgd = numpy.empty(self.rainNb)
+            self.rmin = numpy.empty(self.rainNb)
+            self.rmax = numpy.empty(self.rainNb)
+            self.windx = numpy.empty(self.rainNb)
+            self.windy = numpy.empty(self.rainNb)
+            self.tauc = numpy.empty(self.rainNb)
+            self.tauf = numpy.empty(self.rainNb)
+            self.nm = numpy.empty(self.rainNb)
+            self.cw = numpy.empty(self.rainNb)
+            self.hw = numpy.empty(self.rainNb)
             self.rainVal[0] = 0.
             self.rainTime[0,0] = self.tStart
             self.rainTime[0,1] = self.tEnd
             self.rainMap = None
+            self.orographic[0] = False
+            self.rainVal[0] = 0.
+            self.rbgd[0] = 0.
+            self.rmin[0] = 0.
+            self.rmax[0] = 0.
+            self.windx[0] = 0.
+            self.windy[0] = 0.
+            self.tauc[0] = 1000.
+            self.tauf[0] = 1000.
+            self.nm[0] = 0.005
+            self.cw[0] = 0.005
+            self.hw[0] = 3000.
+            self.ortime[0] = self.tEnd - self.tStart
 
         # Extract Stream Power Law structure parameters
         spl = None

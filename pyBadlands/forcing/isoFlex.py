@@ -42,7 +42,7 @@ class isoFlex:
         self.yi = None
         self.xyi = None
         self.flex = None
-        self.ball = 0.
+        #self.ball = 0.
         self.rho_s = 2500.
         self.rho_w = 1029.0
         self.previous_flex = None
@@ -224,7 +224,7 @@ class isoFlex:
         """
 
         # Average volume of sediment and water on the flexural grid points
-        ballIDs = self.tree.query_ball_point(self.xyi, self.ball)
+        #ballIDs = self.tree.query_ball_point(self.xyi, self.ball)
         sedload = numpy.zeros(len(self.xyi))
         waterload = numpy.zeros(len(self.xyi))
         distances, indices = self.tree.query(self.xyi, k=self.searchpts)

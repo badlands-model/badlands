@@ -1022,7 +1022,7 @@ contains
 end module fourrier
 ! =====================================================================================
 ! =====================================================================================
-module ormodel
+module oromodel
 
   use fourrier
   implicit none
@@ -1061,7 +1061,7 @@ module ormodel
 contains
 
   ! =====================================================================================
-  subroutine get_rain 
+  subroutine get_rain
 
     integer :: i,j,p
     real :: k1,k2,hr,hi,sigma,mi,mr
@@ -1244,4 +1244,4 @@ contains
   end subroutine extrapolate_border
   ! =====================================================================================
 
-end module ormodel
+end module oromodel
