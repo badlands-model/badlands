@@ -566,8 +566,12 @@ class forceSim:
         if len(newTIN['vertices'][:,0]) > len(newXY[:,0]):
             addPts = newTIN['vertices'][len(newXY[:,0]):,:2]
             dist, ids = tree.query(addPts, k=3)
-            zvals = elev[ids][:,:,0]
-            cumvals = cum[ids][:,:,0]
+            if len(elev[ids].shape) == 3:
+                zvals = elev[ids][:,:,0]
+                cumvals = cum[ids][:,:,0]
+            else:
+                zvals = elev[ids]
+                cumvals = cum[ids]
             zavg = numpy.average(zvals, weights=(1./dist**2),axis=1)
             cumavg = numpy.average(cumvals, weights=(1./dist**2),axis=1)
             newelev = numpy.concatenate((newelev, zavg), axis=0)
@@ -694,9 +698,14 @@ class forceSim:
         if len(newTIN['vertices'][:,0]) > len(newXY[:,0]):
             addPts = newTIN['vertices'][len(newXY[:,0]):,:2]
             dist, ids = tree.query(addPts, k=3)
-            zvals = elev[ids][:,:,0]
-            cumvals = cum[ids][:,:,0]
-            cumfvals = cumf[ids][:,:,0]
+            if len(elev[ids].shape) == 3:
+                zvals = elev[ids][:,:,0]
+                cumvals = cum[ids][:,:,0]
+                cumfvals = cumf[ids][:,:,0]
+            else:
+                zvals = elev[ids]
+                cumvals = cum[ids]
+                cumfvals = cumf[ids]
             zavg = numpy.average(zvals, weights=(1./dist**2),axis=1)
             cumavg = numpy.average(cumvals, weights=(1./dist**2),axis=1)
             cumfavg = numpy.average(cumfvals, weights=(1./dist**2),axis=1)
