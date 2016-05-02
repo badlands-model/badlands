@@ -29,9 +29,13 @@ class RemoteModel(object):
     underlying parallelisation details.
     """
 
+    # These attributes are exposed on the RemoteModel object; any other
+    # accesses are forwarded to the Model objects running on the remote nodes.
+    REMOTEMODEL_ATTRIBUTES = ('_client', '_view')
+
     def __init__(self, profile='mpi'):
-        client = Client(profile=profile)
-        self._view = client[:]
+        self._client = Client(profile=profile)
+        self._view = self._client[:]
         self._view.block = True
 
         self._view.execute('from pyBadlands.model import Model')
@@ -58,3 +62,15 @@ class RemoteModel(object):
     def ncpus(self):
         """Return the number of CPUs used to generate the results."""
         return len(self._view)
+
+    def __getattr__(self, name):
+        """If we don't define an attribute locally, read its value from node 0"""
+        return self._client[0]['model.%s' % name]
+
+    def __setattr__(self, name, value):
+        """If we don't define an attribute locally, write its value to all nodes"""
+
+        if name in RemoteModel.REMOTEMODEL_ATTRIBUTES:
+            self.__dict__[name] = value
+        else:
+            self._view['model.%s' % name] = value
