@@ -627,3 +627,7 @@ class Model(object):
             sortby = 'cumulative'
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.dump_stats('/tmp/profile-%d' % pid)
+
+    def ncpus(self):
+        """Return the number of CPUs used to generate the results."""
+        return 1

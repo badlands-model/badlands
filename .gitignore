@@ -9,4 +9,5 @@ Examples/.ipynb_checkpoints/
 *.xmf
 *.xdmf
 .ipynb_checkpoints
+build/
 

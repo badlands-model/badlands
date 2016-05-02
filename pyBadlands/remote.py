@@ -29,19 +29,10 @@ class RemoteModel(object):
     underlying parallelisation details.
     """
 
-    def __init__(self, profile='mpi', maxcpus=None):
-        '''
-        maxcpus: maximum number of CPUs that may be used in the MPI cluster.
-        Useful for benchmarking.
-        '''
+    def __init__(self, profile='mpi'):
         client = Client(profile=profile)
-
         self._view = client[:]
-        if maxcpus:
-            self._view = client[0:maxcpus]
-
         self._view.block = True
-
 
         self._view.execute('from pyBadlands.model import Model')
         self._view.execute('model = Model()')
@@ -64,3 +55,6 @@ class RemoteModel(object):
         except Exception, e:
             import pdb; pdb.set_trace()
 
+    def ncpus(self):
+        """Return the number of CPUs used to generate the results."""
+        return len(self._view)
