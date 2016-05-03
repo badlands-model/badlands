@@ -10,4 +10,8 @@ Examples/.ipynb_checkpoints/
 *.xdmf
 .ipynb_checkpoints
 build/
+output_*
+.AppleDouble
+__MACOSX
+.DS_Store
 
