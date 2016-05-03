@@ -373,7 +373,7 @@ class Model(object):
 
         # 3. Compute discharge
         walltime = time.clock()
-        self.flow.compute_flow(self.FVmesh.control_volumes, self.rain, True)
+        self.flow.compute_flow(self.FVmesh.control_volumes, self.rain)
         if self._rank == 0 and verbose:
             print " -   compute discharge ", time.clock() - walltime
 

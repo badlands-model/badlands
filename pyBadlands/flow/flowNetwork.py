@@ -73,7 +73,9 @@ class flowNetwork:
         self.yi = None
         self.xyi = None
 
-        return
+        self._comm = mpi.COMM_WORLD
+        self._rank = self._comm.Get_rank()
+        self._size = self._comm.Get_size()
 
     def SFD_receivers(self, fillH, elev, neighbours, edges, distances, globalIDs, sea):
         """
@@ -107,8 +109,6 @@ class flowNetwork:
 
         # Initialise MPI communications
         comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
 
         # Call the SFD function from libUtils
         if self.depo == 0 or self.capacity or self.filter:
@@ -206,7 +206,7 @@ class flowNetwork:
 
         return
 
-    def compute_flow(self, Acell, rain, parallel=False):
+    def compute_flow(self, Acell, rain):
         """
         Calculates the drainage area and water discharge at each node.
 
@@ -217,31 +217,16 @@ class flowNetwork:
 
         variable : rain
             Numpy float-type array containing the precipitation rate for each nodes (in m/a).
-
-        variable : parallel
-            Boolean to inform if the discharge algorithm need to be run in parallel (True) or serial (False).
         """
-
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
 
         numPts = len(Acell)
 
         self.discharge = numpy.zeros(numPts, dtype=float)
-        self.discharge[self.stack] = Acell[self.stack]*rain[self.stack]
+        self.discharge[self.stack] = Acell[self.stack] * rain[self.stack]
 
         # Compute discharge using libUtils
-        if(parallel):
-            discharge = FLOWalgo.flowcompute.discharge(self.localstack,self.receivers,self.discharge)
-            comm.Allreduce(mpi.IN_PLACE,discharge,op=mpi.MAX)
-        else:
-            discharge = FLOWalgo.flowcompute.discharge(self.stack,self.receivers,self.discharge)
-
-        self.discharge = discharge
-
-        return
+        self.discharge = FLOWalgo.flowcompute.discharge(self.localstack, self.receivers, self.discharge)
+        self._comm.Allreduce(mpi.IN_PLACE, self.discharge, op=mpi.MAX)
 
     def compute_parameters(self):
         """
