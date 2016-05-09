@@ -12,6 +12,7 @@ import os
 import pstats
 import StringIO
 
+
 class Model(object):
     """State object for the pyBadlands model."""
 
@@ -41,6 +42,14 @@ class Model(object):
 
         # sync the chosen output dir to all nodes
         self.input.outDir = self._comm.bcast(self.input.outDir, root=0)
+
+        # seed the random number generator consistently on all nodes
+        seed = None
+        if self._rank == 0:
+            # limit to max uint32
+            seed = np.random.mtrand.RandomState().tomaxint() % 0xFFFFFFFF
+        seed = self._comm.bcast(seed, root=0)
+        np.random.seed(seed)
 
         self.load_dem(self.input.demfile, verbose)
 
