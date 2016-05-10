@@ -54,12 +54,12 @@ contains
           intArray(pyRcv(k)+1) = intArray(pyRcv(k)+1)+1
       enddo
       
+      allocs = -1
       do p = 1, pyBaseNb
-          allocs = -1
           k = pyBase(p)+1
           j = j+1
           stackOrder(j) = k
-          allocs(k) = 0
+          allocs(k) = p
           success = addtostack(p,k,j)
       enddo
   

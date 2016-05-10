@@ -27,11 +27,11 @@ contains
 
       success = 1
       do n = Delta(donor),Delta(donor+1)-1
-          if((allocs(Donors(n)) == -1))then
+          if((allocs(Donors(n)) /= base))then
               donor = Donors(n)
               stackID = stackID+1
               stackOrder(stackID) = donor
-              allocs(donor) = 0
+              allocs(donor) = base
               success = addtostack(base,donor,stackID)
           endif
       enddo
