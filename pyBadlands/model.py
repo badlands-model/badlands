@@ -116,7 +116,7 @@ class Model(object):
 
         # Define Finite Volume parameters
         totPts = len(recGrid.tinMesh['vertices'][:, 0])
-        FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32)
+        FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32, order='F')
         FVmesh.neighbours.fill(-2)
         FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float)
         FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float)
