@@ -107,26 +107,23 @@ class flowNetwork:
             Current elevation of sea level.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-
         # Call the SFD function from libUtils
         if self.depo == 0 or self.capacity or self.filter:
             base, receivers, diff_flux = SFD.sfdcompute.directions_base(elev, \
                 neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
-            comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
 
             bpos = numpy.where(base >= 0)[0]
             self.base = base[bpos]
             numpy.random.shuffle(self.base)
             # Send local receivers globally
-            comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
             self.receivers = receivers
 
             # Send local diffusion flux globally
-            comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
             self.diff_flux = diff_flux
 
         else:
@@ -134,28 +131,26 @@ class flowNetwork:
                 neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
-            comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
             bpos = numpy.where(base >= 0)[0]
             self.base = base[bpos]
             numpy.random.shuffle(self.base)
 
             # Send local receivers globally
-            comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
             self.receivers = receivers
 
             # Send local maximum deposition globally
-            comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
             self.maxh = maxh
 
             # Send local maximum deposition globally
-            comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
             self.maxdep = maxdep
 
             # Send local diffusion flux globally
-            comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+            self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
             self.diff_flux = diff_flux
-
-        return
 
     def _donors_number_array(self):
         """
