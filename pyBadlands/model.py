@@ -118,8 +118,8 @@ class Model(object):
         totPts = len(recGrid.tinMesh['vertices'][:, 0])
         FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32, order='F')
         FVmesh.neighbours.fill(-2)
-        FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float, order='F')
-        FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float, order='F')
+        FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float)
+        FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float)
         FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
 
         # Compute Finite Volume parameters
@@ -278,10 +278,10 @@ class Model(object):
 
         # Define Finite Volume parameters
         totPts = len(self.recGrid.tinMesh['vertices'][:, 0])
-        FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32, order='F')
+        FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32)
         FVmesh.neighbours.fill(-2)
-        FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float, order='F')
-        FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float, order='F')
+        FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float)
+        FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float)
         FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
 
         # Compute Finite Volume parameters
@@ -354,7 +354,10 @@ class Model(object):
 
         # 2. Compute stream network
         walltime = time.clock()
-        self.flow.SFD_receivers(self.fillH, self.elevation, self.FVmesh.neighbours, self.FVmesh.vor_edges, self.FVmesh.edge_length,
+        ngbhs = self.FVmesh.neighbours[self.allIDs, :]
+        edges = self.FVmesh.vor_edges[self.allIDs, :]
+        distances = self.FVmesh.edge_length[self.allIDs, :]
+        self.flow.SFD_receivers(self.fillH, self.elevation, ngbhs, edges, distances,
                                 self.allIDs, self.force.sealevel - self.input.sealimit)
 
         if self._rank == 0 and verbose:
