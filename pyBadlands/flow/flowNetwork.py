@@ -368,6 +368,8 @@ class flowNetwork:
             Numpy arrays containing the erosion and deposition thicknesses.
         """
 
+        K = 3
+
         if self.xgrid is None:
             dx = self.xycoords[1,0] - self.xycoords[0,0]
             xmin, xmax = min(self.xycoords[:,0]), max(self.xycoords[:,0])
@@ -375,7 +377,13 @@ class flowNetwork:
             self.xgrid = numpy.arange(xmin,xmax+dx,dx)
             self.ygrid = numpy.arange(ymin,ymax+dx,dx)
             self.xi, self.yi = numpy.meshgrid(self.xgrid, self.ygrid)
-            self.xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
+
+            # querying the cKDTree later becomes a bottleneck, so distribute the xyi array across all MPI nodes
+            xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
+            splits = numpy.array_split(xyi, self._size)
+            self.split_lengths = numpy.array(map(len, splits)) * K
+            self.localxyi = splits[self._rank]
+            self.query_shape = (xyi.shape[0], K)
 
         depZ = numpy.copy(diff)
         depZ = depZ.clip(0.)
@@ -384,7 +392,22 @@ class flowNetwork:
         eroZ = eroZ.clip(max=0.)
 
         tree = cKDTree(self.xycoords[:,:2])
-        distances, indices = tree.query(self.xyi, k=3)
+
+        # Querying the KDTree is rather slow, so we split it across MPI nodes
+        # FIXME: the Allgatherv fails if we don't flatten the array first - why?
+        nelems = self.query_shape[0] * self.query_shape[1]
+        indices = numpy.empty(self.query_shape, dtype=numpy.int64)
+        localdistances, localindices = tree.query(self.localxyi, k=K)
+
+        distances_flat = numpy.empty(nelems, dtype=numpy.float64)
+        self._comm.Allgatherv(numpy.ravel(localdistances), [distances_flat, (self.split_lengths, None)])
+
+        indices_flat = numpy.empty(nelems, dtype=numpy.int64)
+        self._comm.Allgatherv(numpy.ravel(localindices), [indices_flat, (self.split_lengths, None)])
+
+        distances = distances_flat.reshape(self.query_shape)
+        indices = indices_flat.reshape(self.query_shape)
+
         if len(depZ[indices].shape) == 3:
             zd_vals = depZ[indices][:,:,0]
             ze_vals = eroZ[indices][:,:,0]
