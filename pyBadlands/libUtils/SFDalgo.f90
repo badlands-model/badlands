@@ -22,11 +22,11 @@ contains
         integer :: pyglobalNb
         real(kind=8),intent(in) :: sealimit
         integer,dimension(pylocalNb),intent(in) :: pyGIDs
-        integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
+        integer,dimension(pyglobalNb,20),intent(in) :: pyNgbs
         real(kind=8),dimension(pyglobalNb),intent(in) :: pyZ
         real(kind=8),dimension(pyglobalNb),intent(in) :: pyElev
-        real(kind=8),dimension(pylocalNb,20),intent(in) :: pyEdge
-        real(kind=8),dimension(pylocalNb,20),intent(in) :: pyDist
+        real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyEdge
+        real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyDist
 
         integer,intent(out) :: pyBase(pyglobalNb)
         integer,intent(out) :: pyRcv(pyglobalNb)
@@ -48,14 +48,14 @@ contains
             diffH = 1.e6
             diffD = 0.
             p = 1
-            do while(pyNgbs(k,p) >=0 )
-                if(pyElev(pyNgbs(k,p)+1) < pyElev(lowestID))then
-                    lowestID = pyNgbs(k,p)+1
+            do while(pyNgbs(gid,p) >=0 )
+                if(pyElev(pyNgbs(gid,p)+1) < pyElev(lowestID))then
+                    lowestID = pyNgbs(gid,p)+1
                 endif
-                dh = pyZ(pyNgbs(k,p)+1)-pyZ(gid)
+                dh = pyZ(pyNgbs(gid,p)+1)-pyZ(gid)
                 if(dh >= 0.) diffH = min(dh, diffH)
                 diffD = max(dh, diffD)
-                pyDiff(gid) = pyDiff(gid) + pyEdge(k,p)*dh/pyDist(k,p)
+                pyDiff(gid) = pyDiff(gid) + pyEdge(gid,p)*dh/pyDist(gid,p)
                 p = p+1
             enddo
             pyRcv(gid) = lowestID-1
@@ -77,10 +77,10 @@ contains
         integer :: pyglobalNb
         real(kind=8),intent(in) :: sealimit
         integer,dimension(pylocalNb),intent(in) :: pyGIDs
-        integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
+        integer,dimension(pyglobalNb,20),intent(in) :: pyNgbs
         real(kind=8),dimension(pyglobalNb),intent(in) :: pyZ
-        real(kind=8),dimension(pylocalNb,20),intent(in) :: pyEdge
-        real(kind=8),dimension(pylocalNb,20),intent(in) :: pyDist
+        real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyEdge
+        real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyDist
 
         integer,intent(out) :: pyBase(pyglobalNb)
         integer,intent(out) :: pyRcv(pyglobalNb)
@@ -97,13 +97,13 @@ contains
             lowestID = gid
             diffD = 0.
             p = 1
-            do while(pyNgbs(k,p) >=0 )
-                if(pyZ(pyNgbs(k,p)+1) < pyZ(lowestID))then
-                    lowestID = pyNgbs(k,p)+1
+            do while(pyNgbs(gid,p) >=0 )
+                if(pyZ(pyNgbs(gid,p)+1) < pyZ(lowestID))then
+                    lowestID = pyNgbs(gid,p)+1
                 endif
-                dh = pyZ(pyNgbs(k,p)+1)-pyZ(gid)
+                dh = pyZ(pyNgbs(gid,p)+1)-pyZ(gid)
                 diffD = max(dh, diffD)
-                pyDiff(gid) = pyDiff(gid) + pyEdge(k,p)*dh/pyDist(k,p)
+                pyDiff(gid) = pyDiff(gid) + pyEdge(gid,p)*dh/pyDist(gid,p)
                 p = p+1
             enddo
             pyRcv(gid) = lowestID-1

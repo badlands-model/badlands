@@ -95,10 +95,10 @@ class flowNetwork:
             Numpy integer-type array with the neighbourhood IDs.
 
         variable : edges
-            Numpy real-type array with the voronoi edges length for each neighbours of local IDs.
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
 
         variable : distances
-            Numpy real-type array with the distances between each connection in the local TIN.
+            Numpy real-type array with the distances between each connection in the TIN.
 
         variable: globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
@@ -140,7 +140,7 @@ class flowNetwork:
             self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
             self.receivers = receivers
 
-            # Send local maximum deposition globally
+            # Send local maximum height globally
             self._comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
             self.maxh = maxh
 

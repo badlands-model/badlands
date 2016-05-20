@@ -354,10 +354,8 @@ class Model(object):
 
         # 2. Compute stream network
         walltime = time.clock()
-        ngbhs = self.FVmesh.neighbours[self.allIDs, :]
-        edges = self.FVmesh.vor_edges[self.allIDs, :]
-        distances = self.FVmesh.edge_length[self.allIDs, :]
-        self.flow.SFD_receivers(self.fillH, self.elevation, ngbhs, edges, distances,
+        self.flow.SFD_receivers(self.fillH, self.elevation, self.FVmesh.neighbours,
+                                self.FVmesh.vor_edges, self.FVmesh.edge_length,
                                 self.allIDs, self.force.sealevel - self.input.sealimit)
 
         if self._rank == 0 and verbose:
