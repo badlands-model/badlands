@@ -33,7 +33,7 @@ contains
       demH = 1.e6
       demH(1:pybounds) = elevation(1:pybounds)
       do k=pybounds+1,pydnodes
-          if( demH(k) > sealimit)then
+          if( elevation(k) > sealimit)then
               demH(k) = 1.e6
           else
               demH(k) = elevation(k)
@@ -67,113 +67,138 @@ contains
 
   end subroutine filling
 
-  ! THIS IS NOT USED
-  subroutine basin_filling(pyGIDS,pyLIDs,elevation,pyNgbs,epsilon,pybounds,demH,pylNodesNb,pygNodesNb)
+end module pdcompute
 
-      integer :: pylNodesNb
-      integer :: pygNodesNb
-      integer,intent(in) :: pybounds
-      real(kind=8),intent(in) :: epsilon
-      real(kind=8),intent(in) :: elevation(pygNodesNb)
-      integer,intent(in) :: pyGIDS(pylNodesNb)
-      integer,intent(in) :: pyLIDS(pygNodesNb)
-      integer,intent(in) :: pyNgbs(pylNodesNb,20)
-      real(kind=8),intent(out) :: demH(pylNodesNb)
+module pdstack
 
-      logical :: flag
-      integer :: p, k, gid, lid
+  implicit none
 
-      flag = .true.
-      demH = 1.e6
-      do k = 1, pybounds
-        gid = pyGIDS(k) + 1
-        demH(k) = elevation(gid)
-      enddo
+  ! Define the data-structure to hold the data
+  integer :: s1 = 0
+  integer :: s2 = 0
+  integer, allocatable, dimension(:) :: data1
+  integer, allocatable, dimension(:) :: data2
 
-      do while(flag)
-        flag=.false.
-        do k=1,pylNodesNb
-          gid = pyGIDS(k) + 1
-          if( demH(k) > elevation(gid) )then
-            loop: do p = 1, 20
-              if( pyNgbs(k,p) < 0) exit loop
-              lid = pyLIDS(pyNgbs(k,p)+1) + 1
-              if( elevation(gid) >= demH(lid) + epsilon )then
-                demH(k) = elevation(gid)
+  ! Set the size of allocated memory blocks
+  integer :: block_size
+
+  ! Set neighbourhood array
+  integer,allocatable, dimension(:,:) :: neighbours
+
+  integer :: bds
+  real(kind=8) :: eps, fill_TH
+
+contains
+
+  subroutine initialisePD(elevation, demH, sealimit, pydnodes)
+
+    integer :: pydnodes, k
+    real(kind=8),intent(in) :: sealimit
+    real(kind=8),intent(in) :: elevation(pydnodes)
+    real(kind=8),intent(inout) :: demH(pydnodes)
+
+    s1 = 0
+    s2 = 0
+
+    demH(1:bds) = elevation(1:bds)
+    do k = bds+1,pydnodes
+        if( elevation(k) > sealimit)then
+            demH(k) = 1.e6
+            s1 = s1 + 1
+            data1(s1) = k
+        else
+            demH(k) = elevation(k)
+        endif
+    enddo
+
+  end subroutine initialisePD
+
+  subroutine fillPD(elevation, demH, pydnodes)
+
+    logical :: change
+    integer :: pydnodes, n, k, p
+    real(kind=8) :: hmin
+    real(kind=8),intent(in) :: elevation(pydnodes)
+    real(kind=8),intent(inout) :: demH(pydnodes)
+
+    change = .true.
+    do while(change)
+      change = .false.
+      do n = 1, s1
+        k = data1(n)
+        if( demH(k) > elevation(k) )then
+          ! Get minimum value
+          hmin = 2.e6
+          loop: do p = 1, 20
+            if( neighbours(k,p) < 0 ) exit loop
+            hmin = min(hmin,demH(neighbours(k,p)+1))
+          enddo loop
+          if( elevation(k) >= hmin + eps )then
+            demH(k) = elevation(k)
+          else
+            if( demH(k) > hmin + eps )then
+              demH(k) = hmin + eps
+              if( demH(k) - elevation(k) > fill_TH )then
+                demH(k) = elevation(k) + fill_TH
               else
-                if( demH(k) > demH(lid) + epsilon )then
-                  demH(k) = demH(lid) + epsilon
-                  flag=.true.
-                endif
+                change = .true.
               endif
-            enddo loop
+            endif
+            s2 = s2 + 1
+            data2(s2) = k
           endif
-        enddo
+        endif
       enddo
-
-      return
-
-  end subroutine basin_filling
-
-  ! THIS IS NOT USED
-  subroutine fill_recursive(depFill, pyArea, pyElev, distH, pybaseNb)
-
-    integer :: pybaseNb
-    real(kind=8),intent(in) :: depFill
-    real(kind=8),intent(in) :: pyArea(pybaseNb)
-    real(kind=8),intent(in) :: pyElev(pybaseNb)
-
-    real(kind=8),intent(out) :: distH(pybaseNb)
-
-    integer :: id, stpID
-    real(kind=8) :: dh, cumFill, area, fillh, distVol, flatVol
-
-    id = 1
-    area = 0.
-    cumFill = 0.
-    distVol = 0.01 * depFill
-    flatVol = depFill !- distVol
-
-    fillh = pyElev(1)
-    lp: do id = 1, pybaseNb-1
-
-      stpID = id
-
-      dh = pyElev(id+1) - pyElev(id)
-      area = area + pyArea(id)
-
-      if( cumFill + area * dh < flatVol )then
-        fillh = fillh + dh
-        cumFill = cumFill + area * dh
-      else
-        fillh = fillh + ( flatVol - cumFill )/area
-        exit lp
-      endif
-
-    enddo lp
-
-    do id = 1, pybaseNb
-      if(fillh - pyElev(id) > 0)then
-        distH(id) = fillh - pyElev(id)
-      else
-        distH(id) = 0.
+      if( s2 > 0 )then
+        s1 = s2
+        data1(1:s1) = data2(1:s2)
+        s2 = 0
       endif
     enddo
 
     return
 
-    dh = 0.01
-    distH = fillh
-    lp2: do while(distVol > 0.)
-      do id = stpID, 2
-        distH(id) = distH(id) + dh * (id/stpID)
-        distVol = distVol - dh * pyArea(id) * (id/stpID)
-        if(distVol < 0.) exit lp2
-      enddo
-    enddo lp2
+  end subroutine fillPD
+
+  subroutine pitparams(pyNgbs,fillTH,epsilon,pybounds,pydnodes)
+
+    integer :: pydnodes
+    integer,intent(in) :: pybounds
+    real(kind=8),intent(in) :: fillTH
+    real(kind=8),intent(in) :: epsilon
+    integer,intent(in) :: pyNgbs(pydnodes,20)
+
+    if(allocated(neighbours)) deallocate(neighbours)
+    allocate(neighbours(pydnodes,20))
+    neighbours = pyNgbs
+    bds = pybounds
+    block_size = pydnodes - bds
+    eps = epsilon
+    fill_TH = fillTH
+    if(allocated(data1)) deallocate(data1)
+    if(allocated(data2)) deallocate(data2)
+    allocate(data1(block_size))
+    allocate(data2(block_size))
 
     return
 
-  end subroutine fill_recursive
+  end subroutine pitparams
 
-end module pdcompute
+  subroutine pitfilling(elevation,sealimit,demH,pydnodes)
+
+    integer :: pydnodes
+    real(kind=8),intent(in) :: sealimit
+    real(kind=8),intent(in) :: elevation(pydnodes)
+    real(kind=8),intent(out) :: demH(pydnodes)
+
+    ! Initialisation phase
+    call initialisePD(elevation,demH,sealimit,pydnodes)
+
+    ! Filling phase
+    call fillPD(elevation,demH,pydnodes)
+
+    return
+
+  end subroutine pitfilling
+
+end module pdstack

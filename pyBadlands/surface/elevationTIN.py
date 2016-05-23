@@ -207,6 +207,55 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
 
     return elev
 
+def assign_parameter_pit(neighbours, boundPts, fillTH=1., epsilon=0.01):
+    """
+    This function defines global variables used in the pit filling algorithm.
+
+    Parameters
+    ----------
+    variable : neighbours
+        Numpy integer-type array containing for each nodes its neigbhours IDs.
+
+    variable : boundPts
+        Number of nodes on the edges of the TIN surface.
+
+    variable : fillTH
+        Limit the filling algorithm to a specific height to prevent complete filling of depression.
+        Default is set to 1.0 metre.
+
+    variable : epsilon
+        Force a minimal slope to form the depression instead of a flat area to build continuous flow
+        pathways. Default is set to 0.01 metres.
+    """
+
+    PDalgo.pdstack.pitparams(neighbours, fillTH, epsilon, boundPts)
+
+
+def pit_stack_PD(elev, sea):
+    """
+    This function calls a depression-less algorithm from Planchon & Darboux to compute the flow
+    pathway using stack.
+
+    Parameters
+    ----------
+    variable : elev
+        Numpy arrays containing the nodes elevation.
+
+    variable : sea
+        Current elevation of sea level.
+
+    Return
+    ----------
+    variable: fillH
+        Numpy array containing the filled elevations.
+    """
+
+    # Call stack based pit filling function from libUtils
+    fillH = PDalgo.pdstack.pitfilling(elev, sea)
+
+    return fillH
+
+
 def pit_filling_PD(elev, neighbours, boundPts, sea, fillTH=1., epsilon=0.01):
     """
     This function calls a depression-less algorithm from Planchon & Darboux to compute the flow pathway.
@@ -224,9 +273,6 @@ def pit_filling_PD(elev, neighbours, boundPts, sea, fillTH=1., epsilon=0.01):
 
     variable : sea
         Current elevation of sea level.
-
-    variable : btype
-        Integer defining the type of boundary: 0 for flat and 1 for slope condition.
 
     variable : fillTH
         Limit the filling algorithm to a specific height to prevent complete filling of depression.

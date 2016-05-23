@@ -173,6 +173,9 @@ class Model(object):
         elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours,
                                                          FVmesh.edge_length, recGrid.boundsPt,
                                                          btype=self.input.btype)
+
+        elevationTIN.assign_parameter_pit(FVmesh.neighbours,recGrid.boundsPt,self.input.fillmax)
+
         # Set default to no rain
         force.update_force_TIN(FVmesh.node_coords[:,:2])
         self.rain = np.zeros(totPts, dtype=float)
@@ -300,6 +303,9 @@ class Model(object):
         inIDs = np.where(FVmesh.partIDs[self.recGrid.boundsPt:] == self._rank)[0]
         inIDs += self.recGrid.boundsPt
 
+        elevationTIN.assign_parameter_pit(FVmesh.neighbours,self.recGrid.boundsPt,
+                                            self.input.fillmax)
+
         # Set default with no rain
         self.force.update_force_TIN(FVmesh.node_coords[:,:2])
         self.rain = np.zeros(totPts, dtype=float)
@@ -319,7 +325,6 @@ class Model(object):
         self.inGIDs = inGIDs
         self.tMesh = tMesh
         self.totPts = totPts
-
 
     def compute_flow(self, verbose=False):
         """
@@ -344,10 +349,12 @@ class Model(object):
             if self.flow.dsmooth is None and self.input.filter:
                 self.flow.dsmooth = 0
         else:
-            self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
-                                                 self.recGrid.boundsPt,
-                                                 self.force.sealevel - self.input.sealimit,
-                                                 self.input.fillmax)
+            # self.fillH = elevationTIN.pit_filling_PD(self.elevation, self.FVmesh.neighbours,
+            #                                      self.recGrid.boundsPt,
+            #                                      self.force.sealevel - self.input.sealimit,
+            #                                      self.input.fillmax)
+            sea_lvl =  self.force.sealevel - self.input.sealimit
+            self.fillH = elevationTIN.pit_stack_PD(self.elevation,sea_lvl)
 
         if self._rank == 0 and verbose and self.input.spl and not self.input.filter:
             print " -   depression-less algorithm PD with stack", time.clock() - walltime
