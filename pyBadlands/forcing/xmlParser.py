@@ -12,6 +12,7 @@ This module encapsulates parsing functions of Badlands XmL input file.
 import os
 import glob
 import numpy
+import shutil
 import xml.etree.ElementTree as ET
 
 class xmlParser:
@@ -875,5 +876,6 @@ class xmlParser:
             os.makedirs(self.outDir)
             os.makedirs(self.outDir+'/h5')
             os.makedirs(self.outDir+'/xmf')
+            shutil.copyfile(self.inputfile,self.outDir)
 
         return
