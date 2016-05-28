@@ -876,6 +876,6 @@ class xmlParser:
             os.makedirs(self.outDir)
             os.makedirs(self.outDir+'/h5')
             os.makedirs(self.outDir+'/xmf')
-            shutil.copyfile(self.inputfile,self.outDir)
+            shutil.copy(self.inputfile,self.outDir)
 
         return
