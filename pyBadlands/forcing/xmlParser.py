@@ -50,6 +50,9 @@ class xmlParser:
         self.tDisplay = None
         self.minDT = 1.
 
+        self.stratdx = 0.
+        self.laytime = 0.
+
         self.seapos = 0.
         self.sealimit = 100.
         self.seafile = None
@@ -98,6 +101,8 @@ class xmlParser:
         self.makeUniqueOutputDir = makeUniqueOutputDir
 
         self.outDir = None
+        self.sh5file = 'h5/sed.time'
+
         self.th5file = 'h5/tin.time'
         self.txmffile = 'xmf/tin.time'
         self.txdmffile = 'tin.series.xdmf'
@@ -213,6 +218,27 @@ class xmlParser:
                 self.minDT = 1.
         else:
             raise ValueError('Error in the XmL file: time structure definition is required!')
+
+        # Extract stratigraphic structure information
+        strat = None
+        strat = root.find('strata')
+        if strat is not None:
+            element = None
+            element = strat.find('stratdx')
+            if element is not None:
+                self.stratdx = float(element.text)
+            else:
+                self.stratdx = 0.
+            element = None
+            element = strat.find('laytime')
+            if element is not None:
+                self.laytime = float(element.text)
+            else:
+                self.laytime = self.tDisplay
+            if self.laytime >  self.tDisplay:
+                 self.laytime = self.tDisplay
+            if self.tDisplay % self.laytime != 0:
+                raise ValueError('Error in the XmL file: stratal layer interval needs to be an exact multiple of the display interval!')
 
         # Extract sea-level structure information
         sea = None

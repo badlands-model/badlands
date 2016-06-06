@@ -142,6 +142,7 @@ class forceSim:
 
         self.next_display = None
         self.next_flexure = None
+        self.next_layer = None
         self.time_display = Tdisplay
 
         if self.seafile != None:

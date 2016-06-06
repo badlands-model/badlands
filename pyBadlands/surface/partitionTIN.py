@@ -110,7 +110,6 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
         nbprocX = Xdecomp
         nbprocY = Ydecomp
 
-
     # Check decomposition versus CPUs number
     if size != nbprocX*nbprocY:
         raise ValueError('Error in the decomposition grid: the number of domains \
@@ -201,7 +200,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     # Get extent of X partition
     xmin = X.min()
     xmax = X.max()
-    nbX = int((xmax-xmin)/nbprocX)
+    nbX = round((xmax-xmin)/nbprocX-0.5)
     Xstart = numpy.zeros( nbprocX )
     Xend = numpy.zeros( nbprocX )
     for p in range(nbprocX):
@@ -216,7 +215,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     # Get extent of Y partition
     ymin = Y.min()
     ymax = Y.max()
-    nbY = int((ymax-ymin)/nbprocY)
+    nbY = round((ymax-ymin)/nbprocY-0.5)
     Ystart = numpy.zeros( nbprocY )
     Yend = numpy.zeros( nbprocY )
     for p in range(nbprocY):

@@ -33,6 +33,14 @@
         <display>5000.</display>
     </time>
 
+    <!-- Simulation stratigraphic structure -->
+    <strata>
+        <!-- Stratal grid resolution [m] -->
+        <stratdx>500.</stratdx>
+        <!-- Stratal layer interval [a] -->
+        <laytime>5000.</laytime>
+    </strata>
+
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->

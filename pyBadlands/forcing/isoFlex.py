@@ -82,7 +82,7 @@ class isoFlex:
                         '0Moment0Shear', 'Periodic', 'Mirror'
 
         variable : xyTIN
-            Numpy float-type array containing the coordinates for each nodes in the TIN (in m2)
+            Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
         """
         # Build the flexural grid
         self.nx = nx

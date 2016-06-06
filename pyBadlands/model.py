@@ -3,7 +3,7 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from pyBadlands import (diffLinear, elevationTIN, flowNetwork, forceSim,
-                        FVmethod, isoFlex, partitionTIN, raster2TIN,
+                        FVmethod, isoFlex, strataMesh, partitionTIN, raster2TIN,
                         visualiseFlow, visualiseTIN, xmlParser)
 
 # profiling support
@@ -59,7 +59,6 @@ class Model(object):
         """
 
         # 1. Get DEM regular grid and create Badlands TIN.
-
         recGrid = raster2TIN.raster2TIN(filename, areaDelFactor=self.input.Afactor)
 
         self.fixIDs = recGrid.boundsPt + recGrid.edgesPt
@@ -175,6 +174,25 @@ class Model(object):
                                                          btype=self.input.btype)
 
         elevationTIN.assign_parameter_pit(FVmesh.neighbours,recGrid.boundsPt,self.input.fillmax)
+
+        # Build stratigraphic mesh
+        if self.input.laytime > 0:
+            sdx = self.input.stratdx
+            if sdx == 0:
+                sdx = recGrid.rectX[1] - recGrid.rectX[0]
+            bbX = [recGrid.rectX.min(),recGrid.rectX.max()]
+            bbY = [recGrid.rectY.min(),recGrid.rectY.max()]
+            layNb = int((self.input.tEnd - self.input.tStart)/self.input.laytime)+2
+
+            if self.input.restart:
+                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, RowProc,
+                                    ColProc, FVmesh.node_coords[:, :2],
+                                    self.input.outDir, self.input.sh5file, self.cumdiff,
+                                    self.input.rfolder, self.input.rstep)
+            else:
+                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, RowProc,
+                                    ColProc, FVmesh.node_coords[:, :2],
+                                    self.input.outDir, self.input.sh5file)
 
         # Set default to no rain
         force.update_force_TIN(FVmesh.node_coords[:,:2])
@@ -533,6 +551,10 @@ class Model(object):
             self.force.next_rain = self.force.T_rain[0, 0]
             self.force.next_disp = self.force.T_disp[0, 0]
             self.force.next_display = self.input.tStart
+            if self.input.laytime>0:
+                self.force.next_layer = self.input.tStart + self.input.laytime
+            else:
+                self.force.next_layer = self.input.tEnd + 1000.
             self.exitTime = self.input.tEnd
             if self.input.flexure:
                 self.force.next_flexure = self.input.tStart + self.input.ftime
@@ -540,6 +562,7 @@ class Model(object):
                 self.force.next_flexure = self.exitTime + self.input.tDisplay
             self.simStarted = True
 
+        outStrata = 0
         last_time = time.clock()
         last_output = time.clock()
         while self.tNow < tEnd:
@@ -602,6 +625,8 @@ class Model(object):
                     print "   - Compute flexural isostasy ", time.clock() - flextime
 
             if self.tNow >= self.force.next_display:
+                if self.force.next_display > self.input.tStart:
+                    outStrata = 1
                 # time to write output
                 self.write_output(outDir=self.input.outDir, step=self.outputStep)
                 # Update next display time
@@ -609,11 +634,20 @@ class Model(object):
                 self.outputStep += 1
                 last_output = time.clock()
 
-            tStop = min([self.force.next_display, self.force.next_flexure, tEnd, self.force.next_disp, self.force.next_rain])
+            if self.tNow >= self.force.next_layer:
+                # Update next stratal layer time
+                self.force.next_layer += self.input.laytime
+                self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                    self._rank, outStrata, self.outputStep-1)
+                outStrata = 0
+
+            tStop = min([self.force.next_display, self.force.next_layer, self.force.next_flexure,
+                        tEnd, self.force.next_disp, self.force.next_rain])
             self.compute_flux(tEnd=tStop, verbose=False)
 
         diff = time.clock() - last_time
         print 'tNow = %s (%0.02f seconds)' % (self.tNow, diff)
+
         # Isostatic flexure
         if self.input.flexure:
             flextime = time.clock()
@@ -634,6 +668,12 @@ class Model(object):
         self.write_output(outDir=self.input.outDir, step=self.outputStep)
         self.force.next_display += self.input.tDisplay
         self.outputStep += 1
+
+        if self.tNow >= self.force.next_layer:
+            # Update next stratal layer time
+            self.force.next_layer += self.input.laytime
+            self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                self._rank, 1, self.outputStep-1)
 
         if profile:
             pr.disable()
