@@ -39,8 +39,8 @@ class strataMesh():
         Numpy array containing the current depth of each stratigraphic layer
     """
 
-    def __init__(self, sdx, bbX, bbY, layNb, RowProc, ColProc,
-                 xyTIN, folder, h5file, cumdiff=0, rfolder=None, rstep=0):
+    def __init__(self, sdx, bbX, bbY, layNb, RowProc, ColProc, xyTIN, folder,
+                 h5file, cumdiff=0, rfolder=None, rstep=0):
         """
         Constructor.
 
@@ -127,7 +127,7 @@ class strataMesh():
             layThick = numpy.array((df['/layThick']))
             rstlays = layDepth.shape[1]
             layNb +=  rstlays
-            self.step = rstlays+1
+            self.step = rstlays
 
         # Define global stratigraphic dataset
         self.stratIn = numpy.zeros([self.ptsNb],dtype=int)
