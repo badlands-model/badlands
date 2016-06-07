@@ -38,7 +38,7 @@
         <!-- Stratal grid resolution [m] -->
         <stratdx>500.</stratdx>
         <!-- Stratal layer interval [a] -->
-        <laytime>5000.</laytime>
+        <laytime>2500.</laytime>
     </strata>
 
     <!-- Sea-level structure -->
