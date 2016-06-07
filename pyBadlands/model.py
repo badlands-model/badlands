@@ -185,13 +185,11 @@ class Model(object):
             layNb = int((self.input.tEnd - self.input.tStart)/self.input.laytime)+2
 
             if self.input.restart:
-                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, RowProc,
-                                    ColProc, FVmesh.node_coords[:, :2],
+                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
                                     self.input.outDir, self.input.sh5file, self.cumdiff,
                                     self.input.rfolder, self.input.rstep)
             else:
-                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, RowProc,
-                                    ColProc, FVmesh.node_coords[:, :2],
+                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
                                     self.input.outDir, self.input.sh5file)
 
         # Set default to no rain
@@ -333,6 +331,10 @@ class Model(object):
         if self.input.flexure:
             self.tinFlex = np.zeros(totPts, dtype=float)
             self.flex.update_flexure_parameters(FVmesh.node_coords[:,:2])
+
+        # Update stratigraphic mesh
+        if self.input.laytime > 0:
+            self.strata.update_TIN(FVmesh.node_coords[:, :2])
 
         # Save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
@@ -592,8 +594,15 @@ class Model(object):
                     self.applyDisp = True
             else:
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
-                    updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
+                    if self.input.laytime == 0:
+                        updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
+                    else:
+                        updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs,
+                                                                True, self.strata.xyi, self.strata.ids)
                     if updateMesh:
+                        if self.input.laytime > 0:
+                            self.strata.move_mesh(self.force.sdispX,self.force.sdispY,self.force.sdispZ)
+
                         self.force.dispZ = self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours,
                                            self.FVmesh.edge_length, self.recGrid.boundsPt)
                         if self.input.flexure:

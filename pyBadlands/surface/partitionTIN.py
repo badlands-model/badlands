@@ -200,7 +200,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     # Get extent of X partition
     xmin = X.min()
     xmax = X.max()
-    nbX = round((xmax-xmin)/nbprocX-0.5)
+    nbX = int((xmax-xmin)/nbprocX)
     Xstart = numpy.zeros( nbprocX )
     Xend = numpy.zeros( nbprocX )
     for p in range(nbprocX):
@@ -215,7 +215,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     # Get extent of Y partition
     ymin = Y.min()
     ymax = Y.max()
-    nbY = round((ymax-ymin)/nbprocY-0.5)
+    nbY = int((ymax-ymin)/nbprocY)
     Ystart = numpy.zeros( nbprocY )
     Yend = numpy.zeros( nbprocY )
     for p in range(nbprocY):

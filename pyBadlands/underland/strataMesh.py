@@ -39,7 +39,7 @@ class strataMesh():
         Numpy array containing the current depth of each stratigraphic layer
     """
 
-    def __init__(self, sdx, bbX, bbY, layNb, RowProc, ColProc, xyTIN, folder,
+    def __init__(self, sdx, bbX, bbY, layNb, xyTIN, folder,
                  h5file, cumdiff=0, rfolder=None, rstep=0):
         """
         Constructor.
@@ -57,12 +57,6 @@ class strataMesh():
 
         variable: layNb
             Total number of stratigraphic layers
-
-        variable: RowProc
-            Number of processor partition along the X axis
-
-        variable: ColProc
-            Number of processor partition along the Y axis
 
         variable : xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
@@ -92,6 +86,8 @@ class strataMesh():
         self.folder = folder
         self.h5file = h5file
         self.step = 0
+        self.upper = None
+        self.lower = None
 
         # User defined parameter
         self.dx = sdx
@@ -105,7 +101,7 @@ class strataMesh():
         self.xyi = numpy.dstack([xi.flatten(), yi.flatten()])[0]
 
         # Partition mesh
-        self.buildPartition(bbX, bbY, RowProc, ColProc)
+        self.buildPartition(bbX, bbY)
         self.ptsNb = len(self.ids)
 
         if rstep > 0:
@@ -141,9 +137,8 @@ class strataMesh():
             self.stratThick[:,:rstlays] = layThick
 
         # Define TIN grid kdtree for interpolation
-        self.xyTIN = xyTIN
-        self.tree = cKDTree(self.xyTIN)
-        tindx = self.xyTIN[1,0] - self.xyTIN[0,0]
+        self.tree = cKDTree(xyTIN)
+        tindx = xyTIN[1,0] - xyTIN[0,0]
         self.searchpts = max(int(sdx*sdx/(tindx*tindx)),4)
 
         if rstep > 0:
@@ -162,18 +157,173 @@ class strataMesh():
 
         return
 
-    def update_stratal_parameters(self, xyTIN, cumdiff, elev):
+    def update_TIN(self, xyTIN):
         """
-        Update TIN variables after 3D displacements.
+        Update stratal mesh after 3D displacements.
 
         variable : xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
         """
 
-        self.xyTIN = xyTIN
-        self.tree = cKDTree(self.xyTIN)
+        # Update TIN grid kdtree for interpolation
+        self.tree = cKDTree(xyTIN)
 
-        # Update elevation and cumlative change
+        return
+
+    def move_mesh(self, dispX, dispY):
+        """
+        Update stratal mesh after 3D displacements.
+
+        variable : dispX
+            Numpy float-type array containing X-displacement for each nodes in the stratal mesh
+
+        variable : dispY
+            Numpy float-type array containing Y-displacement for each nodes in the stratal mesh
+        """
+
+        # Initialise MPI communications
+        comm = mpi.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        # Move coordinates
+        moveXY = numpy.zeros([self.xyi.shape[0],2])
+        moveXY[:,0] = self.xyi[:,0] + dispX
+        moveXY[:,1] = self.xyi[:,1] + dispY
+
+        # Define point ids in local partition which needs to be send to neighbourhood
+        l0 = self.nx
+        l1 = l0 + self.nx
+        u1 = self.ptsNb - self.nx
+        u0 = u1 - self.nx
+        shape = self.strataThick[l0:l1,:self.step+1].shape()
+
+        if size > 1:
+            if rank == 0:
+                # Send upper row to next processor
+                uData1 = self.stratThick[u0:u1,:self.step+1].ravel()
+                uData2 = self.stratElev[u0:u1,:self.step+1].ravel()
+                uData3 = self.prevload[u0:u1]
+                comm.Send(uData1, dest=rank+1, tag=rank)
+                comm.Send(uData2, dest=rank+1, tag=rank+2000)
+                comm.Send(uData3, dest=rank+1, tag=rank+4000)
+                # Receive upper ghost row from next processor
+                comm.Recv(guData1, source=rank+1, tag=rank+1)
+                comm.Recv(guData2, source=rank+1, tag=rank+2001)
+                comm.Recv(guData3, source=rank+1, tag=rank+4001)
+                guData1.reshape(shape)
+                guData2.reshape(shape)
+
+            elif rank == size-1:
+                # Send lower row to previous processor
+                lData1 = self.stratThick[l0:l1,:self.step+1].ravel()
+                lData2 = self.stratElev[l0:l1,:self.step+1].ravel()
+                lData3 = self.prevload[l0:l1]
+                comm.Send(lData1, dest=rank-1, tag=rank)
+                comm.Send(lData2, dest=rank-1, tag=rank+2000)
+                comm.Send(lData3, dest=rank-1, tag=rank+4000)
+                # Receive lower ghost row from previous processor
+                comm.Recv(glData1, source=rank-1, tag=rank-1)
+                comm.Recv(glData2, source=rank-1, tag=rank+1999)
+                comm.Recv(glData3, source=rank-1, tag=rank+3999)
+                glData1.reshape(shape)
+                glData2.reshape(shape)
+
+            else:
+                # Send lower row to previous processor
+                lData1 = self.stratThick[l0:l1,:self.step+1].ravel()
+                lData2 = self.stratElev[l0:l1,:self.step+1].ravel()
+                lData3 = self.prevload[l0:l1]
+                comm.Send(lData1, dest=rank-1, tag=rank)
+                comm.Send(lData2, dest=rank-1, tag=rank+2000)
+                comm.Send(lData3, dest=rank-1, tag=rank+4000)
+                # Receive lower ghost row from previous processor
+                comm.Recv(glData1, source=rank-1, tag=rank-1)
+                comm.Recv(glData2, source=rank-1, tag=rank+1999)
+                comm.Recv(glData3, source=rank-1, tag=rank+3999)
+                glData1.reshape(shape)
+                glData2.reshape(shape)
+                # Send upper row to next processor
+                uData1 = self.stratThick[u0:u1,:self.step+1].ravel()
+                uData2 = self.stratElev[u0:u1,:self.step+1].ravel()
+                uData3 = self.prevload[u0:u1]
+                comm.Send(uData1, dest=rank+1, tag=rank)
+                comm.Send(uData2, dest=rank+1, tag=rank+2000)
+                comm.Send(uData3, dest=rank+1, tag=rank+4000)
+                # Receive upper ghost row from next processor
+                comm.Recv(guData1, source=rank+1, tag=rank+1)
+                comm.Recv(guData2, source=rank+1, tag=rank+2001)
+                comm.Recv(guData3, source=rank+1, tag=rank+4001)
+                guData1.reshape(shape)
+                guData2.reshape(shape)
+
+        # Build the deformed mesh
+        if size > 1:
+            u0 = self.upper[rank,0]
+            u1 = self.upper[rank,1]
+            l0 = self.lower[rank,0]
+            l1 = self.lower[rank,1]
+            if rank == 0:
+                deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[u0:u1,:]), axis=0)
+                deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], guData1), axis=0)
+                deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], guData2), axis=0)
+                deformLoad = numpy.concatenate((self.prevload, guData3), axis=0)
+            elif rank == size-1:
+                deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[l0:l1,:]), axis=0)
+                deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], glData1), axis=0)
+                deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], glData2), axis=0)
+                deformLoad = numpy.concatenate((self.prevload, glData3), axis=0)
+            else:
+                deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[l0:l1,:]), axis=0)
+                deformXY = numpy.concatenate((deformXY, moveXY[u0:u1,:]), axis=0)
+                deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], glData1), axis=0)
+                deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], glData2), axis=0)
+                deformLoad = numpy.concatenate((self.prevload, glData3), axis=0)
+                deformThick = numpy.concatenate((deformThick, guData1), axis=0)
+                deformElev = numpy.concatenate((deformElev, guData2), axis=0)
+                deformLoad = numpy.concatenate((deformLoad, guData3), axis=0)
+        else:
+            deformXY = moveXY
+            deformThick = self.stratThick[:,:self.step+1]
+            deformElev = self.stratElev[:,:self.step+1]
+            deformLoad = self.prevload
+
+        # Build the kd-tree and perform interpolation
+        deformtree = cKDTree(self.deformXY)
+        distances, indices = deformtree.query(self.xyi, k=4)
+        onIDs = numpy.where(distances[:,0] == 0)[0]
+
+        thick = numpy.zeros(len(self.xyi))
+        elev = numpy.zeros(len(self.xyi))
+        # Loop through the layers and perform interpolation
+        for k in range(self.step+1):
+            if len(deformElev[indices,k].shape) == 3:
+                thick_vals = deformThick[indices,k][:,:,0]
+                elev_vals = deformElev[indices,k][:,:,0]
+            else:
+                thick_vals = deformThick[indices,k]
+                elev_vals = deformElev[indices,k]
+            felev = numpy.average(elev_vals,weights=(1./distances), axis=1)
+            fthick = numpy.average(thick_vals,weights=(1./distances), axis=1)
+            if len(onIDs) > 0:
+                felev[onIDs] = deformElev[indices[onIDs,0],k]
+                fthick[onIDs] = deformThick[indices[onIDs,0],k]
+            fthick[fthick < 0.] = 0.
+            depIDs = numpy.where(fthick>0)[0]
+            self.stratIN[depIDs,k] = 1
+            self.stratThick[:,k] = fthick
+            self.stratElev[:,k] = felev
+
+        # Apply the displacement to previous load
+        load = numpy.zeros(len(self.xyi))
+        if len(deformLoad[indices].shape) == 3:
+            load_vals = deformLoad[indices][:,:,0]
+        else:
+            load_vals = deformLoad[indices]
+        fload = numpy.average(load_vals,weights=(1./distances), axis=1)
+        if len(onIDs) > 0:
+            fload[onIDs] = deformLoad[indices[onIDs,0]]
+        self.prevload = fload
 
         return
 
@@ -220,6 +370,7 @@ class strataMesh():
         scumload = fcum - self.prevload
         self.prevload = fcum
         selev = felev
+
         # Update stratal elevation
         self.stratElev[self.ids,self.step] =  selev[self.ids]-sea
 
@@ -240,17 +391,9 @@ class strataMesh():
 
         return
 
-    def buildPartition(self, bbX, bbY, RowProc, ColProc):
+    def buildPartition(self, bbX, bbY):
         """
         Define a partition for the stratal mesh.
-
-        Parameters
-        ----------
-        variable: ptsNb
-            Number of points in the regular grid
-
-        variable: layNb
-            Total number of stratigraphic layers
         """
 
         # Initialise MPI communications
@@ -259,41 +402,37 @@ class strataMesh():
         size = comm.Get_size()
 
         # extent of X partition
-        Xstart = numpy.zeros( RowProc )
-        Xend = numpy.zeros( RowProc )
-        for p in range(RowProc):
-            if p == 0:
-                Xstart[p] = p*self.nx + bbX[0]
-                Xend[p] = Xstart[p] + self.nx + self.dx
-            else:
-                Xstart[p] = p*self.nx + bbX[0] - self.dx
-                Xend[p] = Xstart[p] + self.nx + 2 * self.dx
-        Xend[RowProc-1] = bbX[1]
-
-        # extent of Y partition
-        Ystart = numpy.zeros( ColProc )
-        Yend = numpy.zeros( ColProc )
-        for p in range(ColProc):
-            if p == 0:
-                Ystart[p] = p*self.ny + bbY[0]
-                Yend[p] = Ystart[p] + self.ny + self.dx
-            else:
-                Ystart[p] = p*self.ny + bbY[0] - self.dx
-                Yend[p] = Ystart[p] + self.ny + 2 * self.dx
-        Yend[ColProc-1] = bbY[1]
-
-        # Define partitions ID globally
-        size = ColProc * RowProc
-        Xst = numpy.zeros( size )
-        Xed = numpy.zeros( size )
         Yst = numpy.zeros( size )
         Yed = numpy.zeros( size )
-        for q in range(RowProc):
-            for p in range(ColProc):
-                Xst[q + p * RowProc] = Xstart[q]
-                Yst[q + p * RowProc] = Ystart[p]
-                Xed[q + p * RowProc] = Xend[q]
-                Yed[q + p * RowProc] = Yend[p]
+        partYID = numpy.zeros( (size,2) )
+        nbY = int((self.ny-1) / size)
+        for p in range(size):
+            if p == 0:
+                Yst[p] = bbY[0]
+                Yed[p] = Yst[p] + nbY*self.dx
+                partYID[p,0] = 0
+                partYID[p,1] = (nbY+1)*self.nx
+            else:
+                Yst[p] = Yed[p-1]
+                Yed[p] = Yst[p] + nbY*self.dx
+                partYID[p,0] = partYID[p-1,1] - self.nx
+                partYID[p,1] = partYID[p,0] + (nbY+1)*self.nx
+        Yed[size-1] = bbY[1]
+        partYID[size-1,1] = self.ny*self.nx
+
+        # Get send/receive data ids for each processors
+        self.upper = numpy.zeros( (size,2) )
+        self.lower = numpy.zeros( (size,2) )
+        self.upper[rank,0] = partYID[rank,1]
+        self.upper[rank,1] = partYID[rank,1] + self.nx
+        self.lower[rank,0] = partYID[rank,0]
+        self.lower[rank,1] = partYID[rank,0] - self.nx
+
+        # Define partitions ID globally
+        Xst = numpy.zeros( size )
+        Xed = numpy.zeros( size )
+        Xst += bbX[0]
+        Xed += bbX[1]
 
         # Loop over node coordinates and find if they belong to local partition
         # Note: used a Cython/Fython class to increase search loop performance... in libUtils

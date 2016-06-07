@@ -137,6 +137,8 @@ class forceSim:
         self.dispX = None
         self.dispY = None
         self.dispZ = None
+        self.sdispX = None
+        self.sdispY = None
         self.merge3d = None
         self.time3d = None
 
@@ -387,7 +389,7 @@ class forceSim:
 
         return tinDisp
 
-    def load_Disp_map(self, time, tXY, inIDs):
+    def load_Disp_map(self, time, tXY, inIDs, strata=False, sXY=None, insIDs=None):
         """
         Load 3D displacements map for a given period and perform interpolation from regular grid to unstructured TIN one.
 
@@ -399,8 +401,17 @@ class forceSim:
         float : tXY
             Unstructured grid (TIN) XY coordinates.
 
-        integer : inDs
+        integer : inIDs
             List of unstructured vertices contained in each partition.
+
+        boolean : strata
+            Stratigraphic module flag.
+
+        float : sXY
+            Stratigraphic regular grid XY coordinates.
+
+        integer : insIDs
+            List of stratigraphic vertices contained in each partition.
         """
 
         # Initialise MPI communications
@@ -416,7 +427,14 @@ class forceSim:
         dispZ = numpy.zeros(totPts, dtype=float)
 
         dpXY = tXY[inIDs,:]
-        locPts = len(inIDs)
+
+        if strata:
+            totsPts = len(sXY[:,0])
+            sdispX = numpy.zeros(totsPts, dtype=float)
+            sdispY = numpy.zeros(totsPts, dtype=float)
+            sdispZ = numpy.zeros(totsPts, dtype=float)
+
+            dpsXY = sXY[insIDs,:]
 
         events = numpy.where( (self.T_disp[:,1] - time) <= 0)[0]
         event = len(events)
@@ -453,15 +471,32 @@ class forceSim:
             comm.Allreduce(mpi.IN_PLACE, dispZ, op=mpi.MAX)
             update = True
 
+            if strata:
+                sdispX.fill(-1.e6)
+                sdispY.fill(-1.e6)
+
+                sdispX[insIDs] = interpolate.interpn( (self.regX, self.regY), disprX, dpsXY, method='linear')
+                sdispY[insIDs] = interpolate.interpn( (self.regX, self.regY), disprY, dpsXY, method='linear')
+
+                comm.Allreduce(mpi.IN_PLACE, sdispX, op=mpi.MAX)
+                comm.Allreduce(mpi.IN_PLACE, sdispY, op=mpi.MAX)
+
         if self.time3d > 0. and self.Map_disp[event] != None:
             rate = (self.next_disp - time) / (self.T_disp[event,1] - self.T_disp[event,0])
             dispX = dispX * rate
             dispY = dispY * rate
             dispZ = dispZ * rate
+            if strata:
+                sdispX = sdispX * rate
+                sdispY = sdispY * rate
 
         self.dispX = dispX
         self.dispY = dispY
         self.dispZ = dispZ
+
+        if strata:
+            self.sdispX = sdispX
+            self.sdispY = sdispY
 
         return update
 
