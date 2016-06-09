@@ -601,7 +601,7 @@ class Model(object):
                                                                 True, self.strata.xyi, self.strata.ids)
                     if updateMesh:
                         if self.input.laytime > 0:
-                            self.strata.move_mesh(self.force.sdispX,self.force.sdispY,self.force.sdispZ)
+                            self.strata.move_mesh(self.force.sdispX,self.force.sdispY)
 
                         self.force.dispZ = self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours,
                                            self.FVmesh.edge_length, self.recGrid.boundsPt)

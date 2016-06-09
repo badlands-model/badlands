@@ -93,8 +93,8 @@ class strataMesh():
         self.dx = sdx
 
         # Create stratal regular grid
-        self.nx = round((bbX[1]-bbX[0])/sdx - 0.5)+1
-        self.ny = round((bbY[1]-bbY[0])/sdx - 0.5)+1
+        self.nx = int(round((bbX[1]-bbX[0])/sdx - 0.5)+1)
+        self.ny = int(round((bbY[1]-bbY[0])/sdx - 0.5)+1)
         xgrid = numpy.linspace(bbX[0],bbX[1],num=self.nx)
         ygrid = numpy.linspace(bbY[0],bbY[1],num=self.ny)
         xi, yi = numpy.meshgrid(xgrid, ygrid)
@@ -196,7 +196,7 @@ class strataMesh():
         l1 = l0 + self.nx
         u1 = self.ptsNb - self.nx
         u0 = u1 - self.nx
-        shape = self.strataThick[l0:l1,:self.step+1].shape()
+        shape = (l1-l0, self.step+1)
 
         if size > 1:
             if rank == 0:
@@ -289,7 +289,7 @@ class strataMesh():
             deformLoad = self.prevload
 
         # Build the kd-tree and perform interpolation
-        deformtree = cKDTree(self.deformXY)
+        deformtree = cKDTree(deformXY)
         distances, indices = deformtree.query(self.xyi, k=4)
         onIDs = numpy.where(distances[:,0] == 0)[0]
 
@@ -310,8 +310,8 @@ class strataMesh():
                 fthick[onIDs] = deformThick[indices[onIDs,0],k]
             fthick[fthick < 0.] = 0.
             depIDs = numpy.where(fthick>0)[0]
-            self.stratIN[depIDs,k] = 1
             self.stratThick[:,k] = fthick
+            self.stratIn[depIDs] = 1
             self.stratElev[:,k] = felev
 
         # Apply the displacement to previous load
