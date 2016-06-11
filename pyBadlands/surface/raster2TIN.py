@@ -160,8 +160,6 @@ class raster2TIN:
         self.rny = int(round((maxY-minY)/resDEM+1))
         self.regX = numpy.linspace(minX,maxX,self.rnx)
         self.regY = numpy.linspace(minY,maxY,self.rny)
-        print self.rectZ.shape
-        print self.rnx, self.rny
         self.regZ = numpy.reshape(self.rectZ,(self.rnx,self.rny),order='F')
 
     def _TIN_ghosts_bounds(self):

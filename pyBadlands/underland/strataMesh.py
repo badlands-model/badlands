@@ -142,7 +142,6 @@ class strataMesh():
         self.searchpts = max(int(sdx*sdx/(tindx*tindx)),4)
 
         if rstep > 0:
-            scumload = numpy.zeros(len(self.xyi))
             distances, indices = self.tree.query(self.xyi, k=self.searchpts)
 
             if len(cumdiff[indices].shape) == 3:
@@ -170,7 +169,7 @@ class strataMesh():
 
         return
 
-    def move_mesh(self, dispX, dispY):
+    def move_mesh(self, dispX, dispY, verbose=False):
         """
         Update stratal mesh after 3D displacements.
 
@@ -187,6 +186,8 @@ class strataMesh():
         size = comm.Get_size()
 
         # Move coordinates
+        walltime = time.clock()
+        st_time = walltime
         moveXY = numpy.zeros([self.xyi.shape[0],2])
         moveXY[:,0] = self.xyi[:,0] + dispX
         moveXY[:,1] = self.xyi[:,1] + dispY
@@ -198,7 +199,11 @@ class strataMesh():
         u0 = u1 - self.nx
         shape = (l1-l0, self.step+1)
 
+        if rank == 0 and verbose:
+            print " - move stratal mesh ", time.clock() - walltime
+
         if size > 1:
+            walltime = time.clock()
             if rank == 0:
                 # Send upper row to next processor
                 uData1 = self.stratThick[u0:u1,:self.step+1].ravel()
@@ -257,7 +262,7 @@ class strataMesh():
                 guData1.reshape(shape)
                 guData2.reshape(shape)
 
-        # Build the deformed mesh
+        # Build deformed mesh
         if size > 1:
             u0 = self.upper[rank,0]
             u1 = self.upper[rank,1]
@@ -282,48 +287,68 @@ class strataMesh():
                 deformThick = numpy.concatenate((deformThick, guData1), axis=0)
                 deformElev = numpy.concatenate((deformElev, guData2), axis=0)
                 deformLoad = numpy.concatenate((deformLoad, guData3), axis=0)
+
+            if rank == 0 and verbose:
+                print " - send/receive communication stratal mesh ", time.clock() - walltime
         else:
+            walltime = time.clock()
             deformXY = moveXY
             deformThick = self.stratThick[:,:self.step+1]
             deformElev = self.stratElev[:,:self.step+1]
             deformLoad = self.prevload
+            if rank == 0 and verbose:
+                print " - create deformed stratal mesh arrays ", time.clock() - walltime
 
-        # Build the kd-tree and perform interpolation
+        # Build the kd-tree
+        walltime = time.clock()
         deformtree = cKDTree(deformXY)
+        if rank == 0 and verbose:
+            print " - create deformed stratal mesh kd-tree ", time.clock() - walltime
+
+        walltime = time.clock()
         distances, indices = deformtree.query(self.xyi, k=4)
-        onIDs = numpy.where(distances[:,0] == 0)[0]
+        if rank == 0 and verbose:
+            print " - query stratal mesh kd-tree ", time.clock() - walltime
 
-        thick = numpy.zeros(len(self.xyi))
-        elev = numpy.zeros(len(self.xyi))
-        # Loop through the layers and perform interpolation
-        for k in range(self.step+1):
-            if len(deformElev[indices,k].shape) == 3:
-                thick_vals = deformThick[indices,k][:,:,0]
-                elev_vals = deformElev[indices,k][:,:,0]
-            else:
-                thick_vals = deformThick[indices,k]
-                elev_vals = deformElev[indices,k]
-            felev = numpy.average(elev_vals,weights=(1./distances), axis=1)
-            fthick = numpy.average(thick_vals,weights=(1./distances), axis=1)
-            if len(onIDs) > 0:
-                felev[onIDs] = deformElev[indices[onIDs,0],k]
-                fthick[onIDs] = deformThick[indices[onIDs,0],k]
-            fthick[fthick < 0.] = 0.
-            depIDs = numpy.where(fthick>0)[0]
-            self.stratThick[:,k] = fthick
-            self.stratIn[depIDs] = 1
-            self.stratElev[:,k] = felev
+        # Compute inverse weighting distance
+        walltime = time.clock()
+        w = 1.0 / distances**2
+        w3D = w.reshape((len(self.xyi),4,1))
+        weights = numpy.tile(w3D, (1,1,self.step+1))
 
-        # Apply the displacement to previous load
-        load = numpy.zeros(len(self.xyi))
-        if len(deformLoad[indices].shape) == 3:
-            load_vals = deformLoad[indices][:,:,0]
+        # Perform interpolation
+        tmpIDs = numpy.where(distances[:,0] == 0)[0]
+        if len(tmpIDs) > 0:
+            self.stratThick[tmpIDs,:self.step+1] = deformElev[indices[tmpIDs,0],:self.step+1]
+            self.stratElev[tmpIDs,:self.step+1]  = deformThick[indices[tmpIDs,0],:self.step+1]
+            tmpID = numpy.where(distances[:,0] > 0)[0]
+            self.stratThick[tmpID,:self.step+1] = numpy.average(deformThick[indices[tmpID,:],:],
+                                                                weights=weights[tmpID,:], axis=1)
+            self.stratElev[tmpID,:self.step+1] = numpy.average(deformElev[indices[tmpID,:],:],
+                                                                weights=weights[tmpID,:], axis=1)
+
         else:
-            load_vals = deformLoad[indices]
-        fload = numpy.average(load_vals,weights=(1./distances), axis=1)
-        if len(onIDs) > 0:
-            fload[onIDs] = deformLoad[indices[onIDs,0]]
-        self.prevload = fload
+            self.stratThick[:,:self.step+1] = numpy.average(deformThick[indices,:],weights=weights, axis=1)
+            self.stratElev[:,:self.step+1] = numpy.average(deformElev[indices,:],weights=weights, axis=1)
+
+        # Reset depostion flag
+        self.stratIn.fill(0)
+        tmpID = numpy.where(numpy.amax(self.stratThick[:,:self.step+1], axis=1)>0)[0]
+        self.stratIn[tmpID] = 1
+        if rank == 0 and verbose:
+            print " - perform stratal mesh interpolation ", time.clock() - walltime
+
+        # Apply displacements to previous load
+        if len(deformLoad[indices].shape) == 3:
+            self.prevload = numpy.average(deformLoad[indices][:,:,0],weights=w, axis=1)
+        else:
+            self.prevload = numpy.average(deformLoad[indices],weights=w, axis=1)
+        if len(tmpIDs) > 0:
+            self.prevload[tmpIDs] = deformLoad[indices[tmpIDs,0]]
+
+
+        if rank == 0 and verbose:
+            print " - moving stratal mesh function ", time.clock() - st_time
 
         return
 
@@ -582,109 +607,3 @@ class strataMesh():
             f["layThick"][:,:self.step+1] = self.stratThick[:,:self.step+1]
 
         return
-
-'''
-class strataMesh():
-    """
-    This class builds stratigraphic layer on each depositional point of the unstructured mesh.
-
-    Parameters
-    ----------
-    string : timeID
-        Numpy array containing the stratigraphic time layer index
-
-    string : elev
-        Numpy array containing the relative elevation of the layer at the time of deposition
-
-    variable: thick
-        Numpy array containing the thickness of each stratigraphic layer
-    """
-
-    def __init__(self, timeslice, ):
-        self.timeID = numpy.array([],dtype=int)
-        self.elev = numpy.array([])
-        self.thick = numpy.array([])
-
-
-    def add2layer(self, step, elev, depo):
-        """
-        Add deposit to top stratigraphic layer.
-
-        Parameters
-        ----------
-        variable: step
-            Time step of the running simulation
-
-        variable: elev
-            Initial elevation of the layer deposit relative to sea level [m]
-
-        variable: depo
-            Value of the deposition for the given point [m]
-        """
-
-        # First time we store some deposits on this node
-        if self.timeID.size == 0:
-            self.timeID = numpy.append(self.timeID, step)
-            self.elev = numpy.append(self.elev, elev)
-            self.thick = numpy.append(self.thick, depo)
-        else:
-            # New stratigraphic layer deposit
-            if self.timeID[-1] < step:
-                self.timeID = numpy.append(self.timeID, step)
-                self.elev = numpy.append(self.elev, elev)
-                self.thick = numpy.append(self.thick, depo)
-            # Add to existing stratigraphic layer
-            else:
-                self.thick[-1] += depo
-
-        return
-
-    def take2layer(self, ero):
-        """
-        Erode top stratigraphic layer.
-
-        Parameters
-        ----------
-        variable: ero
-            Value of the erosion for the given point [m]
-
-        Return
-        ----------
-        variable: deleteStrat
-            Flag to delete completely eroded stratal layer
-        """
-
-        deleteStrat = False
-
-        if ero <= self.thick[-1]:
-            self.thick[-1] -= ero
-        elif ero >= numpy.sum(self.thick):
-            deleteStrat = True
-            self.timeID = numpy.array([],dtype=int)
-            self.elev = numpy.array([])
-            self.thick = numpy.array([])
-        else:
-            cumthick = numpy.cumsum(self.thick[::-1])[::-1]
-            eroLay = numpy.where(cumthick<ero)[0]
-            self.thick = numpy.delete(self.thick,eroLay)
-            self.timeID = numpy.delete(self.timeID,eroLay)
-            self.elev = numpy.delete(self.elev,eroLay)
-            stillero = ero - cumthick[eroLay[0]]
-            if stillero > 0.:
-                self.thick[-1] -= ero
-
-        if self.thick.size > 0:
-            if self.thick[-1] < 1.e-6:
-                size = self.thick.size
-                if size == 1:
-                    deleteStrat = True
-                    self.timeID = numpy.array([],dtype=int)
-                    self.elev = numpy.array([])
-                    self.thick = numpy.array([])
-                else:
-                    self.thick = numpy.delete(self.thick,[size-1])
-                    self.timeID = numpy.delete(self.timeID,[size-1])
-                    self.elev = numpy.delete(self.elev,[size-1])
-
-        return deleteStrat
-'''
