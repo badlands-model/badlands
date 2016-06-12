@@ -39,6 +39,19 @@
         <stratdx>500.</stratdx>
         <!-- Stratal layer interval [a] -->
         <laytime>2500.</laytime>
+        <!-- Number of stratigraphic regions (optional) -->
+        <region>1</region>
+        <!-- Region bounding box (optional)-->
+        <domain>
+            <!-- Lower left corner X coordinate -->
+            <llcx>87000</llcx>
+            <!-- Lower left corner Y coordinate -->
+            <llcy>34000</llcy>
+            <!-- Upper right corner X coordinate -->
+            <urcx>132000</urcx>
+            <!-- Upper right corner Y coordinate -->
+            <urcy>169000</urcy>
+        </domain>
     </strata>
 
     <!-- Sea-level structure -->

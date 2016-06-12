@@ -39,8 +39,8 @@ class strataMesh():
         Numpy array containing the current depth of each stratigraphic layer
     """
 
-    def __init__(self, sdx, bbX, bbY, layNb, xyTIN, folder,
-                 h5file, cumdiff=0, rfolder=None, rstep=0):
+    def __init__(self, sdx, bbX, bbY, layNb, xyTIN, folder, h5file,
+                 cumdiff=0, rfolder=None, rstep=0, regionID=0):
         """
         Constructor.
 
@@ -72,6 +72,9 @@ class strataMesh():
 
         variable: rfolder, rstep
             Restart folder and step.
+
+        variable: regionID
+            Stratal domain ID.
         """
 
         # Initialise MPI communications
@@ -84,7 +87,7 @@ class strataMesh():
         self.prevload = 0.
         self.tree = None
         self.folder = folder
-        self.h5file = h5file
+        self.h5file = h5file+'.region%s.time'%regionID
         self.step = 0
         self.upper = None
         self.lower = None
@@ -107,7 +110,7 @@ class strataMesh():
         if rstep > 0:
             if os.path.exists(rfolder):
                 folder = rfolder+'/h5/'
-                fileCPU = 'sed.time%s.p*.hdf5'%rstep
+                fileCPU = 'sed.region%s.time%s.p*.hdf5'%(regionID,rstep)
                 restartncpus = len(glob.glob1(folder,fileCPU))
                 if restartncpus == 0:
                     raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
@@ -117,7 +120,7 @@ class strataMesh():
             if restartncpus != size:
                 raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
 
-            df = h5py.File('%s/h5/sed.time%s.p%s.hdf5'%(rfolder, rstep, rank), 'r')
+            df = h5py.File('%s/h5/sed.region%s.time%s.p%s.hdf5'%(rfolder, regionID, rstep, rank), 'r')
             layDepth = numpy.array((df['/layDepth']))
             layElev = numpy.array((df['/layElev']))
             layThick = numpy.array((df['/layThick']))
@@ -596,14 +599,14 @@ class strataMesh():
 
             # Write stratal layers depth per cells
             f.create_dataset('layDepth',shape=(self.ptsNb,self.step+1), dtype='float32', compression='gzip')
-            f["layDepth"][:,:self.step+1] = self.stratDepth[:,:self.step+1]
+            f["layDepth"][:,:self.step+1] = self.stratDepth[self.ids,:self.step+1]
 
             # Write stratal layers elevations per cells
             f.create_dataset('layElev',shape=(self.ptsNb,self.step+1), dtype='float32', compression='gzip')
-            f["layElev"][:,:self.step+1] = self.stratElev[:,:self.step+1]
+            f["layElev"][:,:self.step+1] = self.stratElev[self.ids,:self.step+1]
 
             # Write stratal layers thicknesses per cells
             f.create_dataset('layThick',shape=(self.ptsNb,self.step+1), dtype='float32', compression='gzip')
-            f["layThick"][:,:self.step+1] = self.stratThick[:,:self.step+1]
+            f["layThick"][:,:self.step+1] = self.stratThick[self.ids,:self.step+1]
 
         return

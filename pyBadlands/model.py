@@ -178,19 +178,33 @@ class Model(object):
         # Build stratigraphic mesh
         if self.input.laytime > 0:
             sdx = self.input.stratdx
-            if sdx == 0:
-                sdx = recGrid.rectX[1] - recGrid.rectX[0]
-            bbX = [recGrid.rectX.min(),recGrid.rectX.max()]
-            bbY = [recGrid.rectY.min(),recGrid.rectY.max()]
-            layNb = int((self.input.tEnd - self.input.tStart)/self.input.laytime)+2
-
-            if self.input.restart:
-                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
-                                    self.input.outDir, self.input.sh5file, self.cumdiff,
-                                    self.input.rfolder, self.input.rstep)
+            if self.input.region == 0:
+                if sdx == 0:
+                    sdx = recGrid.rectX[1] - recGrid.rectX[0]
+                bbX = [recGrid.rectX.min(),recGrid.rectX.max()]
+                bbY = [recGrid.rectY.min(),recGrid.rectY.max()]
+                layNb = int((self.input.tEnd - self.input.tStart)/self.input.laytime)+2
+                self.strata = [None]
+                if self.input.restart:
+                    self.strata[0] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
+                                        self.input.outDir, self.input.sh5file, self.cumdiff,
+                                        self.input.rfolder, self.input.rstep)
+                else:
+                    self.strata[0] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
+                                        self.input.outDir, self.input.sh5file)
             else:
-                self.strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
-                                    self.input.outDir, self.input.sh5file)
+                self.strata = [None] * self.input.region
+                layNb = int((self.input.tEnd - self.input.tStart)/self.input.laytime)+2
+                for rid in range(self.input.region):
+                    bbX = [self.input.llcXY[rid,0],self.input.urcXY[rid,0]]
+                    bbY = [self.input.llcXY[rid,1],self.input.urcXY[rid,1]]
+                    if self.input.restart:
+                        self.strata[rid] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
+                                        self.input.outDir, self.input.sh5file, self.cumdiff,
+                                        self.input.rfolder, self.input.rstep, rid)
+                    else:
+                        self.strata[rid] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
+                                        self.input.outDir, self.input.sh5file, rid)
 
         # Set default to no rain
         force.update_force_TIN(FVmesh.node_coords[:,:2])
@@ -334,7 +348,11 @@ class Model(object):
 
         # Update stratigraphic mesh
         if self.input.laytime > 0:
-            self.strata.update_TIN(FVmesh.node_coords[:, :2])
+            if self.input.region == 0:
+                self.strata[0].update_TIN(FVmesh.node_coords[:, :2])
+            else:
+                for rid in range(self.input.region):
+                    self.strata[rid].update_TIN(FVmesh.node_coords[:, :2])
 
         # Save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
@@ -597,12 +615,25 @@ class Model(object):
                     if self.input.laytime == 0:
                         updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
                     else:
-                        updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs,
-                                                                True, self.strata.xyi, self.strata.ids)
+                        if self.input.region == 0:
+                            regdX = [None]
+                            regdY = [None]
+                            updateMesh, regdX[0], regdY[0] = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs,
+                                                                True, self.strata[0].xyi, self.strata[0].ids)
+                        else:
+                            regdX = [None] * self.input.region
+                            regdY = [None] * self.input.region
+                            for rid in range(self.input.region):
+                                updateMesh, regdX[rid], regdY[rid] = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs,
+                                                                    True, self.strata[rid].xyi, self.strata[rid].ids)
+
                     if updateMesh:
                         if self.input.laytime > 0:
-                            self.strata.move_mesh(self.force.sdispX,self.force.sdispY,verbose=False)
-
+                            if self.input.region == 0:
+                                self.strata[0].move_mesh(regdX[0], regdY[0],verbose=False)
+                            else:
+                                for rid in range(self.input.region):
+                                    self.strata[rid].move_mesh(regdX[rid], regdY[rid],verbose=False)
                         self.force.dispZ = self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours,
                                            self.FVmesh.edge_length, self.recGrid.boundsPt)
                         if self.input.flexure:
@@ -646,8 +677,13 @@ class Model(object):
             if self.tNow >= self.force.next_layer:
                 # Update next stratal layer time
                 self.force.next_layer += self.input.laytime
-                self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
-                    self._rank, outStrata, self.outputStep-1)
+                if self.input.region == 0:
+                    self.strata[0].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                        self._rank, outStrata, self.outputStep-1)
+                else:
+                    for rid in range(self.input.region):
+                        self.strata[rid].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                            self._rank, outStrata, self.outputStep-1)
                 outStrata = 0
 
             tStop = min([self.force.next_display, self.force.next_layer, self.force.next_flexure,
@@ -681,8 +717,13 @@ class Model(object):
         if self.tNow >= self.force.next_layer:
             # Update next stratal layer time
             self.force.next_layer += self.input.laytime
-            self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
-                self._rank, 1, self.outputStep-1)
+            if self.input.region == 0:
+                self.strata[0].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                    self._rank, 1, self.outputStep-1)
+            else:
+                for rid in range(self.input.region):
+                    self.strata[rid].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                        self._rank, 1, self.outputStep-1)
 
         if profile:
             pr.disable()

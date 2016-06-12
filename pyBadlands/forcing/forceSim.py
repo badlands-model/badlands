@@ -137,8 +137,6 @@ class forceSim:
         self.dispX = None
         self.dispY = None
         self.dispZ = None
-        self.sdispX = None
-        self.sdispY = None
         self.merge3d = None
         self.time3d = None
 
@@ -495,10 +493,9 @@ class forceSim:
         self.dispZ = dispZ
 
         if strata:
-            self.sdispX = sdispX
-            self.sdispY = sdispY
-
-        return update
+            return update, sdispX, sdispY
+        else:
+            return update
 
     def apply_XY_dispacements(self, area, fixIDs, telev, tcum):
         """
