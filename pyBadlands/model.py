@@ -628,21 +628,30 @@ class Model(object):
                                                                     True, self.strata[rid].xyi, self.strata[rid].ids)
 
                     if updateMesh:
-                        if self.input.laytime > 0:
-                            if self.input.region == 0:
-                                self.strata[0].move_mesh(regdX[0], regdY[0],verbose=False)
-                            else:
-                                for rid in range(self.input.region):
-                                    self.strata[rid].move_mesh(regdX[rid], regdY[rid],verbose=False)
                         self.force.dispZ = self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours,
                                            self.FVmesh.edge_length, self.recGrid.boundsPt)
                         if self.input.flexure:
-                            self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex = self.force.apply_XY_dispacements_flexure(
-                                self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex)
+                            if self.input.laytime == 0:
+                                self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex = self.force.apply_XY_dispacements_flexure(
+                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex)
+                            else:
+                                self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex, newscum = self.force.apply_XY_dispacements_flexure(
+                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex, scum=self.strata[0].oldload, strat=1)
                         else:
-                            self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(
-                                self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff)
+                            if self.input.laytime == 0:
+                                self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(
+                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff)
+                            else:
+                                self.recGrid.tinMesh, self.elevation, self.cumdiff, newscum = self.force.apply_XY_dispacements(
+                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, scum=self.strata[0].oldload, strat=1)
+
                         self.rebuildMesh()
+                        if self.input.laytime > 0:
+                            if self.input.region == 0:
+                                self.strata[0].move_mesh(regdX[0], regdY[0], newscum, verbose=False)
+                            else:
+                                for rid in range(self.input.region):
+                                    self.strata[rid].move_mesh(regdX[rid], regdY[rid], newscum, verbose=False)
 
             # Run the simulation for a bit
             self.compute_flow(verbose=False)
@@ -678,6 +687,7 @@ class Model(object):
                 # Update next stratal layer time
                 self.force.next_layer += self.input.laytime
                 if self.input.region == 0:
+                    dede = self.strata[0].oldload - self.cumdiff
                     self.strata[0].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
                         self._rank, outStrata, self.outputStep-1)
                 else:

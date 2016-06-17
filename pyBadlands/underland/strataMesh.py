@@ -84,7 +84,7 @@ class strataMesh():
 
         self.ids = None
         self.ptsNb = None
-        self.prevload = 0.
+        self.oldload = 0.
         self.tree = None
         self.folder = folder
         self.h5file = h5file+'.region%s.time'%regionID
@@ -146,16 +146,16 @@ class strataMesh():
 
         if rstep > 0:
             distances, indices = self.tree.query(self.xyi, k=self.searchpts)
-
+            weights = 1.0 / distances**2
             if len(cumdiff[indices].shape) == 3:
                 cum_vals = cumdiff[indices][:,:,0]
             else:
                 cum_vals = cumdiff[indices]
-            fcum = numpy.average(cum_vals,weights=(1./distances), axis=1)
+            fcum = numpy.average(cum_vals,weights=weights, axis=1)
             onIDs = numpy.where(distances[:,0] == 0)[0]
             if len(onIDs) > 0:
                 fcum[onIDs] = cumdiff[indices[onIDs,0]]
-            self.prevload = fcum
+            self.oldload = cumdiff
 
         return
 
@@ -172,7 +172,7 @@ class strataMesh():
 
         return
 
-    def move_mesh(self, dispX, dispY, verbose=False):
+    def move_mesh(self, dispX, dispY, cumdiff, verbose=False):
         """
         Update stratal mesh after 3D displacements.
 
@@ -181,6 +181,9 @@ class strataMesh():
 
         variable : dispY
             Numpy float-type array containing Y-displacement for each nodes in the stratal mesh
+
+        variable : cumdiff
+            Numpy float-type array containing the cumulative erosion/deposition of the nodes in the TIN
         """
 
         # Initialise MPI communications
@@ -211,14 +214,11 @@ class strataMesh():
                 # Send upper row to next processor
                 uData1 = self.stratThick[u0:u1,:self.step+1].ravel()
                 uData2 = self.stratElev[u0:u1,:self.step+1].ravel()
-                uData3 = self.prevload[u0:u1]
                 comm.Send(uData1, dest=rank+1, tag=rank)
                 comm.Send(uData2, dest=rank+1, tag=rank+2000)
-                comm.Send(uData3, dest=rank+1, tag=rank+4000)
                 # Receive upper ghost row from next processor
                 comm.Recv(guData1, source=rank+1, tag=rank+1)
                 comm.Recv(guData2, source=rank+1, tag=rank+2001)
-                comm.Recv(guData3, source=rank+1, tag=rank+4001)
                 guData1.reshape(shape)
                 guData2.reshape(shape)
 
@@ -226,14 +226,11 @@ class strataMesh():
                 # Send lower row to previous processor
                 lData1 = self.stratThick[l0:l1,:self.step+1].ravel()
                 lData2 = self.stratElev[l0:l1,:self.step+1].ravel()
-                lData3 = self.prevload[l0:l1]
                 comm.Send(lData1, dest=rank-1, tag=rank)
                 comm.Send(lData2, dest=rank-1, tag=rank+2000)
-                comm.Send(lData3, dest=rank-1, tag=rank+4000)
                 # Receive lower ghost row from previous processor
                 comm.Recv(glData1, source=rank-1, tag=rank-1)
                 comm.Recv(glData2, source=rank-1, tag=rank+1999)
-                comm.Recv(glData3, source=rank-1, tag=rank+3999)
                 glData1.reshape(shape)
                 glData2.reshape(shape)
 
@@ -241,27 +238,21 @@ class strataMesh():
                 # Send lower row to previous processor
                 lData1 = self.stratThick[l0:l1,:self.step+1].ravel()
                 lData2 = self.stratElev[l0:l1,:self.step+1].ravel()
-                lData3 = self.prevload[l0:l1]
                 comm.Send(lData1, dest=rank-1, tag=rank)
                 comm.Send(lData2, dest=rank-1, tag=rank+2000)
-                comm.Send(lData3, dest=rank-1, tag=rank+4000)
                 # Receive lower ghost row from previous processor
                 comm.Recv(glData1, source=rank-1, tag=rank-1)
                 comm.Recv(glData2, source=rank-1, tag=rank+1999)
-                comm.Recv(glData3, source=rank-1, tag=rank+3999)
                 glData1.reshape(shape)
                 glData2.reshape(shape)
                 # Send upper row to next processor
                 uData1 = self.stratThick[u0:u1,:self.step+1].ravel()
                 uData2 = self.stratElev[u0:u1,:self.step+1].ravel()
-                uData3 = self.prevload[u0:u1]
                 comm.Send(uData1, dest=rank+1, tag=rank)
                 comm.Send(uData2, dest=rank+1, tag=rank+2000)
-                comm.Send(uData3, dest=rank+1, tag=rank+4000)
                 # Receive upper ghost row from next processor
                 comm.Recv(guData1, source=rank+1, tag=rank+1)
                 comm.Recv(guData2, source=rank+1, tag=rank+2001)
-                comm.Recv(guData3, source=rank+1, tag=rank+4001)
                 guData1.reshape(shape)
                 guData2.reshape(shape)
 
@@ -275,21 +266,17 @@ class strataMesh():
                 deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[u0:u1,:]), axis=0)
                 deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], guData1), axis=0)
                 deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], guData2), axis=0)
-                deformLoad = numpy.concatenate((self.prevload, guData3), axis=0)
             elif rank == size-1:
                 deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[l0:l1,:]), axis=0)
                 deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], glData1), axis=0)
                 deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], glData2), axis=0)
-                deformLoad = numpy.concatenate((self.prevload, glData3), axis=0)
             else:
                 deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[l0:l1,:]), axis=0)
                 deformXY = numpy.concatenate((deformXY, moveXY[u0:u1,:]), axis=0)
                 deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], glData1), axis=0)
                 deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], glData2), axis=0)
-                deformLoad = numpy.concatenate((self.prevload, glData3), axis=0)
                 deformThick = numpy.concatenate((deformThick, guData1), axis=0)
                 deformElev = numpy.concatenate((deformElev, guData2), axis=0)
-                deformLoad = numpy.concatenate((deformLoad, guData3), axis=0)
 
             if rank == 0 and verbose:
                 print " - send/receive communication stratal mesh ", time.clock() - walltime
@@ -298,7 +285,6 @@ class strataMesh():
             deformXY = moveXY
             deformThick = self.stratThick[:,:self.step+1]
             deformElev = self.stratElev[:,:self.step+1]
-            deformLoad = self.prevload
             if rank == 0 and verbose:
                 print " - create deformed stratal mesh arrays ", time.clock() - walltime
 
@@ -322,13 +308,14 @@ class strataMesh():
         # Perform interpolation
         tmpIDs = numpy.where(distances[:,0] == 0)[0]
         if len(tmpIDs) > 0:
-            self.stratThick[tmpIDs,:self.step+1] = deformElev[indices[tmpIDs,0],:self.step+1]
-            self.stratElev[tmpIDs,:self.step+1]  = deformThick[indices[tmpIDs,0],:self.step+1]
+            self.stratThick[tmpIDs,:self.step+1] = deformThick[indices[tmpIDs,0],:self.step+1]
+            self.stratElev[tmpIDs,:self.step+1]  = deformElev[indices[tmpIDs,0],:self.step+1]
             tmpID = numpy.where(distances[:,0] > 0)[0]
-            self.stratThick[tmpID,:self.step+1] = numpy.average(deformThick[indices[tmpID,:],:],
-                                                                weights=weights[tmpID,:], axis=1)
-            self.stratElev[tmpID,:self.step+1] = numpy.average(deformElev[indices[tmpID,:],:],
-                                                                weights=weights[tmpID,:], axis=1)
+            if len(tmpID) > 0:
+                self.stratThick[tmpID,:self.step+1] = numpy.average(deformThick[indices[tmpID,:],:],
+                                                                    weights=weights[tmpID,:], axis=1)
+                self.stratElev[tmpID,:self.step+1] = numpy.average(deformElev[indices[tmpID,:],:],
+                                                                    weights=weights[tmpID,:], axis=1)
 
         else:
             self.stratThick[:,:self.step+1] = numpy.average(deformThick[indices,:],weights=weights, axis=1)
@@ -341,17 +328,10 @@ class strataMesh():
         if rank == 0 and verbose:
             print " - perform stratal mesh interpolation ", time.clock() - walltime
 
-        # Apply displacements to previous load
-        if len(deformLoad[indices].shape) == 3:
-            self.prevload = numpy.average(deformLoad[indices][:,:,0],weights=w, axis=1)
-        else:
-            self.prevload = numpy.average(deformLoad[indices],weights=w, axis=1)
-        if len(tmpIDs) > 0:
-            self.prevload[tmpIDs] = deformLoad[indices[tmpIDs,0]]
-
-
         if rank == 0 and verbose:
             print " - moving stratal mesh function ", time.clock() - st_time
+
+        self.oldload = numpy.copy(cumdiff)
 
         return
 
@@ -379,31 +359,31 @@ class strataMesh():
         """
 
         selev = numpy.zeros(len(self.xyi))
-        scumload = numpy.zeros(len(self.xyi))
         distances, indices = self.tree.query(self.xyi, k=self.searchpts)
+        weights = 1.0 / distances**2
 
+        load_diff = cumdiff - self.oldload
         if len(elev[indices].shape) == 3:
             elev_vals = elev[indices][:,:,0]
-            cum_vals = cumdiff[indices][:,:,0]
+            cum_vals = load_diff[indices][:,:,0]
         else:
             elev_vals = elev[indices]
-            cum_vals = cumdiff[indices]
+            cum_vals = load_diff[indices]
 
-        felev = numpy.average(elev_vals,weights=(1./distances), axis=1)
-        fcum = numpy.average(cum_vals,weights=(1./distances), axis=1)
+        felev = numpy.average(elev_vals,weights=weights, axis=1)
+        fcum = numpy.average(cum_vals,weights=weights, axis=1)
         onIDs = numpy.where(distances[:,0] == 0)[0]
         if len(onIDs) > 0:
             felev[onIDs] = elev[indices[onIDs,0]]
-            fcum[onIDs] = cumdiff[indices[onIDs,0]]
-        scumload = fcum - self.prevload
-        self.prevload = fcum
+            fcum[onIDs] = load_diff[indices[onIDs,0]]
+        self.oldload = numpy.copy(cumdiff)
         selev = felev
 
         # Update stratal elevation
         self.stratElev[self.ids,self.step] =  selev[self.ids]-sea
 
         # Update stratal deposition
-        localCum = scumload[self.ids]
+        localCum = fcum[self.ids]
         depIDs = numpy.where(localCum>0.)[0]
         self.depoLayer(self.ids[depIDs], localCum)
 
@@ -570,7 +550,6 @@ class strataMesh():
         cumThick = numpy.cumsum(self.stratThick[tmpIDs,self.step::-1],axis=1)[:,::-1]
 
         # Updata stratal depth
-        #surf = numpy.tile(topsurf[tmpIDs].transpose(), (1, self.step+1)).reshape(self.step+1,len(tmpIDs)).transpose()
         surf = numpy.array([topsurf[tmpIDs],]*int(self.step+1)).transpose()
         self.stratDepth[tmpIDs,:self.step+1] = surf - cumThick
 
