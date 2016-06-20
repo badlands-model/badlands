@@ -19,7 +19,9 @@ If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](http
 The latest pyBadlands version is the one that’s in our Github [repository](https://github.com/badlands-model/pyBadlands). Get it using this shell command, which requires Git:
 * `git clone https://github.com/badlands-model/pyBadlands.git`
 
-For Mac users using El Capitan the following [wiki page](https://github.com/badlands-model/pyBadlands/wiki/Running-pyBadlands-on-OS-X-El-Capitan) provides the installation steps to get it running on OS X. 
+For Mac users using El Capitan the following [wiki page](https://github.com/badlands-model/pyBadlands/wiki/Running-pyBadlands-on-OS-X-El-Capitan) provides the installation steps to get it running on OS X.
+
+Information on how to use pyBadlands via Docker, setup initial models and run examples is available through the following [link](http://tinyurl.com/pybadlands-workshop). 
 
 ## The specs...
 
