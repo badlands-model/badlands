@@ -21,7 +21,7 @@ The latest pyBadlands version is the one that’s in our Github [repository](htt
 
 For Mac users using El Capitan the following [wiki page](https://github.com/badlands-model/pyBadlands/wiki/Running-pyBadlands-on-OS-X-El-Capitan) provides the installation steps to get it running on OS X.
 
-Information on how to use pyBadlands via Docker, setup initial models and run examples is available through the following [link](http://tinyurl.com/pybadlands-workshop). 
+Information on how to use pyBadlands via Docker, setup initial models and run examples is available through the following [link](https://cloudstor.aarnet.edu.au/plus/index.php/s/q9JBXdm4QWFWFbB). 
 
 ## The specs...
 
