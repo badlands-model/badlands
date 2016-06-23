@@ -19,7 +19,7 @@ If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](http
 The latest pyBadlands version is the one that’s in our Github [repository](https://github.com/badlands-model/pyBadlands). Get it using this shell command, which requires Git:
 * `git clone https://github.com/badlands-model/pyBadlands.git`
 
-For addiitonal information visit our github [wiki page](https://github.com/badlands-model/pyBadlands/wiki) which provides several useful notes on how to start using the tool.
+For installation information and documentation visit our github [**wiki page**](https://github.com/badlands-model/pyBadlands/wiki) which provides several useful notes on how to start using the tool.
 
 Information on how to use pyBadlands via Docker, setup initial models and run examples are available through the following workshop [link](https://cloudstor.aarnet.edu.au/plus/index.php/s/q9JBXdm4QWFWFbB). 
 
