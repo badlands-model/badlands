@@ -12,16 +12,14 @@ _A schematic of 2D landscape evolution model illustrating the main variables and
 
 ## Getting started
 
+For installation information and documentation visit our github [**wiki page**](https://github.com/badlands-model/pyBadlands/wiki) which provides several useful notes on how to start using the tool.
+
 The easiest way to get started is with the [Docker container](https://hub.docker.com/u/badlandsmodel/) using [Kitematic](https://docs.docker.com/kitematic/userguide/). Once **Kitematic** is installed on your computer, open it and look for **pybadlands-demo** via the *search* menu.
 
 If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](https://github.com/badlands-model/pyBadlands-Dependencies-Docker/blob/master/Dockerfile) & [**code**](https://github.com/badlands-model/pyBadlands-Docker-Demo/blob/master/Dockerfile)) are the best documentation of the required packages.
 
 The latest pyBadlands version is the one that’s in our Github [repository](https://github.com/badlands-model/pyBadlands). Get it using this shell command, which requires Git:
 * `git clone https://github.com/badlands-model/pyBadlands.git`
-
-For installation information and documentation visit our github [**wiki page**](https://github.com/badlands-model/pyBadlands/wiki) which provides several useful notes on how to start using the tool.
-
-Information on how to use pyBadlands via Docker, setup initial models and run examples are available through the following workshop [link](https://cloudstor.aarnet.edu.au/plus/index.php/s/q9JBXdm4QWFWFbB). 
 
 ## The specs...
 
