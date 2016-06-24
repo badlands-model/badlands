@@ -63,6 +63,7 @@ class flowNetwork:
         self.maxh = None
         self.maxdep = None
         self.diff_flux = None
+        self.diff_cfl = None
         self.chi = None
         self.basinID = None
 
@@ -150,6 +151,92 @@ class flowNetwork:
             # Send local diffusion flux globally
             self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
             self.diff_flux = diff_flux
+
+    def SFD_nreceivers(self, Sc, fillH, elev, neighbours, edges, distances, globalIDs, sea):
+        """
+        Single Flow Direction function computes downslope flow directions by inspecting the neighborhood
+        elevations around each node. The SFD method assigns a unique flow direction towards the steepest
+        downslope neighbor. In addition it compute the hillslope non-linear diffusion
+
+        Parameters
+        ----------
+        variable : Sc
+            Critical slope for non-linear diffusion.
+
+        variable : fillH
+            Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
+
+        variable : elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        variable : neighbours
+            Numpy integer-type array with the neighbourhood IDs.
+
+        variable : edges
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+
+        variable : distances
+            Numpy real-type array with the distances between each connection in the TIN.
+
+        variable: globalIDs
+            Numpy integer-type array containing for local nodes their global IDs.
+
+        variable : sea
+            Current elevation of sea level.
+        """
+
+        # Call the SFD function from libUtils
+        if self.depo == 0 or self.capacity or self.filter:
+            base, receivers, diff_flux, diff_cfl = SFD.sfdcompute.directions_base_nl(elev, \
+                neighbours, edges, distances, globalIDs, sea, Sc)
+
+            # Send local base level globally
+            self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
+
+            bpos = numpy.where(base >= 0)[0]
+            self.base = base[bpos]
+            numpy.random.shuffle(self.base)
+            # Send local receivers globally
+            self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
+            self.receivers = receivers
+
+            # Send local diffusion flux globally
+            self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+            self.diff_flux = diff_flux
+
+            # Send local diffusion CFL condition globally
+            self._comm.Allreduce(mpi.IN_PLACE,diff_cfl,op=mpi.MIN)
+            self.diff_cfl = diff_cfl
+        else:
+            base, receivers, maxh, maxdep, diff_flux, diff_cfl = SFD.sfdcompute.directions_nl(fillH, \
+                elev, neighbours, edges, distances, globalIDs, sea, Sc)
+
+            # Send local base level globally
+            self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
+            bpos = numpy.where(base >= 0)[0]
+            self.base = base[bpos]
+            numpy.random.shuffle(self.base)
+
+            # Send local receivers globally
+            self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
+            self.receivers = receivers
+
+            # Send local maximum height globally
+            self._comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
+            self.maxh = maxh
+
+            # Send local maximum deposition globally
+            self._comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
+            self.maxdep = maxdep
+
+            # Send local diffusion flux globally
+            self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+            self.diff_flux = diff_flux
+
+            # Send local diffusion CFL condition globally
+            self._comm.Allreduce(mpi.IN_PLACE,diff_cfl,op=mpi.MIN)
+            self.diff_cfl = diff_cfl
+            #print 'ddfufd',self.diff_cfl.max(),self.diff_flux.max()
 
     def _donors_number_array(self):
         """

@@ -2,7 +2,7 @@ import time
 import numpy as np
 import mpi4py.MPI as mpi
 
-from pyBadlands import (diffLinear, elevationTIN, flowNetwork, forceSim,
+from pyBadlands import (diffLinear, diffnLinear, elevationTIN, flowNetwork, forceSim,
                         FVmethod, isoFlex, strataMesh, partitionTIN, raster2TIN,
                         visualiseFlow, visualiseTIN, xmlParser)
 
@@ -211,9 +211,15 @@ class Model(object):
         self.rain = np.zeros(totPts, dtype=float)
 
         # Define variables
-        self.hillslope = diffLinear()
-        self.hillslope.CDaerial = self.input.CDa
-        self.hillslope.CDmarine = self.input.CDm
+        if self.input.nHillslope:
+            self.hillslope = diffnLinear()
+            self.hillslope.CDaerial = self.input.CDa
+            self.hillslope.CDmarine = self.input.CDm
+            self.hillslope.Sc = self.input.Sc
+        else:
+            self.hillslope = diffLinear()
+            self.hillslope.CDaerial = self.input.CDa
+            self.hillslope.CDmarine = self.input.CDm
 
         self.flow = flowNetwork()
         self.flow.erodibility = self.input.SPLero
@@ -399,9 +405,14 @@ class Model(object):
 
         # 2. Compute stream network
         walltime = time.clock()
-        self.flow.SFD_receivers(self.fillH, self.elevation, self.FVmesh.neighbours,
-                                self.FVmesh.vor_edges, self.FVmesh.edge_length,
-                                self.allIDs, self.force.sealevel - self.input.sealimit)
+        if self.input.nHillslope:
+            self.flow.SFD_nreceivers(self.hillslope.Sc,self.fillH, self.elevation, self.FVmesh.neighbours,
+                                    self.FVmesh.vor_edges, self.FVmesh.edge_length,
+                                    self.allIDs, self.force.sealevel - self.input.sealimit)
+        else:
+            self.flow.SFD_receivers(self.fillH, self.elevation, self.FVmesh.neighbours,
+                                    self.FVmesh.vor_edges, self.FVmesh.edge_length,
+                                    self.allIDs, self.force.sealevel - self.input.sealimit)
 
         if self._rank == 0 and verbose:
             print " -   compute receivers parallel ", time.clock() - walltime
@@ -438,6 +449,8 @@ class Model(object):
         walltime = time.clock()
         if self.input.Hillslope:
             self.hillslope.dt_pstability(self.FVmesh.edge_length[self.inGIDs, :self.tMesh.maxNgbh])
+        elif self.input.nHillslope:
+            self.hillslope.dt_stability(self.flow.diff_cfl)
         else:
             self.hillslope.CFL = tEnd - self.tNow
 
@@ -687,7 +700,6 @@ class Model(object):
                 # Update next stratal layer time
                 self.force.next_layer += self.input.laytime
                 if self.input.region == 0:
-                    dede = self.strata[0].oldload - self.cumdiff
                     self.strata[0].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
                         self._rank, outStrata, self.outputStep-1)
                 else:

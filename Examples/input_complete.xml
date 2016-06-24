@@ -218,14 +218,18 @@
         <bscale>100e3</bscale>
     </tc_law>
 
-    <!-- Linear slope diffusion parameters:
+    <!-- Hillslope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport
-         law which states that transport rate depends linearly on topographic gradient. -->
+         law which states that transport rate depends linearly on topographic gradient or
+         the non-linear diffusion law where a critical slope parameter needs to be defined. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
         <caerial>0.001</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>0.005</cmarine>
+        <!-- Critical slope for non-linear diffusion needs to be greater than 1. (optional).
+             Default is 0 for simple creep.-->
+        <cslp>1.</cslp>
     </creep>
 
     <!-- Flexural isostasy parameters:

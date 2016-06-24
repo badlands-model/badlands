@@ -8,7 +8,7 @@ _A schematic of 2D landscape evolution model illustrating the main variables and
 
 ## Overview
 
-**Ba**sin an**d** **Lan**dscape **D**ynamic**s** (**Badlands**) is a parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The model is capable of simulating hillslope processes (**linear** diffusion), fluvial incision (*'modified'* **Stream Power Law**, **Transport Capacity Law** both for sediment  erosion/transport/deposition), spatially and temporally varying geodynamic (horizontal + vertical displacements) and climatic forces which can be used to simulate changes in base level, as well as effects of climate changes or sea-level fluctuations. The model uses  [**gFlex**](https://github.com/awickert/gFlex) package which is designed to solve elastic plate flexure for applications to Earth's lithosphere.
+**Ba**sin an**d** **Lan**dscape **D**ynamic**s** (**Badlands**) is a parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The model is capable of simulating hillslope processes (**linear** & **non-linear** diffusion), fluvial incision (*'modified'* **Stream Power Law**, **Transport Capacity Law** both for sediment  erosion/transport/deposition), spatially and temporally varying geodynamic (horizontal + vertical displacements) and climatic forces which can be used to simulate changes in base level, as well as effects of climate changes or sea-level fluctuations. The model uses  [**gFlex**](https://github.com/awickert/gFlex) package which is designed to solve elastic plate flexure for applications to Earth's lithosphere.
 
 ## Getting started
 
@@ -23,10 +23,10 @@ The latest pyBadlands version is the one that’s in our Github [repository](htt
 
 ## The specs...
 
-The model is based on the following characteristics: 
-* The finite volume approach from [**Tucker et al. (2001)**](http://www.sciencedirect.com/science/article/pii/S0098300400001345) based on the dual Delaunay-Voronoi framework is used to solve the continuity equation explicitly, 
+The model is based on the following characteristics:
+* The finite volume approach from [**Tucker et al. (2001)**](http://www.sciencedirect.com/science/article/pii/S0098300400001345) based on the dual Delaunay-Voronoi framework is used to solve the continuity equation explicitly,
 * Node ordering is perform efficiently based on the work from [**Braun & Willett (2013)**](http://www.sciencedirect.com/science/article/pii/S0169555X12004618),
-* 3D surface deformations using the node refinement technique proposed by [**Thieulot et al. ( 2014)**](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005490/abstract;jsessionid=48A885F79A40B1E3E76AFC1BEAA2B238.f03t03). 
+* 3D surface deformations using the node refinement technique proposed by [**Thieulot et al. ( 2014)**](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005490/abstract;jsessionid=48A885F79A40B1E3E76AFC1BEAA2B238.f03t03).
 * Orographic precipitation using [**Smith & Barstad (2004)**](http://journals.ametsoc.org/doi/abs/10.1175/1520-0469(2004)061%3C1377%3AALTOOP%3E2.0.CO%3B2) linear model to compute topographic induced rain field.
 
 A set of functions for _pre_ & _post_-processing for **Badlands** input and output are available in a github [**Companion**](https://github.com/badlands-model/pyBadlands-Companion) repository which is already shiped with the Badlands docker container.

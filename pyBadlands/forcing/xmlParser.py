@@ -98,9 +98,11 @@ class xmlParser:
         self.capacity = False
         self.filter = False
         self.Hillslope = False
+        self.nHillslope = False
 
         self.CDa = 0.
         self.CDm = 0.
+        self.Sc = 0.
         self.makeUniqueOutputDir = makeUniqueOutputDir
 
         self.outDir = None
@@ -787,7 +789,6 @@ class xmlParser:
         creep = None
         creep = root.find('creep')
         if creep is not None:
-            self.Hillslope = True
             element = None
             element = creep.find('caerial')
             if element is not None:
@@ -800,9 +801,22 @@ class xmlParser:
                 self.CDm = float(element.text)
             else:
                 self.CDm = 0.
+            element = None
+            element = creep.find('cslp')
+            if element is not None:
+                self.Sc = float(element.text)
+                if self.Sc >= 1.:
+                    self.nHillslope = True
+                else:
+                    self.Sc = 0.
+                    self.Hillslope = True
+            else:
+                self.Sc = 0.
+                self.Hillslope = True
         else:
             self.CDa = 0.
             self.CDm = 0.
+            self.Sc = 0.
 
         # Flexural isostasy parameters
         flex = None

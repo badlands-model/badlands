@@ -16,6 +16,7 @@ from .surface import raster2TIN
 from .underland import strataMesh
 from .flow import visualiseFlow
 from .hillslope import diffLinear
+from .hillslope import diffnLinear
 from .surface import elevationTIN
 from .surface import partitionTIN
 from .surface import visualiseTIN
