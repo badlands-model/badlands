@@ -208,6 +208,7 @@ class strataMesh():
         if rank == 0 and verbose:
             print " - move stratal mesh ", time.clock() - walltime
 
+        # Parallel calls
         if size > 1:
             walltime = time.clock()
             if rank == 0:
@@ -257,6 +258,7 @@ class strataMesh():
                 guData2.reshape(shape)
 
         # Build deformed mesh
+        # Parallel model
         if size > 1:
             u0 = self.upper[rank,0]
             u1 = self.upper[rank,1]
@@ -280,6 +282,8 @@ class strataMesh():
 
             if rank == 0 and verbose:
                 print " - send/receive communication stratal mesh ", time.clock() - walltime
+
+        # Serial model
         else:
             walltime = time.clock()
             deformXY = moveXY

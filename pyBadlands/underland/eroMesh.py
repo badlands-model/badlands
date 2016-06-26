@@ -14,10 +14,7 @@ import glob
 import time
 import h5py
 import numpy
-import mpi4py.MPI as mpi
 from scipy import interpolate
-from scipy.spatial import cKDTree
-from scipy.interpolate import RegularGridInterpolator
 
 class eroMesh():
     """
@@ -72,6 +69,8 @@ class eroMesh():
         self.folder = folder
 
         # Build erosion layers
+
+        # If we restart a simulation
         if rstep > 0:
             if os.path.exists(rfolder):
                 folder = rfolder+'/h5/'
@@ -88,40 +87,58 @@ class eroMesh():
                 self.erodibility[existIDs] = self.Ke[existIDs,k]
                 if(len(numpy.where(self.erodibility == 0)[0]) == 0):
                     break
+
+        # Build the underlying erodibility mesh and associated thicknesses
         else:
+            # Initial top layer (id=0) is for reworked sediment (freshly deposited)
             self.thickness = numpy.zeros((nbPts,self.layNb), dtype=float)
             self.Ke = numpy.zeros((nbPts,self.layNb), dtype=float)
             self.thickness[:,0] = 0
             self.Ke[:,0] = eroTop
+
+            # Loop through the underlying layers
             for l in range(1,self.layNb):
+                # Uniform erodibility value
                 if eroMap[l-1] == None:
                     self.Ke[:,l] = eroVal[l-1]
+                # Erodibility map
                 else:
                     eMap = pandas.read_csv(str(eroMap[l-1]), sep=r'\s+', engine='c',
                                        header=None, na_filter=False, dtype=numpy.float, low_memory=False)
                     reMap = numpy.reshape(eMap.values,(len(self.regX), len(self.regY)), order='F')
                     self.Ke[:,l] = interpolate.interpn( (self.regX, self.regY), reMap, xyTIN, method='nearest')
+                # Uniform thickness value
                 if thickMap[l-1] == None:
                     self.thickness[:,l] = thickVal[l-1]
+                # Thickness map
                 else:
                     tMap = pandas.read_csv(str(thickMap[l-1]), sep=r'\s+', engine='c',
                                        header=None, na_filter=False, dtype=numpy.float, low_memory=False)
                     rtMap = numpy.reshape(tMap.values,(len(self.regX), len(self.regY)), order='F')
                     self.thickness[:,l] = interpolate.interpn( (self.regX, self.regY), rtMap, xyTIN, method='linear')
-            self.erodibility = self.Ke[:,1]
+
+            # Define active layer erodibility
+            self.erodibility = np.zeros(nbPts)
+            for l in range(1,self.layNb):
+                # Get erodibility coefficients from active underlying layers
+                tmpIDs = numpy.where(numpy.logical_and(self.thickness[:,l] > 0., self.erodibility[:,l] == 0.))[0]
+                self.erodibility[tmpIDs] = self.Ke[tmpIDs,l]
+
+                if(len(numpy.where(self.erodibility == 0)[0]) == 0):
+                    break
+
+            # Bottom layer is supposed to be infinitely thick
             self.thickness[:,self.layNb-1] += 1.e6
 
         return
 
-    def getErodibility(self, cumdiff):
+    def getErodibility(self, cumThick):
         """
         Get the erodibility values for the surface based on underlying erosive stratigraphic layer.
 
-        variable : cumdiff
+        variable : cumThick
             Numpy float-type array containing the cumulative erosion/deposition of the nodes in the TIN
         """
-
-        cumThick = numpy.copy(cumdiff)
 
         # Update deposition
         depIDs = numpy.where(cumThick>=0.)[0]
@@ -131,26 +148,33 @@ class eroMesh():
         eroIDs = numpy.where(cumThick<0.)[0]
         if len(eroIDs) > 0:
             for k in range(self.layNb):
-                # Update thickness for non completely eroded layers
-                eIDs = numpy.where(numpy.logical_and(self.thickness[eroIDs,k] > 0., self.thickness[eroIDs,k]+cumThick[eroIDs]>=0.))[0]
+                # Update thickness for remaining layers
+                eIDs = numpy.where(numpy.logical_and(self.thickness[eroIDs,k] > 0., self.thickness[eroIDs,k] >= -cumThick[eroIDs]))[0]
                 if len(eIDs) > 0:
                     self.thickness[eroIDs[eIDs],k] += cumThick[eroIDs[eIDs]]
                     cumThick[eroIDs[eIDs]] = 0.
-                # Nullify completely eroded layer thicknesses and update erosion values
-                eIDs = numpy.where(numpy.logical_and(self.thickness[eroIDs,k] > 0., cumThick[eroIDs]<0.))[0]
+
+                # Nullify eroded layer thicknesses and update erosion values
+                eIDs = numpy.where(numpy.logical_and(self.thickness[eroIDs,k] > 0., cumThick[eroIDs] < 0.))[0]
                 if len(eIDs) > 0:
                     cumThick[eroIDs[eIDs]] += self.thickness[eroIDs[eIDs],k]
                     self.thickness[eroIDs[eIDs],k] = 0.
+
+                # Ensure non-negative values
+                tmpIDs = numpy.where(self.thickness[:,k] < 0.)[0]
+                if len(tmpIDs) > 0:
+                    self.thickness[tmpIDs,k] = 0.
+
                 if(len(numpy.where(cumThick < 0)[0]) == 0):
                     break
-                tmpIDs = numpy.where(self.thickness[:,k]<0.)[0]
-                self.thickness[tmpIDs,k] = 0.
 
-        # Update surface erodibility from active underlying layers
+        # Update surface erodibility map
         self.erodibility = np.zeros(len(cumThick))
         for k in range(self.layNb):
-            existIDs = numpy.where(numpy.logical_and(self.thickness[:,k] > 0., self.erodibility[:,k] == 0.))[0]
-            self.erodibility[existIDs] = self.Ke[existIDs,k]
+            # Get erodibility coefficients from active underlying layers
+            tmpIDs = numpy.where(numpy.logical_and(self.thickness[:,k] > 0., self.erodibility[:,k] == 0.))[0]
+            self.erodibility[tmpIDs] = self.Ke[tmpIDs,k]
+
             if(len(numpy.where(self.erodibility == 0)[0]) == 0):
                 break
 
@@ -167,24 +191,17 @@ class eroMesh():
             Output time step.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
+        eh5file = self.folder+'/h5/erolay.time'+str(outstep)+'.hdf5'
+        ptsNb = len(self.tXY[inIDs,0])
+        with h5py.File(eh5file, "w") as f:
 
-        if rank == 0:
-            eh5file = self.folder+'/h5/erolay.time'+str(outstep)+'.hdf5'
-            ptsNb = len(self.tXY[inIDs,0])
-            with h5py.File(eh5file, "w") as f:
+            # Write erosive layers depth
+            f.create_dataset('elayDepth',shape=(self.ptsNb,self.layNb), dtype='float32', compression='gzip')
+            f["elayDepth"][:,:self.layNb] = self.thickness
 
-                # Write erosive layers depth
-                f.create_dataset('elayDepth',shape=(self.ptsNb,self.layNb), dtype='float32', compression='gzip')
-                f["elayDepth"][:,:self.layNb] = self.thickness
+            # Write erodibility for each layers
+            f.create_dataset('elayKe',shape=(self.ptsNb,self.layNb), dtype='float32', compression='gzip')
+            f["elayKe"][:,:self.layNb] = self.Ke
 
-                # Write erodibility for each layers
-                f.create_dataset('elayKe',shape=(self.ptsNb,self.layNb), dtype='float32', compression='gzip')
-                f["elayKe"][:,:self.layNb] = self.Ke
-
-        comm.Barrier()
 
         return

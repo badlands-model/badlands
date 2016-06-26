@@ -51,14 +51,14 @@ class FVmethod:
         self.maxNgbh = None
         self.localIDs = None
 
-    def _FV_utils(self, allIDs, verbose=False):
+    def _FV_utils(self, lGIDs, verbose=False):
         """
         This function constructs the Finite Volume discretisation for each local
         triangularised grid.
 
         Parameters
         ----------
-        variable : allIDs
+        variable : lGIDs
             Numpy integer-type array filled with the global vertex IDs for each local grid located
             within the partition (including those on the edges).
 
@@ -80,7 +80,7 @@ class FVmethod:
         walltime = time.clock()
         self.control_volumes, self.neighbours, self.vor_edges, \
         self.edge_length, maxNgbhs = FVframe.discretisation.build( \
-             allIDs+1, self.localIDs+1, self.node_coords[:,0], self.node_coords[:,1],
+             lGIDs+1, self.localIDs+1, self.node_coords[:,0], self.node_coords[:,1],
             self.edges[:,:2]+1, self.cells[:,:3]+1, Vor_pts[:,0], Vor_pts[:,1], \
             Vor_edges[:,:2]+1)
         if rank == 0 and verbose:
@@ -91,13 +91,13 @@ class FVmethod:
         comm.Allreduce(mpi.IN_PLACE,maxNgbh,op=mpi.MAX)
         self.maxNgbh = maxNgbh
 
-    def _gather_GIDs(self, allIDs):
+    def _gather_GIDs(self, lGIDs):
         """
         Gather local IDs to all processors.
 
         Parameters
         ----------
-        variable : allIDs
+        variable : lGIDs
             Numpy integer-type array filled with the global vertex IDs for each local grid located
             within the partition (including those on the edges).
 
@@ -113,7 +113,7 @@ class FVmethod:
         comm = mpi.COMM_WORLD
 
         # Get global IDs of non-boundary vertex for each TIN
-        gid = allIDs.astype(numpy.int32)
+        gid = lGIDs.astype(numpy.int32)
         gids = gid[self.localIDs]
         localPtsNb = len(gids)
 
@@ -278,7 +278,7 @@ class FVmethod:
 
         return exportVors
 
-    def construct_FV(self, inIDs, allIDs, totPts, res, verbose=False):
+    def construct_FV(self, inIDs, lGIDs, totPts, res, verbose=False):
         """
         Called function to build the Finite Volume discretisation of Badlands TIN grid.
 
@@ -288,7 +288,7 @@ class FVmethod:
             Numpy integer-type array filled with the global vertex IDs for each local grid located
             within the partition (not those on the edges).
 
-        variable : allIDs
+        variable : lGIDs
             Numpy integer-type array filled with the global vertex IDs for each local grid located
             within the partition (including those on the edges).
 
@@ -320,9 +320,9 @@ class FVmethod:
         rank = comm.Get_rank()
 
         # Define each partition nodes global IDs
-        inArrays = numpy.in1d(allIDs, inIDs)
+        inArrays = numpy.in1d(lGIDs, inIDs)
         ids = numpy.where(inArrays == True)[0]
-        self.partIDs = numpy.zeros(len(allIDs))
+        self.partIDs = numpy.zeros(len(lGIDs))
         self.partIDs.fill(-1)
         self.partIDs[ids] = rank
 
@@ -330,13 +330,13 @@ class FVmethod:
         self.localIDs = numpy.where(self.partIDs == rank)[0]
 
         # Call finite volume function
-        self._FV_utils(allIDs)
+        self._FV_utils(lGIDs)
 
         # Gather processor dataset together
         walltime = time.clock()
 
         # Gather vertex IDs from each region globally
-        exportGIDs, localPtsNb = self._gather_GIDs(allIDs)
+        exportGIDs, localPtsNb = self._gather_GIDs(lGIDs)
         # Gather voronoi area from each region globally
         exportVols = self._gather_Area(localPtsNb)
         # Gather neighbourhood IDs from each region globally

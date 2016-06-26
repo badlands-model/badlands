@@ -273,7 +273,7 @@
         <cmarine>0.005</cmarine>
         <!-- Critical slope for non-linear diffusion needs to be greater than 1. (optional).
              Default is 0 for simple creep.-->
-        <cslp>1.</cslp>
+        <cslp>1.25</cslp>
     </creep>
 
     <!-- Flexural isostasy parameters:

@@ -42,13 +42,10 @@ class isoFlex:
         self.yi = None
         self.xyi = None
         self.flex = None
-        #self.ball = 0.
         self.rho_s = 2500.
         self.rho_w = 1029.0
         self.previous_flex = None
         self.tree = None
-        #self.Area = None
-        #self.Acell = None
         self.Te = None
         self.searchpts = None
 
@@ -105,19 +102,6 @@ class isoFlex:
         self.ball = math.sqrt(0.25*(self.flex.dx*self.flex.dx + self.flex.dy*self.flex.dy))
         tindx = self.xyTIN[1,0] - self.xyTIN[0,0]
         self.searchpts = max(int(self.flex.dx*self.flex.dy/(tindx*tindx)),4)
-        '''
-        area = numpy.zeros((self.nx, self.ny))
-        area.fill(self.flex.dx*self.flex.dy)
-        area[0,:] = 0.5 * self.flex.dx*self.flex.dy
-        area[self.nx-1,:] = 0.5 * self.flex.dx*self.flex.dy
-        area[:,0] = 0.5 * self.flex.dx*self.flex.dy
-        area[:,self.ny-1] = 0.5 * self.flex.dx*self.flex.dy
-        area[0,0] = 0.25 * self.flex.dx*self.flex.dy
-        area[self.nx-1,0] = area[0,0]
-        area[0,self.ny-1] = area[0,0]
-        area[self.nx-1,self.ny-1] = area[0,0]
-        self.Area = area.flatten()
-        '''
 
         # Solution method finite difference
         self.flex.Method = 'FD'
@@ -224,7 +208,6 @@ class isoFlex:
         """
 
         # Average volume of sediment and water on the flexural grid points
-        #ballIDs = self.tree.query_ball_point(self.xyi, self.ball)
         sedload = numpy.zeros(len(self.xyi))
         waterload = numpy.zeros(len(self.xyi))
         distances, indices = self.tree.query(self.xyi, k=self.searchpts)
@@ -245,23 +228,11 @@ class isoFlex:
         sedload = fcum
         marine = numpy.where(felev < sea)[0]
         waterload[marine] = sea - felev[marine]
-        '''
-        for i in range(len(self.xyi)):
-            ids = numpy.asarray(ballIDs[i], dtype=numpy.int)
-            inIDX = numpy.where(numpy.logical_and(self.xyTIN[ids,0] >= self.xyi[i,0] - 0.5*self.flex.dx,
-                                                  self.xyTIN[ids,0] <= self.xyi[i,0] + 0.5*self.flex.dx))[0]
-            inIDY = numpy.where(numpy.logical_and(self.xyTIN[ids,1] >= self.xyi[i,1] - 0.5*self.flex.dy,
-                                                  self.xyTIN[ids,1] <= self.xyi[i,1] + 0.5*self.flex.dy))[0]
-            inIDs = numpy.intersect1d(ids[inIDX], ids[inIDY])
-            sedload[i] = numpy.sum(cumdiff[inIDs]*self.Acell[inIDs]) / self.Area[i]
 
-            marine = numpy.where(elev[inIDs] < sea)[0]
-
-            waterload[i] = numpy.sum((sea-elev[inIDs[marine]])*self.Acell[inIDs[marine]]) / self.Area[i]
-        '''
         # Compute surface loads
         self.flex.qs = self.rho_w * self.flex.g * numpy.reshape(waterload,(self.ny, self.nx))
         self.flex.qs += self.rho_s * self.flex.g * (self.Te + numpy.reshape(sedload,(self.ny, self.nx)) )
+
         # Compute flexural isostasy with gFlex
         self._compute_flexure()
 

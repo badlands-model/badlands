@@ -375,6 +375,8 @@ class flowNetwork:
         size = comm.Get_size()
 
         # Compute sediment flux using libUtils
+
+        # Parallel case
         if(size > 1):
             # Purely erosive case
             if self.spl and self.depo == 0:
@@ -409,6 +411,8 @@ class flowNetwork:
             sedflux[tempIDs] = 0.
             newdt = max(self.mindt,newdt)
             sedrate = sedflux
+
+        # Serial case
         else:
             # Purely erosive case
             if self.spl and self.depo == 0:
@@ -520,9 +524,9 @@ class flowNetwork:
 
         return zdepsmth + zerosmth
 
-    def dt_fstability(self, elev, locIDs):
+    def dt_stability(self, elev, locIDs):
         """
-        This pyfortran function computes the maximal timestep to ensure computation stability
+        This function computes the maximal timestep to ensure computation stability
         of the flow processes. This CFL-like condition is computed using erodibility
         coefficients, discharges plus elevations and distances between TIN nodes and
         their respective reveivers.
@@ -548,52 +552,5 @@ class flowNetwork:
         # Global mimimum value for diffusion stability
         CFL = numpy.zeros(1)
         CFL[0] = dt
-        comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
-        self.CFL = CFL[0]
-
-    def dt_pstability(self, elev, locIDs):
-        """
-        This pure python function computes the maximal timestep to ensure computation stability
-        of the flow processes. This CFL-like condition is computed using erodibility
-        coefficients, discharges plus elevations and distances between TIN nodes and
-        their respective reveivers.
-
-        Parameters
-        ----------
-        variable : elev
-            Numpy arrays containing the elevation of the TIN nodes.
-
-        variable: locIDs
-            Numpy integer-type array containing for local nodes their global IDs.
-        """
-
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
-        # Compute elevation difference and distance between receiver and donor
-        dz0 = elev[locIDs] - elev[self.receivers[locIDs]]
-        dx = self.xycoords[locIDs,0] - self.xycoords[self.receivers[locIDs],0]
-        dy = self.xycoords[locIDs,1] - self.xycoords[self.receivers[locIDs],1]
-        dist0 = numpy.sqrt(dx**2 + dy**2)
-        dshg0 = self.discharge[locIDs]
-
-        # Limit to positive values of dz and discharge
-        tmpID = numpy.where(dz0 > 0.)
-        tmpdz = dz0[tmpID]
-        tmpdist = dist0[tmpID]
-        tmpdisc = dshg0[tmpID]
-        tmpID2 = numpy.where( tmpdisc > 0.)
-        discharge = tmpdisc[tmpID2]
-        dist = tmpdist[tmpID2]
-        dz = tmpdz[tmpID2]
-
-        # Compute the local value for time stability
-        CFL = numpy.zeros(1)
-        CFL[0] = numpy.amin(dist / (self.erodibility * (discharge)**(self.m) * \
-                ( dz / dist )**(self.n-1.) ))
-
-        # Global mimimum value for diffusion stability
         comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
         self.CFL = CFL[0]

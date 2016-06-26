@@ -15,13 +15,13 @@ import h5py
 import numpy
 import xml.etree.ElementTree as ETO
 
-def output_cellsIDs(allIDs, inIDs, visXlim, visYlim, coords, cells):
+def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
     """
     This function defines the cells used for visualising the TIN surface.
 
     Parameters
     ----------
-    variable : allIDs
+    variable : lGIDs
         Numpy integer-type array filled with the global vertex IDs for each local grid located
         within the partition (including those on the edges).
 
@@ -48,7 +48,7 @@ def output_cellsIDs(allIDs, inIDs, visXlim, visYlim, coords, cells):
     """
 
     # Find non-overlapping vertices in each local TIN
-    findInside = numpy.in1d(allIDs, inIDs)
+    findInside = numpy.in1d(lGIDs, inIDs)
     inside = numpy.where(findInside == True)
 
     # Find cells containing only the inside indices
@@ -59,12 +59,12 @@ def output_cellsIDs(allIDs, inIDs, visXlim, visYlim, coords, cells):
     outcell = cells[localCell]
 
     # Get the non-border points IDs
-    notBorder = numpy.where((coords[allIDs,0] >= visXlim[0]) & (coords[allIDs,0] <= visXlim[1]) &
-                         (coords[allIDs,1] >= visYlim[0]) & (coords[allIDs,1] <= visYlim[1]) )[0]
-    notBorderIDs = numpy.zeros(len(allIDs),dtype=int)
+    notBorder = numpy.where((coords[lGIDs,0] >= visXlim[0]) & (coords[lGIDs,0] <= visXlim[1]) &
+                         (coords[lGIDs,1] >= visYlim[0]) & (coords[lGIDs,1] <= visYlim[1]) )[0]
+    notBorderIDs = numpy.zeros(len(lGIDs),dtype=int)
     notBorderIDs.fill(-1)
-    notBorderIDs[notBorder] = allIDs[notBorder]
-    findInside2 = numpy.in1d(allIDs, notBorderIDs)
+    notBorderIDs[notBorder] = lGIDs[notBorder]
+    findInside2 = numpy.in1d(lGIDs, notBorderIDs)
     inside2 = numpy.where(findInside2 == True)
 
     inCell2 = numpy.in1d(outcell, inside2).reshape(outcell.shape)
@@ -76,7 +76,7 @@ def output_cellsIDs(allIDs, inIDs, visXlim, visYlim, coords, cells):
     rav = numpy.ravel(outcell[localCell2])
     allInside = numpy.unique(rav)
 
-    return allIDs[allInside], outcell[localCell2] + 1
+    return lGIDs[allInside], outcell[localCell2] + 1
 
 def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cells, rank, rainOn):
     """
