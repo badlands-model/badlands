@@ -10,4 +10,5 @@
    Implementation relating to Badlands underlying stratigraphic architecture.
 """
 
+import eroMesh
 import strataMesh

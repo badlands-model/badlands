@@ -7,7 +7,7 @@
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 """
-This module defines the stratigraphic layers based on the TIN nodes.
+This module defines the stratigraphic layers based on a regular mesh.
 """
 import os
 import glob
@@ -151,7 +151,7 @@ class strataMesh():
                 cum_vals = cumdiff[indices][:,:,0]
             else:
                 cum_vals = cumdiff[indices]
-            fcum = numpy.average(cum_vals,weights=weights, axis=1)
+            fcum = numpy.average(cum_vals, weights=weights, axis=1)
             onIDs = numpy.where(distances[:,0] == 0)[0]
             if len(onIDs) > 0:
                 fcum[onIDs] = cumdiff[indices[onIDs,0]]

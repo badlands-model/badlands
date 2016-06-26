@@ -3,8 +3,8 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from pyBadlands import (diffLinear, diffnLinear, elevationTIN, flowNetwork, forceSim,
-                        FVmethod, isoFlex, strataMesh, partitionTIN, raster2TIN,
-                        visualiseFlow, visualiseTIN, xmlParser)
+                        FVmethod, isoFlex, eroMesh, strataMesh, partitionTIN,
+                        raster2TIN, visualiseFlow, visualiseTIN, xmlParser)
 
 # profiling support
 import cProfile
@@ -206,6 +206,19 @@ class Model(object):
                         self.strata[rid] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
                                         self.input.outDir, self.input.sh5file, rid)
 
+        # Define pre-existing erodibility maps
+        if self.input.erolays >= 0:
+            if self.input.restart:
+                self.mapero = eroMesh.eroMesh(self.input.erolays, self.input.eroMap,
+                                    self.input.eroVal, self.input.SPLero, self.input.thickMap,
+                                    self.input.thickVal, FVmesh.node_coords[:, :2], recGrid.regX,
+                                    recGrid.regY, self.input.outDir, self.input.rfolder, self.input.rstep)
+            else:
+                self.mapero = eroMesh.eroMesh(self.input.erolays, self.input.eroMap,
+                                    self.input.eroVal, self.input.SPLero, self.input.thickMap,
+                                    self.input.thickVal, FVmesh.node_coords[:, :2], recGrid.regX,
+                                    recGrid.regY, self.input.outDir)
+
         # Set default to no rain
         force.update_force_TIN(FVmesh.node_coords[:,:2])
         self.rain = np.zeros(totPts, dtype=float)
@@ -222,7 +235,10 @@ class Model(object):
             self.hillslope.CDmarine = self.input.CDm
 
         self.flow = flowNetwork()
-        self.flow.erodibility = self.input.SPLero
+        if self.input.erolays is None:
+            self.flow.erodibility = np.full(totPts, self.input.SPLero)
+        else:
+            self.flow.erodibility = self.mapero.erodibility
         self.flow.m = self.input.SPLm
         self.flow.n = self.input.SPLn
         self.flow.mindt = self.input.minDT
@@ -359,6 +375,11 @@ class Model(object):
             else:
                 for rid in range(self.input.region):
                     self.strata[rid].update_TIN(FVmesh.node_coords[:, :2])
+
+        if self.input.erolays is None:
+            self.flow.erodibility = np.full(totPts, self.input.SPLero)
+        else:
+            self.flow.erodibility = self.mapero.erodibility
 
         # Save state for subsequent calls
         # TODO: there is a lot of stuff here. Can we reduce it?
@@ -504,6 +525,11 @@ class Model(object):
         if self.applyDisp:
             self.elevation += self.disp * timestep
 
+        # Update erodibility values
+        if self.input.erolays >= 0:
+            self.mapero.getErodibility(diff)
+            self.flow.erodibility = self.mapero.erodibility
+
         self.tNow += timestep
 
         if self._rank == 0 and verbose:
@@ -566,6 +592,10 @@ class Model(object):
             visualiseFlow.write_xmf(self.input.outDir, self.input.fxmffile, self.input.fxdmffile,
                                     step, self.tNow, fline, fnodes, self.input.fh5file, self._size)
             print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, self.tNow)
+
+        # Record erodibility maps
+        if self.input.erolays >= 0:
+            self.mapero.write_hdf5_erolay(step)
 
     def run_to_time(self, tEnd, profile=False):
         """
@@ -645,18 +675,43 @@ class Model(object):
                                            self.FVmesh.edge_length, self.recGrid.boundsPt)
                         if self.input.flexure:
                             if self.input.laytime == 0:
-                                self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex = self.force.apply_XY_dispacements_flexure(
-                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex)
+                                if self.input.erolays >= 0:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex, self.mapero.Ke, self.mapero.thickness = self.force.apply_XY_dispacements_flexure(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex, scum=None, Te=self.mapero.thickness,
+                                        Ke=self.mapero.thickness, strat=0, ero=1)
+
+                                else:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex = self.force.apply_XY_dispacements_flexure(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex)
                             else:
-                                self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex, newscum = self.force.apply_XY_dispacements_flexure(
-                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex, scum=self.strata[0].oldload, strat=1)
+                                if self.input.erolays >= 0:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex, newscum, self.mapero.Ke, self.mapero.thickness = self.force.apply_XY_dispacements_flexure(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex, scum=self.strata[0].oldload,
+                                        Te=self.mapero.thickness, Ke=self.mapero.thickness, strat=1, ero=1)
+
+                                else:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumflex, newscum = self.force.apply_XY_dispacements_flexure(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumflex, scum=self.strata[0].oldload,
+                                        Te=None, Ke=None, strat=1, ero=0)
                         else:
                             if self.input.laytime == 0:
-                                self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(
-                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff)
+                                if self.input.erolays >= 0:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff, self.mapero.Ke, self.mapero.thickness = self.force.apply_XY_dispacements(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, scum=None, Te=self.mapero.thickness,
+                                        Ke=self.mapero.Ke, strat=0, ero=1)
+                                else:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff = self.force.apply_XY_dispacements(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, scum=None, Te=None,
+                                        Ke=None, strat=0, ero=0)
                             else:
-                                self.recGrid.tinMesh, self.elevation, self.cumdiff, newscum = self.force.apply_XY_dispacements(
-                                    self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, scum=self.strata[0].oldload, strat=1)
+                                if self.input.erolays >= 0:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff, self.mapero.Ke, self.mapero.thickness = self.force.apply_XY_dispacements(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, scum=self.strata[0].oldload, Te=self.mapero.thickness,
+                                        Ke=self.mapero.Ke, strat=1, ero=1)
+                                else:
+                                    self.recGrid.tinMesh, self.elevation, self.cumdiff, newscum = self.force.apply_XY_dispacements(
+                                        self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, scum=self.strata[0].oldload, Te=None,
+                                        Ke=None, strat=1, ero=0)
 
                         self.rebuildMesh()
                         if self.input.laytime > 0:

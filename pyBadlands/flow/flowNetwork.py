@@ -236,7 +236,6 @@ class flowNetwork:
             # Send local diffusion CFL condition globally
             self._comm.Allreduce(mpi.IN_PLACE,diff_cfl,op=mpi.MIN)
             self.diff_cfl = diff_cfl
-            #print 'ddfufd',self.diff_cfl.max(),self.diff_flux.max()
 
     def _donors_number_array(self):
         """

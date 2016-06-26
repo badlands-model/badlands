@@ -13,6 +13,7 @@
 from .flow import flowNetwork
 from .surface import FVmethod
 from .surface import raster2TIN
+from .underland import eroMesh
 from .underland import strataMesh
 from .flow import visualiseFlow
 from .hillslope import diffLinear

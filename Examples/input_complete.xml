@@ -186,7 +186,9 @@
         <n>1.0</n>
         <!-- The erodibility coefficient is scale-dependent and its value depend
               on lithology and mean precipitation rate, channel width, flood
-              frequency, channel hydraulics. -->
+              frequency, channel hydraulics. In case where the erodibility
+              structure is turned on, this coefficient is applied to the reworked
+              sediments. -->
         <erodibility>1.e-6</erodibility>
     </sp_law>
 
@@ -205,7 +207,8 @@
         <n>1.0</n>
         <!-- Effective transport efficiency coefficient. For the linear relationship this
               coefficient is adimensional and contains information about lithology and
-              climate. -->
+              climate. In case where the erodibility structure is turned on,
+              this coefficient is applied to the reworked sediments. -->
         <transport>5.e-2</transport>
         <!-- A maximum time step used to perform erosion / deposition laws [a].
               Usually this time step is set close to 10 for landscape evolution
@@ -217,6 +220,47 @@
         <!-- Length scale for erosion in bedrock channels [m]. -->
         <bscale>100e3</bscale>
     </tc_law>
+
+    <!-- Erodibility structure
+         This option allows you to specify different erodibility values either on the surface
+         or within a number of initial stratigraphic layers. -->
+    <erocoeff>
+        <!-- Number of erosion layers:
+            - use 0 if you only want to specify a surface erodibility map.
+            - otherwise specify the number of layers you want to define. -->
+        <erolayers>4</erolayers>
+        <!-- The layering is defined from top to bottom, with:
+            - either a constant erodibility value for the entire layer or with an erodibility map
+            - either a constant thickness for the entire layer or with a thickness map -->
+        <!-- Constant erodibility and layer thickness -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>10</thcst>
+        </erolay>
+        <!-- Constant erodibility and variable layer thickness map -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay2.csv</thmap>
+        </erolay>
+        <!-- Variable erodibilities and constant layer thickness -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay3.csv</eromap>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>30</thcst>
+        </erolay>
+        <!-- Variable erodibilities and thicknesses -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay4.csv</eromap>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay4.csv</thmap>
+        </erolay>
+    </erocoeff>
 
     <!-- Hillslope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport

@@ -127,6 +127,12 @@ class xmlParser:
         self.elasticGrid = None
         self.flexbounds = []
 
+        self.erolays = None
+        self.eroMap = None
+        self.eroVal = None
+        self.thickMap = None
+        self.thickVal = None
+
         self._get_XmL_Data()
 
         return
@@ -785,7 +791,7 @@ class xmlParser:
                 self.SPLn = 1.
                 self.SPLero = 0.
 
-        # Extract Linear Slope Diffusion structure parameters
+        # Extract linear and nonlinear slope diffusion structure parameters
         creep = None
         creep = root.find('creep')
         if creep is not None:
@@ -817,6 +823,74 @@ class xmlParser:
             self.CDa = 0.
             self.CDm = 0.
             self.Sc = 0.
+
+
+        # Loading variable erodibility layers
+        erostruct = None
+        erostruct = root.find('erocoeff')
+        if erostruct is not None:
+            element = None
+            element = erostruct.find('erolayers')
+            if element is not None:
+                self.erolays = int(element.text)
+                if self.erolays == 0:
+                    tmpNb = 1
+                    self.eroMap = numpy.empty(1,dtype=object)
+                    self.eroVal = numpy.empty(1)
+                    self.thickMap = numpy.empty(1,dtype=object)
+                    self.thickVal = numpy.empty(1,dtype=bool)
+                else:
+                    tmpNb = self.erolays
+                    self.eroMap = numpy.empty(self.erolays,dtype=object)
+                    self.eroVal = numpy.empty(self.erolays)
+                    self.thickMap = numpy.empty(self.erolays,dtype=object)
+                    self.thickVal = numpy.empty(self.erolays,dtype=bool)
+            else:
+                tmpNb = 1
+                self.erolays = 0
+                self.eroMap = numpy.empty(1,dtype=object)
+                self.eroVal = numpy.empty(1)
+                self.thickMap = numpy.empty(1,dtype=object)
+                self.thickVal = numpy.empty(1,dtype=bool)
+            id = 0
+            for elay in erostruct.iter('erolay'):
+                if id >= tmpNb:
+                    raise ValueError('The number of erodibility layers events does not match the number of defined layers.')
+                element = None
+                element = elay.find('erocst')
+                if element is not None:
+                    self.eroVal[id] = float(element.text)
+                else:
+                    self.eroVal[id] = None
+                element = None
+                element = elay.find('eromap')
+                if element is not None:
+                    self.eroMap[id] = element.text
+                    if not os.path.isfile(self.eroMap[id]):
+                        raise ValueError('Erodibility map file %s is missing or the given path is incorrect.'%(self.eroMap[id]))
+                else:
+                    self.eroMap[id] = None
+                element = None
+                element = elay.find('thcst')
+                if element is not None:
+                    self.thickVal[id] = float(element.text)
+                else:
+                    self.thickVal[id] = None
+                element = None
+                element = elay.find('thmap')
+                if element is not None:
+                    self.thickMap[id] = element.text
+                    if not os.path.isfile(self.thickMap[id]):
+                        raise ValueError('Thickness map file %s is missing or the given path is incorrect.'%(self.thickMap[id]))
+                else:
+                    self.thickMap[id] = None
+                id += 1
+        else:
+            self.erolays = None
+            self.eroMap = None
+            self.eroVal = None
+            self.thickMap = None
+            self.thickVal = None
 
         # Flexural isostasy parameters
         flex = None

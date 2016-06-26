@@ -110,11 +110,11 @@ contains
 
       integer :: pygNodesNb
       integer :: pylNodesNb
-      real(kind=8),intent(in) :: Cero
       real(kind=8),intent(in) :: spl_m
       real(kind=8),intent(in) :: spl_n
       integer,dimension(pylNodesNb),intent(in) :: pyIDs
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
+      real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
@@ -131,7 +131,7 @@ contains
         dz = pyElev(d) - pyElev(r)
         if( d /= r .and. dz > 0. .and. pyDischarge(d) > 0.)then
             dist = sqrt( (pyXY(d,1)-pyXY(r,1))**2.0 + (pyXY(d,2)-pyXY(r,2))**2.0 )
-            tmp = dist / (Cero * pyDischarge(d)**spl_m * (dz/dist)**(spl_n-1.))
+            tmp = dist / (Cero(d) * pyDischarge(d)**spl_m * (dz/dist)**(spl_n-1.))
             cfl_dt = min(tmp,cfl_dt)
         endif
       enddo
@@ -149,13 +149,13 @@ contains
       real(kind=8),intent(in) :: sea
       real(kind=8),intent(in) :: spl_n
       real(kind=8),intent(in) :: spl_m
-      real(kind=8),intent(in) :: Cero
       real(kind=8),dimension(2),intent(in) :: pyXYmin
       real(kind=8),dimension(2),intent(in) :: pyXYmax
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
       real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
+      real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
 
@@ -181,7 +181,7 @@ contains
         if(recvr /= donor .and. dh > 0.)then
           if(pyElev(donor) >= sea)then
             dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
-            if(dist > 0.) SPL = -Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+            if(dist > 0.) SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
           endif
         endif
 
@@ -217,7 +217,6 @@ contains
       real(kind=8),intent(in) :: sea
       real(kind=8),intent(in) :: spl_n
       real(kind=8),intent(in) :: spl_m
-      real(kind=8),intent(in) :: Cero
       real(kind=8),dimension(2),intent(in) :: pyXYmin
       real(kind=8),dimension(2),intent(in) :: pyXYmax
       integer,dimension(pylNodesNb),intent(in) :: pyStack
@@ -225,6 +224,7 @@ contains
       real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyArea
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
+      real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
 
@@ -252,7 +252,7 @@ contains
         if( recvr /= donor .and. dh > 0.)then
           if(pyElev(donor) >= sea)then
             dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
-            if(dist > 0.) SPL = -Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+            if(dist > 0.) SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
           endif
         endif
 
@@ -275,7 +275,7 @@ contains
           else
             Qs = sedFluxes(donor)
           endif
-          
+
         ! Erosion case
         elseif(SPL < 0.)then
 
@@ -312,7 +312,6 @@ contains
       real(kind=8),intent(in) :: sea
       real(kind=8),intent(in) :: spl_n
       real(kind=8),intent(in) :: spl_m
-      real(kind=8),intent(in) :: Cero
       real(kind=8),dimension(2),intent(in) :: pyXYmin
       real(kind=8),dimension(2),intent(in) :: pyXYmax
       integer,dimension(pylNodesNb),intent(in) :: pyStack
@@ -320,6 +319,7 @@ contains
       real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyArea
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
+      real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyMaxH
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyMaxD
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyFillH
@@ -351,7 +351,7 @@ contains
         if( recvr /= donor .and. dh > 0.)then
           if(waterH == 0. .and. pyElev(donor) >= sea)then
             dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
-            if(dist > 0.) SPL = -Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+            if(dist > 0.) SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
           endif
         endif
 
@@ -437,7 +437,6 @@ contains
       real(kind=8),intent(in) :: sea
       real(kind=8),intent(in) :: spl_n
       real(kind=8),intent(in) :: spl_m
-      real(kind=8),intent(in) :: Cero
       real(kind=8),intent(in) :: La
       real(kind=8),intent(in) :: Lb
       real(kind=8),dimension(2),intent(in) :: pyXYmin
@@ -448,6 +447,7 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyArea
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyCum
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
+      real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
 
@@ -475,7 +475,7 @@ contains
         ! Compute stream power law
         dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + &
                      (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
-        if(dist > 0.) SPL = Cero * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+        if(dist > 0.) SPL = Cero(donor) * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
 
         Qs = 0.
 

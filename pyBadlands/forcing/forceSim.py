@@ -497,7 +497,8 @@ class forceSim:
         else:
             return update
 
-    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, scum=None, strat=0):
+    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, scum=None,
+                              Te=None, Ke=None, strat=0, ero=0):
         """
         Apply horizontal displacements and check if any points need to be merged.
 
@@ -518,8 +519,17 @@ class forceSim:
         float : scum
             Numpy array with erosion/deposition used for stratal mesh.
 
+        float : Te
+            Numpy array with thickness used for erosional mesh.
+
+        float : Ke
+            Numpy array with erodibility used for erosional mesh.
+
         integer : strat
             Integer flagging stratigraphic mesh model.
+
+        integer : ero
+            Integer flagging erosional mesh model.
 
         Return
         ----------
@@ -534,6 +544,13 @@ class forceSim:
 
         variable: newscum
             Numpy array containing the updated erosion/deposition values used in the stratal mesh.
+
+        variable: newKe
+            Numpy array containing the updated erodibility values for the new TIN.
+
+        variable: newTe
+            Numpy array containing the updated thickness values used in the erosional mesh.
+
         """
 
         telev += self.dispZ
@@ -559,12 +576,23 @@ class forceSim:
             cum = numpy.delete(tcum, tID, 0)
             if strat == 1:
                 stcum = numpy.delete(scum, tID, 0)
+            if ero == 1:
+                lay = Ke.shape()[1]
+                mKe = numpy.zeros((len(cum),lay))
+                mTe = numpy.zeros((len(cum),lay))
+                for k in range(lay):
+                    mKe[:,k] = numpy.delete(Ke[:,k], tID, 0)
+                    mTe[:,k] = numpy.delete(Te[:,k], tID, 0)
         else:
             self.tXY = tXY
             elev = telev
             cum = tcum
             if strat == 1:
                 stcum = scum
+            if ero == 1:
+                lay = Ke.shape()[1]
+                mKe = Ke
+                mTe = Te
 
         tree = cKDTree(self.tXY)
         pairs = tree.query_pairs(self.merge3d)
@@ -601,6 +629,19 @@ class forceSim:
             if strat == 1:
                 scum_avg = numpy.average(scum_vals, weights=weights,axis=1)
 
+            if ero == 1:
+                Te_avg = numpy.zeros((len(z_avg),lay))
+                Ke_avg = numpy.zeros((len(z_avg),lay))
+                for k in range(lay):
+                    if len(mTe[indices,k].shape) == 3:
+                        Te_vals = mTe[indices,k][:,:,0]
+                        Ke_vals = mKe[indices,k][:,:,0]
+                    else:
+                        Te_vals = mTe[indices,k]
+                        Ke_vals = mKe[indices,k]
+
+                    Te_avg[:,k] = numpy.average(Te_vals, weights=weights,axis=1)
+                    Ke_avg[:,k] = Ke_vals[indices[0]]
 
             newXY = numpy.delete(self.tXY, mergedIDs, 0)
             newelev = numpy.delete(elev, mergedIDs, 0)
@@ -608,17 +649,35 @@ class forceSim:
             if strat == 1:
                 newscum = numpy.delete(stcum, mergedIDs, 0)
 
+            if ero == 1:
+                newKe = numpy.zeros((len(newcum),lay))
+                newTe = numpy.zeros((len(newcum),lay))
+                for k in range(lay):
+                    newKe[:,k] = numpy.delete(mKe[:,k], mergedIDs, 0)
+                    newTe[:,k] = numpy.delete(mTe[:,k], mergedIDs, 0)
+
             newXY = numpy.concatenate((newXY, mXY), axis=0)
             newelev = numpy.concatenate((newelev, z_avg), axis=0)
             newcum = numpy.concatenate((newcum, cum_avg), axis=0)
             if strat == 1:
                 newscum = numpy.concatenate((newscum, scum_avg), axis=0)
+
+            if ero == 1:
+                nKe = numpy.zeros((len(newcum),lay))
+                nTe = numpy.zeros((len(newcum),lay))
+                for k in range(lay):
+                    nKe[:,k] = numpy.concatenate((newKe[:,k], Ke_avg[:,k]), axis=0)
+                    nTe[:,k] = numpy.concatenate((newTe[:,k], Te_avg[:,k]), axis=0)
+
         else:
             newXY = self.tXY
             newelev = elev
             newcum = cum
             if strat == 1:
                 newscum = stcum
+            if ero == 1:
+                nKe = mKe
+                nTe = mTe
 
         newTIN = triangle.triangulate( dict(vertices=newXY),'Da'+str(area))
 
@@ -636,25 +695,58 @@ class forceSim:
                 cumvals = cum[ids]
                 if strat == 1:
                     scumvals = stcum[ids]
+
+            if ero == 1:
+                Tevals = numpy.zeros((len(zvals),lay))
+                Kevals = numpy.zeros((len(zvals),lay))
+                for k in range(lay):
+                    if len(mTe[ids,k].shape) == 3:
+                        Tevals[:,k] = mTe[ids,k][:,:,0]
+                        Kevals[:,k] = mKe[ids,k][:,:,0]
+                    else:
+                        Tevals[:,k] = mTe[ids,k]
+                        Kevals[:,k] = mKe[ids,k]
+
             zavg = numpy.average(zvals, weights=weights,axis=1)
             cumavg = numpy.average(cumvals, weights=weights,axis=1)
             if strat == 1:
                 scumavg = numpy.average(scumvals, weights=weights,axis=1)
+
+            if ero == 1:
+                Teavg = numpy.zeros((len(zavg),lay))
+                Keavg = numpy.zeros((len(zavg),lay))
+                for k in range(lay):
+                    Teavg[:,k] = numpy.average(Tevals[:,k], weights=weights,axis=1)
+                    Keavg[:,k] = Kevals[indices[0],k]
 
             newelev = numpy.concatenate((newelev, zavg), axis=0)
             newcum = numpy.concatenate((newcum, cumavg), axis=0)
             if strat == 1:
                 newscum = numpy.concatenate((newscum, scumavg), axis=0)
 
+            if ero == 1:
+                newTe = numpy.zeros((len(newelev),lay))
+                newKe = numpy.zeros((len(newelev),lay))
+                for k in range(lay):
+                    newTe[:,k] = numpy.concatenate((nTe[:,k], Teavg[:,k]), axis=0)
+                    newKe[:,k] = numpy.concatenate((nKe[:,k], Keavg[:,k]), axis=0)
+
         elif len(newTIN['vertices'][:,0]) < len(newXY):
             raise ValueError('Problem building the TIN after 3D displacements.')
 
         if strat == 1:
-            return newTIN, newelev, newcum, newscum
+            if ero == 0:
+                return newTIN, newelev, newcum, newscum
+            else:
+                return newTIN, newelev, newcum, newscum, newKe, newTe
         else:
-            return newTIN, newelev, newcum
+            if ero == 0:
+                return newTIN, newelev, newcum
+            else:
+                return newTIN, newelev, newcum, newKe, newTe
 
-    def apply_XY_dispacements_flexure(self, area, fixIDs, telev, tcum, tflex, scum=None, strat=0):
+    def apply_XY_dispacements_flexure(self, area, fixIDs, telev, tcum, tflex, scum=None,
+                                      Te=None, Ke=None, strat=0, ero=0):
         """
         Apply horizontal displacements and check if any points need to be merged.
 
@@ -678,8 +770,17 @@ class forceSim:
         float : scum
             Numpy array with erosion/deposition used for stratal mesh.
 
+        float : Te
+            Numpy array with thickness used for erosional mesh.
+
+        float : Ke
+            Numpy array with erodibility used for erosional mesh.
+
         integer : strat
             Integer flagging stratigraphic mesh model.
+
+        integer : ero
+            Integer flagging erosional mesh model.
 
         Return
         ----------
@@ -697,6 +798,13 @@ class forceSim:
 
         variable: newscum
             Numpy array containing the updated erosion/deposition values used in the stratal mesh.
+
+        variable: newKe
+            Numpy array containing the updated erodibility values for the new TIN.
+
+        variable: newTe
+            Numpy array containing the updated thickness values used in the erosional mesh.
+
         """
 
         telev += self.dispZ
@@ -723,6 +831,13 @@ class forceSim:
             cumf = numpy.delete(tflex, tID, 0)
             if strat == 1:
                 stcum = numpy.delete(scum, tID, 0)
+            if ero == 1:
+                lay = Ke.shape()[1]
+                mKe = numpy.zeros((len(cum),lay))
+                mTe = numpy.zeros((len(cum),lay))
+                for k in range(lay):
+                    mKe[:,k] = numpy.delete(Ke[:,k], tID, 0)
+                    mTe[:,k] = numpy.delete(Te[:,k], tID, 0)
         else:
             self.tXY = tXY
             elev = telev
@@ -730,6 +845,10 @@ class forceSim:
             cumf = tflex
             if strat == 1:
                 stcum = scum
+            if ero == 1:
+                lay = Ke.shape()[1]
+                mKe = Ke
+                mTe = Te
 
         tree = cKDTree(self.tXY)
         pairs = tree.query_pairs(self.merge3d)
@@ -769,6 +888,20 @@ class forceSim:
             if strat == 1:
                 scum_avg = numpy.average(scum_vals, weights=weights,axis=1)
 
+            if ero == 1:
+                Te_avg = numpy.zeros((len(z_avg),lay))
+                Ke_avg = numpy.zeros((len(z_avg),lay))
+                for k in range(lay):
+                    if len(mTe[indices,k].shape) == 3:
+                        Te_vals = mTe[indices,k][:,:,0]
+                        Ke_vals = mKe[indices,k][:,:,0]
+                    else:
+                        Te_vals = mTe[indices,k]
+                        Ke_vals = mKe[indices,k]
+
+                    Te_avg[:,k] = numpy.average(Te_vals, weights=weights,axis=1)
+                    Ke_avg[:,k] = Ke_vals[indices[0]]
+
             newXY = numpy.delete(self.tXY, mergedIDs, 0)
             newelev = numpy.delete(elev, mergedIDs, 0)
             newcum = numpy.delete(cum, mergedIDs, 0)
@@ -776,12 +909,27 @@ class forceSim:
             if strat == 1:
                 newscum = numpy.delete(stcum, mergedIDs, 0)
 
+            if ero == 1:
+                newKe = numpy.zeros((len(newcum),lay))
+                newTe = numpy.zeros((len(newcum),lay))
+                for k in range(lay):
+                    newKe[:,k] = numpy.delete(mKe[:,k], mergedIDs, 0)
+                    newTe[:,k] = numpy.delete(mTe[:,k], mergedIDs, 0)
+
             newXY = numpy.concatenate((newXY, mXY), axis=0)
             newelev = numpy.concatenate((newelev, z_avg), axis=0)
             newcum = numpy.concatenate((newcum, cum_avg), axis=0)
             newcumf = numpy.concatenate((newcumf, cumf_avg), axis=0)
             if strat == 1:
                 newscum = numpy.concatenate((newscum, scum_avg), axis=0)
+
+            if ero == 1:
+                nKe = numpy.zeros((len(newcum),lay))
+                nTe = numpy.zeros((len(newcum),lay))
+                for k in range(lay):
+                    nKe[:,k] = numpy.concatenate((newKe[:,k], Ke_avg[:,k]), axis=0)
+                    nTe[:,k] = numpy.concatenate((newTe[:,k], Te_avg[:,k]), axis=0)
+
         else:
             newXY = self.tXY
             newelev = elev
@@ -789,6 +937,9 @@ class forceSim:
             newcumf = cumf
             if strat == 1:
                 newscum = stcum
+            if ero == 1:
+                nKe = mKe
+                nTe = mTe
 
         newTIN = triangle.triangulate( dict(vertices=newXY),'Da'+str(area))
 
@@ -808,11 +959,30 @@ class forceSim:
                 cumfvals = cumf[ids]
                 if strat == 1:
                     scumvals = stcum[ids]
+
+            if ero == 1:
+                Tevals = numpy.zeros((len(zvals),lay))
+                Kevals = numpy.zeros((len(zvals),lay))
+                for k in range(lay):
+                    if len(mTe[ids,k].shape) == 3:
+                        Tevals[:,k] = mTe[ids,k][:,:,0]
+                        Kevals[:,k] = mKe[ids,k][:,:,0]
+                    else:
+                        Tevals[:,k] = mTe[ids,k]
+                        Kevals[:,k] = mKe[ids,k]
+
             zavg = numpy.average(zvals, weights=weights,axis=1)
             cumavg = numpy.average(cumvals, weights=weights,axis=1)
             cumfavg = numpy.average(cumfvals, weights=weights,axis=1)
             if strat == 1:
                 scumavg = numpy.average(scumvals, weights=weights,axis=1)
+
+            if ero == 1:
+                Teavg = numpy.zeros((len(zavg),lay))
+                Keavg = numpy.zeros((len(zavg),lay))
+                for k in range(lay):
+                    Teavg[:,k] = numpy.average(Tevals[:,k], weights=weights,axis=1)
+                    Keavg[:,k] = Kevals[indices[0],k]
 
             newelev = numpy.concatenate((newelev, zavg), axis=0)
             newcum = numpy.concatenate((newcum, cumavg), axis=0)
@@ -820,10 +990,25 @@ class forceSim:
             if strat == 1:
                 newscum = numpy.concatenate((newscum, scumavg), axis=0)
 
+            if ero == 1:
+                newTe = numpy.zeros((len(newelev),lay))
+                newKe = numpy.zeros((len(newelev),lay))
+                for k in range(lay):
+                    newTe[:,k] = numpy.concatenate((nTe[:,k], Teavg[:,k]), axis=0)
+                    newKe[:,k] = numpy.concatenate((nKe[:,k], Keavg[:,k]), axis=0)
+
         elif len(newTIN['vertices'][:,0]) < len(newXY):
             raise ValueError('Problem building the TIN after 3D displacements.')
 
         if strat == 0:
-            return newTIN, newelev, newcum, newcumf
+            if ero == 0:
+                return newTIN, newelev, newcum, newcumf
+            else:
+                return newTIN, newelev, newcum, newcumf, newKe, newTe
         else:
-            return newTIN, newelev, newcum, newcumf, newscum
+            if ero == 0:
+                return newTIN, newelev, newcum, newcumf, newscum
+            else:
+                return newTIN, newelev, newcum, newcumf, newscum, newKe, newTe
+
+        return
