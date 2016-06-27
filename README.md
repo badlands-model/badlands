@@ -30,7 +30,7 @@ The model is based on the following characteristics:
 * Orographic precipitation using [**Smith & Barstad (2004)**](http://journals.ametsoc.org/doi/abs/10.1175/1520-0469(2004)061%3C1377%3AALTOOP%3E2.0.CO%3B2) linear model to compute topographic induced rain field.
 * Varying erodibility layers (both horizontally and vertically) to simulate impact of changing sediment characteristics on landscape evolution. 
 
-A set of functions for _pre_ & _post_-processing for **Badlands** input and output are available in a github [**Companion**](https://github.com/badlands-model/pyBadlands-Companion) repository which is already shiped with the Badlands docker container.
+A set of functions for _pre_ & _post_-processing of **Badlands** inputs and outputs is available in a github [**Companion**](https://github.com/badlands-model/pyBadlands-Companion) repository which is already shiped with the Badlands docker container.
 
 ### Community driven
 
