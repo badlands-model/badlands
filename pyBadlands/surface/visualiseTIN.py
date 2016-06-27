@@ -78,7 +78,8 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
 
     return lGIDs[allInside], outcell[localCell2] + 1
 
-def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cells, rank, rainOn):
+def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
+               cells, rank, rainOn, eroOn, erodibility):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -108,6 +109,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
     variable : cumdiff
         Numpy float-type array containing the cumulative elevation changes values of the local TIN.
 
+    variable : erodibility
+        Numpy float-type array containing the top surface erodibility values of the local TIN.
+
     variable: cells
         Numpy integer-type array filled with the global cell IDs.
 
@@ -116,6 +120,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
 
     variable : rainOn
         Boolean for orographic precipitation.
+
+    variable : eroOn
+        Boolean for erodibility values.
     """
 
     h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
@@ -136,10 +143,15 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
             f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float32', compression='gzip')
             f["precipitation"][:,0] = rain
 
+        if eroOn:
+                f.create_dataset('erodibility',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                f["erodibility"][:,0] = erodibility
+
         f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
 
-def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumflex, cells, rank, rainOn):
+def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
+                       cumflex, cells, rank, rainOn, eroOn, erodibility):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -169,7 +181,10 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
     variable : cumdiff
         Numpy float-type array containing the cumulative elevation changes values of the local TIN.
 
-    variable : cumdiff
+    variable : erodibility
+        Numpy float-type array containing the top surface erodibility values of the local TIN.
+
+    variable : cumflex
         Numpy float-type array containing the cumulative flexural changes values of the local TIN.
 
     variable: cells
@@ -180,6 +195,9 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
 
     variable : rainOn
         Boolean for orographic precipitation.
+
+    variable : eroOn
+        Boolean for erodibility values.
     """
 
     h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
@@ -199,6 +217,10 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
         if rainOn:
             f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float32', compression='gzip')
             f["precipitation"][:,0] = rain
+
+        if eroOn:
+            f.create_dataset('erodibility',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["erodibility"][:,0] = erodibility
 
         f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
@@ -244,7 +266,8 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
 
     return
 
-def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size, flexOn, rainOn):
+def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size,
+              flexOn, rainOn, eroOn):
     """
     This function writes the XmF file which is calling each HFD5 file.
 
@@ -285,6 +308,9 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
 
     variable : rainOn
         Boolean for orographic precipitation.
+
+    variable : eroOn
+        Boolean for erodibility values.
     """
 
     xmf_file = folder+'/'+xmffile+str(step)+'.xmf'
@@ -330,6 +356,12 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
             f.write('         <Attribute Type="Scalar" Center="Node" Name="Rain">\n')
             f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
             f.write('Dimensions="%d 1">%s:/precipitation</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
+
+        if eroOn:
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="Ke">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/erodibility</DataItem>\n'%(nodes[p],pfile))
             f.write('         </Attribute>\n')
 
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Sealevel">\n')

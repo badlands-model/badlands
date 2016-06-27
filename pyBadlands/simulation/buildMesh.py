@@ -296,16 +296,17 @@ def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, rank, verbose=False):
     if input.erolays >= 0:
 
         walltime = time.clock()
-
+        bPts = recGrid.boundsPt
         if input.restart:
             mapero = eroMesh.eroMesh(input.erolays, input.eroMap, input.eroVal, input.SPLero,
                                     input.thickMap, input.thickVal, FVmesh.node_coords[:, :2],
-                                    recGrid.regX, recGrid.regY, input.outDir, rfolder=input.rfolder,
-                                    rstep=input.rstep)
+                                    recGrid.regX, recGrid.regY, bPts, recGrid.edgesPt, input.outDir,
+                                    rfolder=input.rfolder, rstep=input.rstep)
         else:
             mapero = eroMesh.eroMesh(input.erolays, input.eroMap, input.eroVal, input.SPLero,
-                                     input.thickMap, input.thickVal, FVmesh.node_coords[:, :2], recGrid.regX,
-                                     recGrid.regY, input.outDir, rfolder=None, rstep=0)
+                                     input.thickMap, input.thickVal, FVmesh.node_coords[:, :2],
+                                     recGrid.regX, recGrid.regY, bPts, recGrid.edgesPt, input.outDir,
+                                     rfolder=None, rstep=0)
 
         if rank == 0 and verbose:
             print " - create erodibility mesh ", time.clock() - walltime

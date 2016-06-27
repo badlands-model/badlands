@@ -27,6 +27,10 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD
 
+    if input.erolays >= 0:
+        eroOn = True
+    else:
+        eroOn = False
     out_time = time.clock()
     visXlim = np.zeros(2)
     visYlim = np.zeros(2)
@@ -61,12 +65,12 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
     # Write HDF5 files
     if input.flexure:
         visualiseTIN.write_hdf5_flexure(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
-                                    elevation[lGIDs], rain[lGIDs], flow.discharge[lGIDs],
-                                    cumdiff[lGIDs], cumflex[lGIDs], outCells, rank, input.oroRain)
+                                    elevation[lGIDs], rain[lGIDs], flow.discharge[lGIDs], cumdiff[lGIDs],
+                                    cumflex[lGIDs], outCells, rank, input.oroRain, eroOn, flow.erodibility[lGIDs])
     else:
         visualiseTIN.write_hdf5(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
-                                elevation[lGIDs], rain[lGIDs], flow.discharge[lGIDs],
-                                cumdiff[lGIDs], outCells, rank, input.oroRain)
+                                elevation[lGIDs], rain[lGIDs], flow.discharge[lGIDs], cumdiff[lGIDs],
+                                outCells, rank, input.oroRain, eroOn, flow.erodibility[lGIDs])
 
     visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2],
                              elevation[flowIDs], flow.discharge[flowIDs], flow.chi[flowIDs],
@@ -76,7 +80,7 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
     if rank == 0:
         visualiseTIN.write_xmf(input.outDir, input.txmffile, input.txdmffile, step, tNow,
                            tcells, tnodes, input.th5file, force.sealevel, size,
-                           input.flexure, input.oroRain)
+                           input.flexure, input.oroRain, eroOn)
         visualiseFlow.write_xmf(input.outDir, input.fxmffile, input.fxdmffile, step, tNow,
                             fline, fnodes, input.fh5file, size)
         print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, tNow)
