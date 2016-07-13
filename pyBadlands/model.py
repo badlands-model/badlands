@@ -165,7 +165,7 @@ class Model(object):
 
             # At most, display output every 5 seconds
             tloop = time.clock() - last_time
-            if time.clock() - last_output >= 5.0:
+            if self._rank == 0 and time.clock() - last_output >= 5.0:
                 print 'tNow = %s (step took %0.02f seconds)' % (self.tNow, tloop)
                 last_output = time.clock()
             last_time = time.clock()
@@ -304,7 +304,8 @@ class Model(object):
                               self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time
-        print 'tNow = %s (%0.02f seconds)' % (self.tNow, tloop)
+        if self.rank == 0:
+            print 'tNow = %s (%0.02f seconds)' % (self.tNow, tloop)
 
         # Isostatic flexure
         if self.input.flexure:
