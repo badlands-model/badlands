@@ -304,7 +304,7 @@ class Model(object):
                               self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time
-        if self.rank == 0:
+        if self._rank == 0:
             print 'tNow = %s (%0.02f seconds)' % (self.tNow, tloop)
 
         # Isostatic flexure
