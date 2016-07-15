@@ -27,7 +27,7 @@ The model is based on the following characteristics:
 * 3D surface deformations using the node refinement technique proposed by [**Thieulot et al. ( 2014)**](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005490/abstract;jsessionid=48A885F79A40B1E3E76AFC1BEAA2B238.f03t03). 
 * Orographic precipitation using [**Smith & Barstad (2004)**](http://journals.ametsoc.org/doi/abs/10.1175/1520-0469(2004)061%3C1377%3AALTOOP%3E2.0.CO%3B2) linear model to compute topographic induced rain field.
 
-A set of functions for _pre_ & _post_-processing for **Badlands** input and output are available in a github [**Companion**](https://github.com/badlands-model/pyBadlands-Companion) repository which is already shiped with the Badlands docker container.
+A set of functions for _pre_ & _post_-processing for **Badlands** input and output are available in a github [**Companion**](https://github.com/badlands-model/pyBadlands-Companion) repository which is already shipped with the Badlands docker container.
 
 ### Community driven
 
