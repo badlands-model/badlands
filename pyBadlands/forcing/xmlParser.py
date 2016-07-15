@@ -12,6 +12,7 @@ This module encapsulates parsing functions of Badlands XmL input file.
 import os
 import glob
 import numpy
+import shutil
 import xml.etree.ElementTree as ET
 
 class xmlParser:
@@ -48,6 +49,12 @@ class xmlParser:
         self.tEnd = None
         self.tDisplay = None
         self.minDT = 1.
+
+        self.stratdx = 0.
+        self.laytime = 0.
+        self.region = 0
+        self.llcXY = None
+        self.urcXY = None
 
         self.seapos = 0.
         self.sealimit = 100.
@@ -91,12 +98,16 @@ class xmlParser:
         self.capacity = False
         self.filter = False
         self.Hillslope = False
+        self.nHillslope = False
 
         self.CDa = 0.
         self.CDm = 0.
+        self.Sc = 0.
         self.makeUniqueOutputDir = makeUniqueOutputDir
 
         self.outDir = None
+        self.sh5file = 'h5/sed'
+
         self.th5file = 'h5/tin.time'
         self.txmffile = 'xmf/tin.time'
         self.txdmffile = 'tin.series.xdmf'
@@ -115,6 +126,12 @@ class xmlParser:
         self.elasticH = None
         self.elasticGrid = None
         self.flexbounds = []
+
+        self.erolays = None
+        self.eroMap = None
+        self.eroVal = None
+        self.thickMap = None
+        self.thickVal = None
 
         self._get_XmL_Data()
 
@@ -212,6 +229,52 @@ class xmlParser:
                 self.minDT = 1.
         else:
             raise ValueError('Error in the XmL file: time structure definition is required!')
+
+        # Extract stratigraphic structure information
+        strat = None
+        strat = root.find('strata')
+        if strat is not None:
+            element = None
+            element = strat.find('stratdx')
+            if element is not None:
+                self.stratdx = float(element.text)
+            else:
+                self.stratdx = 0.
+            element = None
+            element = strat.find('laytime')
+            if element is not None:
+                self.laytime = float(element.text)
+            else:
+                self.laytime = self.tDisplay
+            if self.laytime >  self.tDisplay:
+                 self.laytime = self.tDisplay
+            if self.tDisplay % self.laytime != 0:
+                raise ValueError('Error in the XmL file: stratal layer interval needs to be an exact multiple of the display interval!')
+
+            element = None
+            element = strat.find('region')
+            if element is not None:
+                self.region = int(element.text)
+                self.llcXY = numpy.empty((self.region,2))
+                self.urcXY = numpy.empty((self.region,2))
+            element = None
+            id = 0
+            for dom in strat.iter('domain'):
+                element = None
+                element = dom.find('llcx')
+                self.llcXY[id,0] = float(element.text)
+                element = None
+                element = dom.find('llcy')
+                self.llcXY[id,1] = float(element.text)
+                element = None
+                element = dom.find('urcx')
+                self.urcXY[id,0] = float(element.text)
+                element = None
+                element = dom.find('urcy')
+                self.urcXY[id,1] = float(element.text)
+                id += 1
+            if id != self.region:
+                raise ValueError('Number of region %d does not match with the number of declared region parameters %d.' %(self.region,id))
 
         # Extract sea-level structure information
         sea = None
@@ -728,11 +791,10 @@ class xmlParser:
                 self.SPLn = 1.
                 self.SPLero = 0.
 
-        # Extract Linear Slope Diffusion structure parameters
+        # Extract linear and nonlinear slope diffusion structure parameters
         creep = None
         creep = root.find('creep')
         if creep is not None:
-            self.Hillslope = True
             element = None
             element = creep.find('caerial')
             if element is not None:
@@ -745,9 +807,90 @@ class xmlParser:
                 self.CDm = float(element.text)
             else:
                 self.CDm = 0.
+            element = None
+            element = creep.find('cslp')
+            if element is not None:
+                self.Sc = float(element.text)
+                if self.Sc >= 1.:
+                    self.nHillslope = True
+                else:
+                    self.Sc = 0.
+                    self.Hillslope = True
+            else:
+                self.Sc = 0.
+                self.Hillslope = True
         else:
             self.CDa = 0.
             self.CDm = 0.
+            self.Sc = 0.
+
+
+        # Loading variable erodibility layers
+        erostruct = None
+        erostruct = root.find('erocoeff')
+        if erostruct is not None:
+            element = None
+            element = erostruct.find('erolayers')
+            if element is not None:
+                self.erolays = int(element.text)
+                if self.erolays == 0:
+                    tmpNb = 1
+                    self.eroMap = numpy.empty(1,dtype=object)
+                    self.eroVal = numpy.empty(1)
+                    self.thickMap = numpy.empty(1,dtype=object)
+                    self.thickVal = numpy.empty(1,dtype=bool)
+                else:
+                    tmpNb = self.erolays
+                    self.eroMap = numpy.empty(self.erolays,dtype=object)
+                    self.eroVal = numpy.empty(self.erolays)
+                    self.thickMap = numpy.empty(self.erolays,dtype=object)
+                    self.thickVal = numpy.empty(self.erolays,dtype=bool)
+            else:
+                tmpNb = 1
+                self.erolays = 0
+                self.eroMap = numpy.empty(1,dtype=object)
+                self.eroVal = numpy.empty(1)
+                self.thickMap = numpy.empty(1,dtype=object)
+                self.thickVal = numpy.empty(1,dtype=bool)
+            id = 0
+            for elay in erostruct.iter('erolay'):
+                if id >= tmpNb:
+                    raise ValueError('The number of erodibility layers events does not match the number of defined layers.')
+                element = None
+                element = elay.find('erocst')
+                if element is not None:
+                    self.eroVal[id] = float(element.text)
+                else:
+                    self.eroVal[id] = None
+                element = None
+                element = elay.find('eromap')
+                if element is not None:
+                    self.eroMap[id] = element.text
+                    if not os.path.isfile(self.eroMap[id]):
+                        raise ValueError('Erodibility map file %s is missing or the given path is incorrect.'%(self.eroMap[id]))
+                else:
+                    self.eroMap[id] = None
+                element = None
+                element = elay.find('thcst')
+                if element is not None:
+                    self.thickVal[id] = float(element.text)
+                else:
+                    self.thickVal[id] = None
+                element = None
+                element = elay.find('thmap')
+                if element is not None:
+                    self.thickMap[id] = element.text
+                    if not os.path.isfile(self.thickMap[id]):
+                        raise ValueError('Thickness map file %s is missing or the given path is incorrect.'%(self.thickMap[id]))
+                else:
+                    self.thickMap[id] = None
+                id += 1
+        else:
+            self.erolays = None
+            self.eroMap = None
+            self.eroVal = None
+            self.thickMap = None
+            self.thickVal = None
 
         # Flexural isostasy parameters
         flex = None
@@ -875,5 +1018,6 @@ class xmlParser:
             os.makedirs(self.outDir)
             os.makedirs(self.outDir+'/h5')
             os.makedirs(self.outDir+'/xmf')
+            shutil.copy(self.inputfile,self.outDir)
 
         return

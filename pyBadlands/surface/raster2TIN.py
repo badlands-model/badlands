@@ -128,7 +128,7 @@ class raster2TIN:
         self.areaDel = max(self.resEdges**2,self.areaDel)
 
         # North South edges
-        self.nx = int((maxX-minX)/self.resEdges+1)
+        self.nx = int(round((maxX-minX)/self.resEdges+1))
         e_x = numpy.linspace(minX,maxX,self.nx)
         tmp1 = numpy.zeros(self.nx)
         tmp2 = numpy.zeros(self.nx)
@@ -138,7 +138,7 @@ class raster2TIN:
         north = numpy.column_stack((e_x,tmp2))
 
         # East West edges
-        self.ny = int((maxY-minY)/self.resEdges+1)
+        self.ny = int(round((maxY-minY)/self.resEdges+1))
         e_y = numpy.linspace(minY+self.resEdges,maxY-self.resEdges,self.ny-2)
         tmp1 = numpy.zeros(self.ny-2)
         tmp2 = numpy.zeros(self.ny-2)
@@ -156,13 +156,11 @@ class raster2TIN:
 
         self.edgesPt = len(self.edges)
 
-        self.rnx = int((maxX-minX)/resDEM+1)
-        self.rny = int((maxY-minY)/resDEM+1)
+        self.rnx = int(round((maxX-minX)/resDEM+1))
+        self.rny = int(round((maxY-minY)/resDEM+1))
         self.regX = numpy.linspace(minX,maxX,self.rnx)
         self.regY = numpy.linspace(minY,maxY,self.rny)
         self.regZ = numpy.reshape(self.rectZ,(self.rnx,self.rny),order='F')
-
-        return
 
     def _TIN_ghosts_bounds(self):
         """

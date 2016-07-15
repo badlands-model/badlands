@@ -33,6 +33,27 @@
         <display>5000.</display>
     </time>
 
+    <!-- Simulation stratigraphic structure -->
+    <strata>
+        <!-- Stratal grid resolution [m] -->
+        <stratdx>500.</stratdx>
+        <!-- Stratal layer interval [a] -->
+        <laytime>2500.</laytime>
+        <!-- Number of stratigraphic regions (optional) -->
+        <region>1</region>
+        <!-- Region bounding box (optional)-->
+        <domain>
+            <!-- Lower left corner X coordinate -->
+            <llcx>87000</llcx>
+            <!-- Lower left corner Y coordinate -->
+            <llcy>34000</llcy>
+            <!-- Upper right corner X coordinate -->
+            <urcx>132000</urcx>
+            <!-- Upper right corner Y coordinate -->
+            <urcy>169000</urcy>
+        </domain>
+    </strata>
+
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
@@ -165,7 +186,9 @@
         <n>1.0</n>
         <!-- The erodibility coefficient is scale-dependent and its value depend
               on lithology and mean precipitation rate, channel width, flood
-              frequency, channel hydraulics. -->
+              frequency, channel hydraulics. In case where the erodibility
+              structure is turned on, this coefficient is applied to the reworked
+              sediments. -->
         <erodibility>1.e-6</erodibility>
     </sp_law>
 
@@ -184,7 +207,8 @@
         <n>1.0</n>
         <!-- Effective transport efficiency coefficient. For the linear relationship this
               coefficient is adimensional and contains information about lithology and
-              climate. -->
+              climate. In case where the erodibility structure is turned on,
+              this coefficient is applied to the reworked sediments. -->
         <transport>5.e-2</transport>
         <!-- A maximum time step used to perform erosion / deposition laws [a].
               Usually this time step is set close to 10 for landscape evolution
@@ -197,14 +221,59 @@
         <bscale>100e3</bscale>
     </tc_law>
 
-    <!-- Linear slope diffusion parameters:
+    <!-- Erodibility structure
+         This option allows you to specify different erodibility values either on the surface
+         or within a number of initial stratigraphic layers. -->
+    <erocoeff>
+        <!-- Number of erosion layers:
+            - use 0 if you only want to specify a surface erodibility map.
+            - otherwise specify the number of layers you want to define. -->
+        <erolayers>4</erolayers>
+        <!-- The layering is defined from top to bottom, with:
+            - either a constant erodibility value for the entire layer or with an erodibility map
+            - either a constant thickness for the entire layer or with a thickness map -->
+        <!-- Constant erodibility and layer thickness -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>10</thcst>
+        </erolay>
+        <!-- Constant erodibility and variable layer thickness map -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay2.csv</thmap>
+        </erolay>
+        <!-- Variable erodibilities and constant layer thickness -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay3.csv</eromap>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>30</thcst>
+        </erolay>
+        <!-- Variable erodibilities and thicknesses -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay4.csv</eromap>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay4.csv</thmap>
+        </erolay>
+    </erocoeff>
+
+    <!-- Hillslope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport
-         law which states that transport rate depends linearly on topographic gradient. -->
+         law which states that transport rate depends linearly on topographic gradient or
+         the non-linear diffusion law where a critical slope parameter needs to be defined. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
         <caerial>0.001</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>0.005</cmarine>
+        <!-- Critical slope for non-linear diffusion needs to be greater than 1. (optional).
+             Default is 0 for simple creep.-->
+        <cslp>1.25</cslp>
     </creep>
 
     <!-- Flexural isostasy parameters:
@@ -255,10 +324,10 @@
                         example, the edge of the eastern and western limits of the domain
                         to act like they are next to each other in an infinite loop.
              The boundary are defined for each edges W, E, S and N. -->
-        <boundary_W>'0Displacement0Slope'</boundary_W>
-        <boundary_E>'0Displacement0Slope'</boundary_E>
-        <boundary_S>'0Displacement0Slope'</boundary_S>
-        <boundary_N>'0Displacement0Slope'</boundary_N>
+        <boundary_W>0Displacement0Slope</boundary_W>
+        <boundary_E>0Displacement0Slope</boundary_E>
+        <boundary_S>0Displacement0Slope</boundary_S>
+        <boundary_N>0Displacement0Slope</boundary_N>
     </flexure>
 
     <!-- Filter for erosion/deposition :

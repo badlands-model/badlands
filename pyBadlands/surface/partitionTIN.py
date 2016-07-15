@@ -18,8 +18,6 @@ import mpi4py.MPI as mpi
 
 from numba import jit
 from numpy import random
-#from pyzoltan.core import zoltan
-#from pyzoltan.core.carray import UIntArray, DoubleArray
 
 def get_closest_factors(size):
     """
@@ -109,7 +107,6 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
     else:
         nbprocX = Xdecomp
         nbprocY = Ydecomp
-
 
     # Check decomposition versus CPUs number
     if size != nbprocX*nbprocY:
@@ -338,81 +335,3 @@ def _compute_partition_ghosts(size, neighbours, partID):
         ghosts[p] = numpy.unique(ghostIDs)
 
     return ghosts
-
-#@jit
-#def partitionZoltan(X, Y, neighbours):
-    """
-    This function split the domain using Zoltan RCB algorithm. The method allows for
-    load-balanced partitioning between each CPUs.
-
-    Parameters
-    ----------
-    variable : X, Y
-        Numpy arrays containing the X and Y coordinates of the TIN vertices.
-
-    variable : neighbours
-        Numpy integer-type array containing for each nodes its neigbhours IDs.
-
-    Return
-    ----------
-    variable: GIDs
-        Numpy integer-type array containing local nodes global IDs.
-
-    variable: ghosts
-        List containing the ghost nodes for each partition.
-
-    variable: partID
-        Numpy integer-type array filled with the ID of the partition each node belongs to.
-    """
-    """
-    # Initialise MPI communications
-    comm = mpi.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    #  Perform round-robin distribution for initial partition
-    Lids, Lx, Ly = _robin_distribution(X, Y)
-
-    # Define partitioning parameters
-    partPts = len(Lids)
-    xa = DoubleArray(partPts); xa.set_data(Lx)
-    ya = DoubleArray(partPts); ya.set_data(Ly)
-    za = DoubleArray(partPts); za.set_data(numpy.zeros(partPts))
-    gida = UIntArray(partPts); gida.set_data(Lids)
-
-    # Create Zoltan partitioner
-    pz = zoltan.ZoltanGeometricPartitioner(
-        dim=2, comm=comm, x=xa, y=ya, z=za, gid=gida)
-
-    # Load balancing function
-    pz.set_lb_method('RCB')
-    pz.Zoltan_Set_Param('DEBUG_LEVEL', '0')
-    pz.Zoltan_LB_Balance()
-
-    # Get the new assignments
-    tmp_gids = list( Lids )
-
-    # Remove points to be exported
-    for i in range(pz.numExport):
-        tmp_gids.remove( pz.exportGlobalids[i] )
-
-    # Add points to be imported
-    for i in range(pz.numImport):
-        tmp_gids.append( pz.importGlobalids[i] )
-
-    # Gather the new gids on root
-    nLids = numpy.array( tmp_gids, dtype=numpy.uint32 )
-    nGids = comm.gather( nLids, root=0 )
-
-    # Gather the new gids
-    nbNodes = len(X)
-    partID = numpy.zeros( nbNodes, dtype=numpy.uint32 )
-
-    for i in range(size):
-        partID[nGids[i]] = i
-
-    # Get ghost nodes for each decomposed domain
-    ghosts = _compute_partition_ghosts(size, neighbours, partID)
-
-    return partID, ghosts
-    """
