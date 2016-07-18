@@ -19,6 +19,7 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.ndimage.filters import gaussian_filter
 
 from pyBadlands.libUtils import SFDalgo as SFD
+import pyBadlands.libUtils.sfd as sfd
 from pyBadlands.libUtils import FLOWalgo
 from pyBadlands.libUtils import FLWnetwork
 
@@ -109,8 +110,7 @@ class flowNetwork:
 
         # Call the SFD function from libUtils
         if self.depo == 0 or self.capacity or self.filter:
-            base, receivers, diff_flux = SFD.sfdcompute.directions_base(elev, \
-                neighbours, edges, distances, globalIDs, sea)
+            base, receivers, diff_flux = sfd.directions_base(elev, neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
             self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
@@ -125,10 +125,8 @@ class flowNetwork:
             # Send local diffusion flux globally
             self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
             self.diff_flux = diff_flux
-
         else:
-            base, receivers, maxh, maxdep, diff_flux = SFD.sfdcompute.directions(fillH, elev, \
-                neighbours, edges, distances, globalIDs, sea)
+            base, receivers, maxh, maxdep, diff_flux = sfd.directions(fillH, elev, neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
             self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)

@@ -45,7 +45,7 @@ FV_LMOD = FVframe
 OR_FMOD = ORclass
 OR_LMOD = ORmodel
 
-all: ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so
+all: ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
 
 	@echo ""
 	@echo ""
@@ -94,6 +94,8 @@ ${OR_FMOD}.so: ${OR_FMOD}.f90
 ${OR_LMOD}.so: ${OR_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${OR_FMOD} -m ${OR_LMOD} $<
 
+sfd.so: sfd.c sfd.pyf
+	${F2PY} ${F2PY_FLAGS} -c -m sfd sfd.c sfd.pyf
 
 clean:
 	rm -fv *~ *.bak *.o *.mod *.original *.so
