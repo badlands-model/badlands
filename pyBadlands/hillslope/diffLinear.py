@@ -65,7 +65,7 @@ class diffLinear:
         comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFL = CFL[0]
 
-    def sedflux(self, diff_flux, sea, elevation, area):
+    def sedflux_old(self, diff_flux, sea, elevation, area):
         """
         This function computes the sedimentary fluxes induced by hillslope processes based
         on a linear diffusion approximation.
@@ -101,3 +101,33 @@ class diffLinear:
         flux[wetIDs] = flux[wetIDs] * self.CDmarine
 
         return flux
+
+    def sedflux(self, diff_flux, sea, elevation, area):
+        """
+        This function computes the sedimentary fluxes induced by hillslope processes based
+        on a linear diffusion approximation.
+        The linear diffusion process is implemented through the FV approximation and is based on
+        the area of each node voronoi polygon and the sum over all the neighbours of the slope of the
+        segment (i.e. height differences divided by the length of the mesh edge) as well as the length
+        of the corresponding voronoi edge.
+
+        Parameters
+        ----------
+        variable : diff_flux
+            Numpy arrays representing for each node the sum of the ratio between the height differences
+            and  the length of the mesh edge multiply by the length of the corresponding voronoi edge.
+
+        variable : sea
+            Real value giving the sea-level height at considered time step.
+
+        variable : elevation
+            Numpy arrays containing the elevation of the nodes.
+
+        variable : area
+            Numpy arrays containing the area of the voronoi polygon for each TIN nodes.
+        """
+
+        areacoeff = numpy.where(area > 0, 1 / area, 0)
+        coeff = numpy.where(elevation >= sea, self.CDaerial, self.CDmarine)
+        return numpy.nan_to_num(diff_flux * areacoeff * coeff)
+
