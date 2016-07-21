@@ -44,7 +44,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 If you come accross a bug or if you need some help compiling or using the code you can: 
 
-- go through our mailing list [Archive](http://mailman.sydney.edu.au/pipermail/badlands/)
+- go through our mailing list [Archive](http://mailman.sydney.edu.au/pipermail/badlands/).
 - subscribe to our [mailing list](http://mailman.sydney.edu.au/mailman/listinfo/badlands).
 - or [drop us a line](mailto:tristan.salles@sydney.edu.au).
 
