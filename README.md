@@ -42,7 +42,7 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 ### Reporting  
 
-If you come accross a bug or if you need some help compiling or using the code [drop us a line](mailto:tristan.salles@sydney.edu.au).
+If you come accross a bug or if you need some help compiling or using the code, you can subscribe to our [mailing list](http://mailman.sydney.edu.au/mailman/listinfo/badlands).
 
 ## Hands-on examples
 
