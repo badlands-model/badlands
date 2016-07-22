@@ -172,6 +172,8 @@ class Model(object):
 
             # Load precipitation rate
             if self.force.next_rain <= self.tNow and self.force.next_rain < self.input.tEnd:
+                if self.tNow == self.input.tStart:
+                    self.force.getSea(self.tNow)
                 self.rain = np.zeros(self.totPts, dtype=float)
                 self.rain[self.inIDs] = self.force.get_Rain(self.tNow, self.elevation, self.inIDs)
                 self._comm.Allreduce(mpi.IN_PLACE, self.rain, op=mpi.MAX)
