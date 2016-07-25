@@ -99,3 +99,5 @@ sfd.so: sfd.c sfd.pyf
 
 clean:
 	rm -fv *~ *.bak *.o *.mod *.original *.so
+	rm -rfv *.dSYM
+
