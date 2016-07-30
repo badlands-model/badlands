@@ -87,15 +87,19 @@ class diffnLinear:
             Numpy arrays containing the area of the voronoi polygon for each TIN nodes.
         """
 
-        flux = numpy.zeros(len(elevation))
-        tmpIDs = numpy.where(area > 0)
-        flux[tmpIDs] = diff_flux[tmpIDs] / area[tmpIDs]
-        iddd = numpy.where(flux==flux.max())
+        areacoeff = numpy.where(area > 0, 1 / area, 0)
+        coeff = numpy.where(elevation >= sea, self.CDaerial, self.CDmarine)
 
-        dryIDs = numpy.where(elevation >= sea)
-        flux[dryIDs] = flux[dryIDs] * self.CDaerial
+        return numpy.nan_to_num(diff_flux * areacoeff * coeff)
 
-        wetIDs = numpy.where(elevation < sea)
-        flux[wetIDs] = flux[wetIDs] * self.CDmarine
+        #flux = numpy.zeros(len(elevation))
+        #tmpIDs = numpy.where(area > 0)
+        #flux[tmpIDs] = diff_flux[tmpIDs] / area[tmpIDs]
 
-        return flux
+        #dryIDs = numpy.where(elevation >= sea)
+        #flux[dryIDs] = flux[dryIDs] * self.CDaerial
+
+        #wetIDs = numpy.where(elevation < sea)
+        #flux[wetIDs] = flux[wetIDs] * self.CDmarine
+
+        #return flux
