@@ -19,11 +19,11 @@
         <!-- Simulation start time [a] -->
         <start>0.</start>
         <!-- Simulation end time [a] -->
-        <end>20000000.</end>
+        <end>50000000.</end>
         <!-- Minim time step [a] -->
         <mindt>1.</mindt>
         <!-- Display interval [a] -->
-        <display>50000.</display>
+        <display>250000.</display>
     </time>
 
     <!-- Tectonic structure -->
@@ -37,7 +37,7 @@
             <!-- Displacement start time [a] -->
             <dstart>0.</dstart>
             <!-- Displacement end time [a] -->
-            <dend>75000000.0</dend>
+            <dend>50000000.0</dend>
             <!-- Displacement map [m] -->
             <dfile>data/uplift.csv</dfile>
         </disp>
@@ -52,47 +52,35 @@
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>8000000.</rend>
+            <rend>15000000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
             <rval>1.</rval>
         </rain>
-        <rain>
-            <!-- Rain start time [a] -->
-            <rstart>8000000.</rstart>
-            <!-- Rain end time [a] -->
-            <rend>50000000.</rend>
-            <!-- Choice is given between loading a rain map <map> or
-                 giving a single value <rval> for the entire area and
-                 for the given time interval -->
-            <!-- Precipitation map [m/a] - (optional) -->
-            <map>data/rain_gradient.csv</map>
-        </rain>
-        <?ignore
         <!-- Orographic precipitation model definition -->
         <rain>
             <!-- Rain start time [a] -->
-            <rstart>8000000.</rstart>
+            <rstart>15000000.</rstart>
             <!-- Rain end time [a] -->
             <rend>50000000.</rend>
             <!-- Rain computation time step [a] -->
-            <ortime>10000.</ortime>
+            <ortime>100000.</ortime>
             <!-- Background precipitation value [m/a] -->
             <rbgd>1.</rbgd>
             <!-- Minimal precipitation value [m/a] -->
-            <rmin>0.2</rmin>
+            <rmin>0.1</rmin>
             <!-- Maximal precipitation value [m/a] -->
             <rmax>2.</rmax>
             <!-- Wind velocity along X (W-E) direction [m/s] -->
             <windx>0.</windx>
             <!-- Wind velocity along Y (S-N) direction [m/s] -->
-            <windy>5.</windy>
+            <windy>2.</windy>
             <!-- Time conversion from cloud water to hydrometeors
                  range from 200 to 2000 [s]. Optional default is set
                  to 1000 s -->
-            <tauc>1000.</tauc>
+            <tauc>300.</tauc>
             <!-- Time for hydrometeor fallout range from 200 to 2000 [s].
                  Optional default is set to 1000 s -->
-            <tauf>1000.</tauf>
+            <tauf>750.</tauf>
             <!-- Moist stability frequency range from 0 to 0.01 [/s].
                  Optional default is set to 0.005 /s -->
             <nm>0.005</nm>
@@ -101,7 +89,43 @@
             <cw>0.005</cw>
             <!-- Depth of the moist layer range from 1000 to 5000 [m].
                  Optional default is set to 3000 m -->
-            <hw>3000.</hw>
+            <hw>2000.</hw>
+        </rain>
+        <?ignore
+        <!-- Orographic precipitation model definition -->
+        <rain>
+            <!-- Rain start time [a] -->
+            <rstart>0.</rstart>
+            <!-- Rain end time [a] -->
+            <rend>50000000.</rend>
+            <!-- Rain computation time step [a] -->
+            <ortime>100000.</ortime>
+            <!-- Background precipitation value [m/a] -->
+            <rbgd>1.</rbgd>
+            <!-- Minimal precipitation value [m/a] -->
+            <rmin>0.1</rmin>
+            <!-- Maximal precipitation value [m/a] -->
+            <rmax>2.</rmax>
+            <!-- Wind velocity along X (W-E) direction [m/s] -->
+            <windx>0.</windx>
+            <!-- Wind velocity along Y (S-N) direction [m/s] -->
+            <windy>2.</windy>
+            <!-- Time conversion from cloud water to hydrometeors
+                 range from 200 to 2000 [s]. Optional default is set
+                 to 1000 s -->
+            <tauc>300.</tauc>
+            <!-- Time for hydrometeor fallout range from 200 to 2000 [s].
+                 Optional default is set to 1000 s -->
+            <tauf>750.</tauf>
+            <!-- Moist stability frequency range from 0 to 0.01 [/s].
+                 Optional default is set to 0.005 /s -->
+            <nm>0.005</nm>
+            <!-- Uplift sensitivity factor range from 0.001 to 0.02 [kg/m3].
+                 Optional default is set to 0.005 kg/m3 -->
+            <cw>0.005</cw>
+            <!-- Depth of the moist layer range from 1000 to 5000 [m].
+                 Optional default is set to 3000 m -->
+            <hw>2000.</hw>
         </rain>
         ?>
     </precipitation>
