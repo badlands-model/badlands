@@ -40,12 +40,22 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
             flow.esmooth = 0
         if flow.dsmooth is None and input.filter:
             flow.dsmooth = 0
+        # Build an initial depression-less surface at start time if required
+        if input.tStart == tNow and input.nopit == 1:
+            sea_lvl =  force.sealevel - input.sealimit
+            elevation = elevationTIN.pit_stack_PD(elevation,sea_lvl,input.nopit)
     else:
         # fillH = elevationTIN.pit_filling_PD(elevation, FVmesh.neighbours,
         #                            recGrid.boundsPt, force.sealevel-input.sealimit
         #                            input.fillmax)
         sea_lvl =  force.sealevel - input.sealimit
-        fillH = elevationTIN.pit_stack_PD(elevation,sea_lvl)
+        #fillH = elevationTIN.pit_stack_PD(elevation,sea_lvl)
+        # Build an initial depression-less surface at start time if required
+        if input.tStart == tNow and input.nopit == 1 :
+            fillH = elevationTIN.pit_stack_PD(elevation,sea_lvl,input.nopit)
+            elevation = fillH
+        else:
+            fillH = elevationTIN.pit_stack_PD(elevation,sea_lvl,0)
 
     if rank == 0 and verbose and input.spl and not input.filter:
         print " -   depression-less algorithm PD with stack", time.clock() - walltime

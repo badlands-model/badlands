@@ -12,6 +12,10 @@
              value will multiply the digital elevation model resolution
              accordingly.  -->
         <resfactor>2</resfactor>
+        <!-- Optional parameter (integer) used to force depression-less
+             surface at the start of the simulation. The default value is 0
+             to turn the option off, put it to 1 to enable it. -->
+        <nopit>0</nopit>
     </grid>
 
     <!-- Simulation time structure -->

@@ -41,6 +41,7 @@ class xmlParser:
         self.btype = 'slope'
         self.fillmax = 1.
         self.Afactor = 1
+        self.nopit = 0
 
         self.restart = False
         self.rForlder = None
@@ -174,6 +175,16 @@ class xmlParser:
                     self.Afactor = 1
             else:
                 self.Afactor = 1
+            element = None
+            element = grid.find('nopit')
+            if element is not None:
+                self.nopit = int(element.text)
+                if self.nopit < 1:
+                    self.nopit = 0
+                else:
+                    self.nopit = 1
+            else:
+                self.nopit = 0
         else:
             raise ValueError('Error in the XmL file: grid structure definition is required!')
 

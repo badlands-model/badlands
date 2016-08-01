@@ -160,6 +160,49 @@ contains
 
   end subroutine fillPD
 
+  subroutine allfillPD(elevation, demH, pydnodes)
+
+    logical :: change
+    integer :: pydnodes, n, k, p
+    real(kind=8) :: hmin
+    real(kind=8),intent(in) :: elevation(pydnodes)
+    real(kind=8),intent(inout) :: demH(pydnodes)
+
+    change = .true.
+    do while(change)
+      change = .false.
+      do n = 1, s1
+        k = data1(n)
+        if( demH(k) > elevation(k) )then
+          ! Get minimum value
+          hmin = 2.e6
+          loop: do p = 1, 20
+            if( neighbours(k,p) < 0 ) exit loop
+            hmin = min(hmin,demH(neighbours(k,p)+1))
+          enddo loop
+          if( elevation(k) >= hmin + eps )then
+            demH(k) = elevation(k)
+          else
+            if( demH(k) > hmin + eps )then
+              demH(k) = hmin + eps
+              change = .true.
+            endif
+            s2 = s2 + 1
+            data2(s2) = k
+          endif
+        endif
+      enddo
+      if( s2 > 0 )then
+        s1 = s2
+        data1(1:s1) = data2(1:s2)
+        s2 = 0
+      endif
+    enddo
+
+    return
+
+  end subroutine allfillPD
+
   subroutine pitparams(pyNgbs,fillTH,epsilon,pybounds,pydnodes)
 
     integer :: pydnodes
@@ -184,9 +227,10 @@ contains
 
   end subroutine pitparams
 
-  subroutine pitfilling(elevation,sealimit,demH,pydnodes)
+  subroutine pitfilling(elevation,sealimit,allfill,demH,pydnodes)
 
     integer :: pydnodes
+    integer,intent(in) :: allfill
     real(kind=8),intent(in) :: sealimit
     real(kind=8),intent(in) :: elevation(pydnodes)
     real(kind=8),intent(out) :: demH(pydnodes)
@@ -195,7 +239,11 @@ contains
     call initialisePD(elevation,demH,sealimit,pydnodes)
 
     ! Filling phase
-    call fillPD(elevation,demH,pydnodes)
+    if(allfill == 0)then
+      call fillPD(elevation,demH,pydnodes)
+    else
+      call allfillPD(elevation,demH,pydnodes)
+    endif
 
     return
 
