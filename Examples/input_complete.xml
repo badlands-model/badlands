@@ -229,9 +229,7 @@
          This option allows you to specify different erodibility values either on the surface
          or within a number of initial stratigraphic layers. -->
     <erocoeff>
-        <!-- Number of erosion layers:
-            - use 0 if you only want to specify a surface erodibility map.
-            - otherwise specify the number of layers you want to define. -->
+        <!-- Number of erosion layers. -->
         <erolayers>4</erolayers>
         <!-- The layering is defined from top to bottom, with:
             - either a constant erodibility value for the entire layer or with an erodibility map

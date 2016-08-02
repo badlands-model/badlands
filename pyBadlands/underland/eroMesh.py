@@ -141,7 +141,6 @@ class eroMesh():
                 # Get erodibility coefficients from active underlying layers
                 tmpIDs = numpy.where(numpy.logical_and(self.thickness[:,l] > 0., self.erodibility[:] == 0.))[0]
                 self.erodibility[tmpIDs] = self.Ke[tmpIDs,l]
-
                 if(len(numpy.where(self.erodibility == 0)[0]) == 0):
                     break
 
