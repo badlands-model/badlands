@@ -46,7 +46,7 @@ If you come accross a bug or if you need some help compiling or using the code y
 
 - go through our mailing list [Archive](http://mailman.sydney.edu.au/pipermail/badlands/).
 - subscribe to our [mailing list](http://mailman.sydney.edu.au/mailman/listinfo/badlands).
-- or [drop us a line](mailto:tristan.salles@sydney.edu.au).
+- or [drop us a line](mailto:badlands@mailman.sydney.edu.au).
 
 ## Hands-on examples
 
