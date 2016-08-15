@@ -152,6 +152,9 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
 
     # Update surface parameters and time
     timestep = min(tstep, tEnd-tNow)
+    # bodge around floating point issues, make sure time always advances
+    if timestep < 0.0001:
+        timestep = 0.0001
     diff = sedrate * timestep
 
     if input.filter:
