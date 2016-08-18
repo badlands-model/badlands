@@ -27,7 +27,7 @@ from scipy.spatial import cKDTree
 class raster2TIN:
     """
     This class is useful for building the Badlands surface grid from a rectangular grid (DEM). This grid
-    is used to generate the irregular surface (TIN) om which the interactions between surface processes
+    is used to generate the irregular surface (TIN) on which the interactions between surface processes
     and underlying sedimentary rocks will be computed.
 
     The purpose of the class is:

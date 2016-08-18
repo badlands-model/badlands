@@ -255,7 +255,7 @@ def pit_stack_PD(elev, sea, allFill):
 
     # Call stack based pit filling function from libUtils
     fillH = PDalgo.pdstack.pitfilling(elev, sea, allFill)
-        
+
     return fillH
 
 
