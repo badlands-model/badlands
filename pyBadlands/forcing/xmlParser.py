@@ -847,22 +847,22 @@ class xmlParser:
                 if self.erolays == 0:
                     tmpNb = 1
                     self.eroMap = numpy.empty(1,dtype=object)
-                    self.eroVal = numpy.empty(1)
+                    self.eroVal = numpy.empty(1,dtype=object)
                     self.thickMap = numpy.empty(1,dtype=object)
-                    self.thickVal = numpy.empty(1,dtype=bool)
+                    self.thickVal = numpy.empty(1,dtype=object)
                 else:
                     tmpNb = self.erolays
                     self.eroMap = numpy.empty(self.erolays,dtype=object)
-                    self.eroVal = numpy.empty(self.erolays)
+                    self.eroVal = numpy.empty(self.erolays,dtype=object)
                     self.thickMap = numpy.empty(self.erolays,dtype=object)
-                    self.thickVal = numpy.empty(self.erolays,dtype=bool)
+                    self.thickVal = numpy.empty(self.erolays,dtype=object)
             else:
                 tmpNb = 1
                 self.erolays = 0
                 self.eroMap = numpy.empty(1,dtype=object)
-                self.eroVal = numpy.empty(1)
+                self.eroVal = numpy.empty(1,dtype=object)
                 self.thickMap = numpy.empty(1,dtype=object)
-                self.thickVal = numpy.empty(1,dtype=bool)
+                self.thickVal = numpy.empty(1,dtype=object)
             id = 0
             for elay in erostruct.iter('erolay'):
                 if id >= tmpNb:
