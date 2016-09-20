@@ -44,6 +44,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
         if input.tStart == tNow and input.nopit == 1:
             sea_lvl =  force.sealevel - input.sealimit
             elevation = elevationTIN.pit_stack_PD(elevation,sea_lvl,input.nopit)
+            fillH = elevation
     else:
         # fillH = elevationTIN.pit_filling_PD(elevation, FVmesh.neighbours,
         #                            recGrid.boundsPt, force.sealevel-input.sealimit
@@ -96,7 +97,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
     if rank == 0 and verbose:
         print " -   compute discharge ", time.clock() - walltime
 
-    return fillH
+    return fillH, elevation
 
 def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDisp, \
                   mapero, cumdiff, fillH, disp, inGIDs, elevation, tNow, tEnd, verbose=False):
@@ -176,4 +177,4 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
     if rank == 0 and verbose:
         print " - Flow computation ", time.clock() - Flow_time
 
-    return tNow
+    return tNow,elevation,cumdiff
