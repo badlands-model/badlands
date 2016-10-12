@@ -1,6 +1,8 @@
 pyBadlands - python version of Badlands
 =====
 
+[![DOI](https://zenodo.org/badge/51286954.svg)](https://zenodo.org/badge/latestdoi/51286954)
+
 <div align="center">
     <img width=500 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/sketch.png" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
 </div>
