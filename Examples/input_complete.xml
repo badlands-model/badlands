@@ -31,7 +31,7 @@
         <start>0.</start>
         <!-- Simulation end time [a] -->
         <end>100000.</end>
-        <!-- Minim time step [a] -->
+        <!-- Minimum time step [a] -->
         <mindt>1.</mindt>
         <!-- Display interval [a] -->
         <display>5000.</display>
