@@ -26,7 +26,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD
 
-    Flow_time = time.clock()
+    flow.Flow_time = time.clock()
 
     # Update sea-level
     walltime = time.clock()
@@ -175,6 +175,6 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
     tNow += timestep
 
     if rank == 0 and verbose:
-        print " - Flow computation ", time.clock() - Flow_time
+        print " - Flow computation ", time.clock() - flow.Flow_time
 
     return tNow,elevation,cumdiff
