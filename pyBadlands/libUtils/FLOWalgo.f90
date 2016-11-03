@@ -334,7 +334,8 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
 
       integer :: n, donor, recvr
-      real(kind=8) :: maxh, SPL, Qs, dh, mtime, waterH, dist, slpdh, updh
+      real(kind=8) :: maxh, SPL, Qs, dh, mtime, waterH
+      real(kind=8) :: dist, slp, slpdh, updh, tmpZ
       real(kind=8),dimension(pygNodesNb) :: sedFluxes, upZ, updist
 
       newdt = dt
@@ -348,33 +349,28 @@ contains
         donor = pyStack(n) + 1
         recvr = pyRcv(donor) + 1
         dh = 0.95*(pyElev(donor) - pyElev(recvr))
-        !if(dh<0)print*,'dedee',donor,n,pyElev(donor),recvr,pyElev(recvr),pyFillH(donor)
+
         if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
           dh = pyElev(donor) - sea
         if( dh < 0.001 ) dh = 0.
         waterH = pyFillH(donor)-pyElev(donor)
         dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
 
-        ! For alluvial deposition
-        upZ(recvr) = min(pyElev(donor),upZ(recvr))
-        if(upZ(recvr)==pyElev(donor))then
-          updist(recvr) = dist
-        endif
-
         ! Compute stream power law
         slpdh = 0.
         if( recvr /= donor .and. dh > 0.)then
           if(waterH == 0. .and. pyElev(donor) >= sea)then
+            slp = dh/dist
             ! Check if this is an alluvial plain in which case we force deposition
             if(updist(donor) > 0. .and. dist > 0. .and. slp_cr > 0.)then
               updh = upZ(donor) - pyElev(donor)
-              if(sedFluxes(donor) > 0. .and. updh/updist(donor) < slp_cr .and. updh > 0)then
+              if(sedFluxes(donor) > 0. .and. updh/updist(donor) < slp_cr .and. slp < slp_cr .and. updh > 0)then
                 slpdh = perc_dep * updh
                 slpdh = min(slpdh,pyMaxD(donor))
               endif
             endif
             if(dist > 0. .and. slpdh == 0.)then
-              SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+              SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (slp)**spl_n
             endif
           endif
         endif
@@ -423,9 +419,9 @@ contains
           elseif(donor == recvr .and. pyArea(donor) > 0.)then
             ! In cases where we want to conserve the mass
             SPL = sedFluxes(donor) / pyArea(donor)
-            ! For now just limit the deposition
-            if(SPL>pyMaxD(donor))then
-              SPL = pyMaxD(donor)
+            ! For now just force the deposition
+            if(SPL>pyMaxD(donor)/newdt)then
+              SPL = pyMaxD(donor)/newdt
             endif
             Qs = 0.
           else
@@ -440,7 +436,6 @@ contains
                 newdt = min( newdt,-0.99*(pyElev(donor)-pyElev(recvr))/SPL)
 
             Qs = -SPL * pyArea(donor) + sedFluxes(donor)
-
         endif
 
         ! Update sediment flux in receiver node
@@ -462,6 +457,14 @@ contains
                 newdt = min(newdt, mtime)
             endif
         endif
+
+        ! For alluvial deposition
+        tmpZ = min(pyElev(donor),pyElev(donor)+pyChange(donor)*newdt)
+        upZ(recvr) = min(tmpZ,upZ(recvr))
+        if(upZ(recvr)==tmpZ)then
+          updist(recvr) = dist
+        endif
+
       enddo
 
       return
