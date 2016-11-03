@@ -45,7 +45,9 @@ def construct_mesh(input, filename, verbose=False):
                 input.rbgd, input.rmin, input.rmax , input.windx,
                 input.windy, input.tauc, input.tauf, input.nm,
                 input.cw, input.hw, input.ortime, input.tectFile,
-                input.tectTime, recGrid.regX, recGrid.regY, input.tDisplay)
+                input.tectTime, recGrid.regX, recGrid.regY, input.riverPos,
+                input.riverTime, input.riverQws, input.riverWidth, input.riverNb,
+                input.tDisplay)
 
     if input.disp3d:
         force.time3d = input.time3d

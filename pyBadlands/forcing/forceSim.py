@@ -89,6 +89,21 @@ class forceSim:
     float : regY
         Numpy array containing the Y-coordinates of the regular input grid.
 
+    float : rivPos
+        Numpy array containing the XY position of the rivers.
+
+    float : rivTime
+        Numpy array containing the active time for the rivers.
+
+    float : rivQws
+        Numpy array containing the water and sediment discharge for the rivers.
+
+    float : rivWth
+        Numpy array containing the width of the rivers.
+
+    int : rivNb
+        Number of rivers.
+
     float : Tdisplay
         Display interval (in years).
     """
@@ -96,7 +111,8 @@ class forceSim:
     def __init__(self, seafile = None, sea0 = 0., MapRain = None, TimeRain = None, ValRain = None,
                  orographic = None, rbgd = None, rmin = None, rmax = None, windx = None, windy = None,
                  tauc = None, tauf = None, nm = None, cw = None, hw = None, ortime = None, MapDisp = None,
-                 TimeDisp = None, regX = None, regY = None, Tdisplay = 0.):
+                 TimeDisp = None, regX = None, regY = None, rivPos = None, rivTime = None, rivQws = None,
+                 rivWth = None, rivNb = 0, Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
@@ -104,6 +120,14 @@ class forceSim:
         self.xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
         self.tree = None
         self.dx = None
+
+        self.rivNb = rivNb
+        self.rivPos = rivPos
+        self.rivTime = rivTime
+        self.rivQws = rivQws
+        self.rivWth = rivWth
+        self.rivQs = None
+        self.rivQw = None
 
         self.Map_rain = MapRain
         self.rainVal = ValRain
@@ -185,6 +209,48 @@ class forceSim:
             if time > self.seatime.max():
                 time = self.seatime.max()
             self.sealevel = self.seaFunc(time)
+
+        return
+
+    def getRivers(self, time):
+        """
+        Finds for a given time the active rivers and allocates corresponding points with
+        water and sediment discharge values.
+
+        Parameters
+        ----------
+        float : time
+            Requested time for which to compute sea level elevation.
+
+        Return
+        ----------
+        variable: rivQw
+            Numpy array containing flow discharge from rivers.
+
+        variable: rivQs
+            Numpy array containing sediment discharge from rivers.
+        """
+
+        self.rivQw = numpy.zeros(len(self.tXY))
+        self.rivQs = numpy.zeros(len(self.tXY))
+
+        if self.rivNb > 0:
+            active = numpy.where(numpy.logical_and(self.rivTime[:,0] <= time, self.rivTime[:,1] > time))[0]
+            rivNb = len(active)
+            if rivNb > 0:
+                riv_xy = self.rivPos[active,:]
+                radius = self.rivWth[active]
+                indices = self.tree.query_ball_point(riv_xy, radius)
+                for r in range(rivNb):
+                    riv_qw = self.rivQws[active[r],0]
+                    riv_qs = self.rivQws[active[r],1]
+                    if len(indices[r]) > 0:
+                        self.rivQw[indices[r]] += riv_qw / len(indices[r])
+                        self.rivQs[indices[r]] += riv_qs / len(indices[r])
+                    else:
+                        distances, ids = self.tree.query(riv_xy[r], k=1)
+                        self.rivQw[ids] += riv_qw
+                        self.rivQs[ids] += riv_qs
 
         return
 

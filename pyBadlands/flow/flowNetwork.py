@@ -333,7 +333,8 @@ class flowNetwork:
 
         return
 
-    def compute_sedflux(self, Acell, elev, fillH, xymin, xymax, diff_flux, dt, sealevel, cumdiff):
+    def compute_sedflux(self, Acell, elev, fillH, xymin, xymax, diff_flux, dt, rivqs, sealevel,
+        cumdiff, perc_dep, slp_cr):
         """
         Calculates the sediment flux at each node.
 
@@ -360,11 +361,20 @@ class flowNetwork:
         variable : dt
             Real value corresponding to the maximal stability time step.
 
+        variable : rivqs
+            Numpy arrays representing the sediment fluxes from rivers.
+
         variable : sealevel
             Real value giving the sea-level height at considered time step.
 
         variable : cumdiff
             Numpy array containing the cumulative deposit thicknesses.
+
+        variable : slp_cr
+            Critical slope used to force aerial deposition for alluvial plain.
+
+        variable : perc_dep
+            Maximum percentage of deposition at any given time interval.
         """
 
         # Initialise MPI communications
@@ -374,72 +384,42 @@ class flowNetwork:
 
         # Compute sediment flux using libUtils
 
+        # Purely erosive case
+        if self.spl and self.depo == 0:
+            sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
+                     self.xycoords,xymin,xymax,self.discharge,elev, \
+                     diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
+
+        # Stream power law and mass is not conserved
+        elif self.spl and self.filter:
+            sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity_quick(self.localstack,self.receivers, \
+                     self.xycoords,Acell,xymin,xymax,self.discharge,elev,rivqs,diff_flux,self.erodibility, \
+                     self.m,self.n,sealevel,dt)
+
+        # Stream power law
+        elif self.spl:
+            sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
+                     Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs,diff_flux, \
+                     self.erodibility,self.m,self.n,perc_dep,slp_cr,sealevel,dt)
+
+        # River carrying capacity case
+        else:
+            sedflux, newdt = FLOWalgo.flowcompute.sedflux_capacity(self.localstack,self.receivers,self.xycoords,\
+                     Acell,xymin,xymax,self.discharge,elev,rivqs,diff_flux,cumdiff,self.erodibility, \
+                     self.m,self.n,self.bedrock,self.alluvial,sealevel,dt)
+
         # Parallel case
         if(size > 1):
-            # Purely erosive case
-            if self.spl and self.depo == 0:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
-                                      self.xycoords,xymin,xymax,self.discharge,elev, \
-                                      diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
-
-            # Stream power law and mass is not conserved
-            elif self.spl and self.filter:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity_quick(self.localstack,self.receivers, \
-                         self.xycoords,Acell,xymin,xymax,self.discharge,elev,diff_flux,self.erodibility, \
-                         self.m,self.n,sealevel,dt)
-
-            # Stream power law
-            elif self.spl:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
-                         Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
-                         self.erodibility,self.m,self.n,sealevel,dt)
-
-            # River carrying capacity case
-            else:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_capacity(self.localstack,self.receivers,self.xycoords,\
-                         Acell,xymin,xymax,self.discharge,elev,diff_flux,cumdiff,self.erodibility, \
-                         self.m,self.n,self.bedrock,self.alluvial,sealevel,dt)
-
             timestep = numpy.zeros(1)
             timestep[0] = newdt
             comm.Allreduce(mpi.IN_PLACE,timestep,op=mpi.MIN)
             newdt = timestep[0]
             comm.Allreduce(mpi.IN_PLACE,sedflux,op=mpi.MAX)
-            tempIDs = numpy.where(sedflux < -9.5e5)
-            sedflux[tempIDs] = 0.
-            newdt = max(self.mindt,newdt)
-            sedrate = sedflux
 
-        # Serial case
-        else:
-            # Purely erosive case
-            if self.spl and self.depo == 0:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
-                                      self.xycoords,xymin,xymax,self.discharge,elev, \
-                                      diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
-
-            # Stream power law and mass is not conserved
-            elif self.spl and self.filter:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity_quick(self.localstack,self.receivers, \
-                         self.xycoords,Acell,xymin,xymax,self.discharge,elev,diff_flux,self.erodibility, \
-                         self.m,self.n,sealevel,dt)
-
-            # Stream power law
-            elif self.spl:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
-                         Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,diff_flux, \
-                         self.erodibility,self.m,self.n,sealevel,dt)
-
-            # River carrying capacity case
-            else:
-                sedflux, newdt = FLOWalgo.flowcompute.sedflux_capacity(self.localstack,self.receivers,self.xycoords,\
-                         Acell,xymin,xymax,self.discharge,elev,diff_flux,cumdiff,self.erodibility, \
-                         self.m,self.n,self.bedrock,self.alluvial,sealevel,dt)
-
-            tempIDs = numpy.where(sedflux < -9.5e5)
-            sedflux[tempIDs] = 0.
-            newdt = max(self.mindt,newdt)
-            sedrate = sedflux
+        tempIDs = numpy.where(sedflux < -9.5e5)
+        sedflux[tempIDs] = 0.
+        newdt = max(self.mindt,newdt)
+        sedrate = sedflux
 
         return newdt,sedrate
 

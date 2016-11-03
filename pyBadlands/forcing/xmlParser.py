@@ -39,6 +39,8 @@ class xmlParser:
 
         self.demfile = None
         self.btype = 'slope'
+        self.perc_dep = 0.
+        self.slp_cr = 0.
         self.fillmax = 1.
         self.Afactor = 1
         self.nopit = 0
@@ -50,6 +52,7 @@ class xmlParser:
         self.tEnd = None
         self.tDisplay = None
         self.minDT = 1.
+        self.maxiDT = 1.e6
 
         self.stratdx = 0.
         self.laytime = 0.
@@ -67,6 +70,12 @@ class xmlParser:
         self.tectFile = None
         self.merge3d = None
         self.time3d = None
+
+        self.riverNb = None
+        self.riverTime = None
+        self.riverPos = None
+        self.riverQws = None
+        self.riverWidth = None
 
         self.rainNb = None
         self.rainVal = None
@@ -238,6 +247,12 @@ class xmlParser:
                 self.minDT = float(element.text)
             else:
                 self.minDT = 1.
+            element = None
+            element = time.find('maxdt')
+            if element is not None:
+                self.maxiDT = float(element.text)
+            else:
+                self.maxiDT = self.tDisplay
         else:
             raise ValueError('Error in the XmL file: time structure definition is required!')
 
@@ -421,6 +436,70 @@ class xmlParser:
             self.tectTime[0,1] = self.tEnd + 2.e5
             self.tectFile = numpy.empty((self.tectNb),dtype=object)
             self.tectFile = None
+
+        # Extract Rivers structure information
+        rivers = None
+        rivers = root.find('rivers')
+        if rivers is not None:
+            element = None
+            element = rivers.find('riverNb')
+            if element is not None:
+                self.riverNb = int(element.text)
+            else:
+                raise ValueError('The number of rivers needs to be defined.')
+            self.riverTime = numpy.empty((self.riverNb,2))
+            self.riverPos = numpy.empty((self.riverNb,2))
+            self.riverQws = numpy.empty((self.riverNb,2))
+            self.riverWidth = numpy.empty((self.riverNb))
+            id = 0
+            for riv in rivers.iter('river'):
+                if id >= self.riverNb:
+                    raise ValueError('The number of rivers does not match the value of riverNb.')
+                element = None
+                element = riv.find('rstart')
+                if element is not None:
+                    self.riverTime[id,0] = float(element.text)
+                else:
+                    raise ValueError('River %d is missing start time argument.'%id)
+                element = None
+                element = riv.find('rend')
+                if element is not None:
+                    self.riverTime[id,1] = float(element.text)
+                else:
+                    raise ValueError('River %d is missing end time argument.'%id)
+                element = None
+                element = riv.find('rposX')
+                if element is not None:
+                    self.riverPos[id,0] = float(element.text)
+                else:
+                    raise ValueError('River %d is missing X position.'%id)
+                element = None
+                element = riv.find('rposY')
+                if element is not None:
+                    self.riverPos[id,1] = float(element.text)
+                else:
+                    raise ValueError('River %d is missing Y position.'%id)
+                element = None
+                element = riv.find('rwidth')
+                if element is not None:
+                    self.riverWidth[id] = float(element.text)
+                else:
+                    raise ValueError('River %d is missing width.'%id)
+                element = None
+                element = riv.find('rQw')
+                if element is not None:
+                    self.riverQws[id,0] = float(element.text)
+                else:
+                    raise ValueError('River %d is missing water discharge.'%id)
+                element = None
+                element = riv.find('rQs')
+                if element is not None:
+                    self.riverQws[id,1] = float(element.text)
+                else:
+                    raise ValueError('River %d is missing sediment discharge.'%id)
+                id += 1
+        else:
+            self.riverNb = 0
 
         # Extract Precipitation structure information
         precip = None
@@ -690,7 +769,7 @@ class xmlParser:
             self.rainVal[0] = 0.
             self.rainTime[0,0] = self.tStart
             self.rainTime[0,1] = self.tEnd
-            self.rainMap = None
+            self.rainMap[0] = None
             self.orographic[0] = False
             self.rainVal[0] = 0.
             self.rbgd[0] = 0.
@@ -716,6 +795,18 @@ class xmlParser:
                 self.depo = int(element.text)
             else:
                 self.depo = 1
+            element = None
+            element = spl.find('slp_cr')
+            if element is not None:
+                self.slp_cr = float(element.text)
+            else:
+                self.slp_cr = 0.
+            element = None
+            element = spl.find('perc_dep')
+            if element is not None:
+                self.perc_dep = float(element.text)
+            else:
+                self.perc_dep = 0.
             element = None
             element = spl.find('fillmax')
             if element is not None:

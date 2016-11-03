@@ -33,6 +33,10 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
     force.getSea(tNow)
     fillH = None
 
+    # Update river input
+    force.getRivers(tNow)
+    riverrain = rain+force.rivQw
+
     if input.depo == 0 or input.capacity or input.filter:
         flow.maxdep = 0.
         flow.maxh = 0.
@@ -93,7 +97,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
 
     # Compute discharge
     walltime = time.clock()
-    flow.compute_flow(FVmesh.control_volumes, rain)
+    flow.compute_flow(FVmesh.control_volumes, riverrain)
     if rank == 0 and verbose:
         print " -   compute discharge ", time.clock() - walltime
 
@@ -132,7 +136,10 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
             flow.dt_stability(elevation, inGIDs)
 
     CFLtime = min(flow.CFL, hillslope.CFL)
+    CFLtime = min(CFLtime,tEnd-tNow)
     CFLtime = max(input.minDT, CFLtime)
+    CFLtime = min(input.maxiDT, CFLtime)
+
     if rank == 0 and verbose:
         print " -   Get CFL time step ", time.clock() - walltime
 
@@ -146,8 +153,11 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
     walltime = time.clock()
     xyMin = [recGrid.regX.min(), recGrid.regY.min()]
     xyMax = [recGrid.regX.max(), recGrid.regY.max()]
+    id = np.where(force.rivQs>0)
+    tmp = force.rivQs[id]
     tstep, sedrate = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, xyMin, xyMax,
-                                          diff_flux, CFLtime, force.sealevel, cumdiff)
+                                          diff_flux, CFLtime, force.rivQs, force.sealevel, cumdiff,
+                                          input.perc_dep, input.slp_cr)
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
 

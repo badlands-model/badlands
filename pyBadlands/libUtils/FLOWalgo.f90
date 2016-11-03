@@ -208,7 +208,7 @@ contains
   end subroutine sedflux_ero_only
 
   subroutine sedflux_nocapacity_quick(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
-      pyDischarge, pyElev, pyDiff, Cero, spl_m, spl_n, sea, dt, pyChange, newdt, &
+      pyDischarge, pyElev, pyRiv, pyDiff, Cero, spl_m, spl_n, sea, dt, pyChange, newdt, &
       pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
@@ -227,6 +227,7 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyRiv
 
       real(kind=8),intent(out) :: newdt
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
@@ -237,7 +238,7 @@ contains
 
       newdt = dt
       pyChange = -1.e6
-      sedFluxes = 0.
+      sedFluxes = pyRiv
 
       do n = pylNodesNb, 1, -1
         SPL = 0.
@@ -260,7 +261,7 @@ contains
 
         ! Deposition case
         if( SPL == 0. .and. pyArea(donor) > 0.)then
-          if(pyElev(donor) < sea)then
+          if(pyElev(donor) < sea .and. donor /= recvr)then
               if(sedFluxes(donor)*newdt/pyArea(donor) < sea - pyElev(donor))then
                 SPL = sedFluxes(donor)/pyArea(donor)
                 Qs = 0.
@@ -303,8 +304,8 @@ contains
   end subroutine sedflux_nocapacity_quick
 
   subroutine sedflux_nocapacity(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
-      pyMaxH, pyMaxD, pyDischarge, pyFillH, pyElev, pyDiff, Cero, &
-      spl_m, spl_n, sea, dt, pyChange, newdt, pylNodesNb, pygNodesNb)
+      pyMaxH, pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, pyDiff, Cero, spl_m, &
+      spl_n, perc_dep, slp_cr, sea, dt, pyChange, newdt, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
@@ -312,6 +313,8 @@ contains
       real(kind=8),intent(in) :: sea
       real(kind=8),intent(in) :: spl_n
       real(kind=8),intent(in) :: spl_m
+      real(kind=8),intent(in) :: perc_dep
+      real(kind=8),intent(in) :: slp_cr
       real(kind=8),dimension(2),intent(in) :: pyXYmin
       real(kind=8),dimension(2),intent(in) :: pyXYmax
       integer,dimension(pylNodesNb),intent(in) :: pyStack
@@ -325,33 +328,54 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyFillH
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyRiv
 
       real(kind=8),intent(out) :: newdt
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
 
       integer :: n, donor, recvr
-      real(kind=8) :: maxh, SPL, Qs, dh, mtime, waterH, dist
-      real(kind=8),dimension(pygNodesNb) :: sedFluxes
+      real(kind=8) :: maxh, SPL, Qs, dh, mtime, waterH, dist, slpdh, updh
+      real(kind=8),dimension(pygNodesNb) :: sedFluxes, upZ, updist
 
       newdt = dt
       pyChange = -1.e6
-      sedFluxes = 0.
+      sedFluxes = pyRiv
+      upZ = 1.e6
+      updist = 0.
 
       do n = pylNodesNb, 1, -1
         SPL = 0.
         donor = pyStack(n) + 1
         recvr = pyRcv(donor) + 1
         dh = 0.95*(pyElev(donor) - pyElev(recvr))
+        !if(dh<0)print*,'dedee',donor,n,pyElev(donor),recvr,pyElev(recvr),pyFillH(donor)
         if(pyElev(donor) > sea .and. pyElev(recvr) < sea) &
           dh = pyElev(donor) - sea
         if( dh < 0.001 ) dh = 0.
         waterH = pyFillH(donor)-pyElev(donor)
+        dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
+
+        ! For alluvial deposition
+        upZ(recvr) = min(pyElev(donor),upZ(recvr))
+        if(upZ(recvr)==pyElev(donor))then
+          updist(recvr) = dist
+        endif
 
         ! Compute stream power law
+        slpdh = 0.
         if( recvr /= donor .and. dh > 0.)then
           if(waterH == 0. .and. pyElev(donor) >= sea)then
-            dist = sqrt( (pyXY(donor,1)-pyXY(recvr,1))**2.0 + (pyXY(donor,2)-pyXY(recvr,2))**2.0 )
-            if(dist > 0.) SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+            ! Check if this is an alluvial plain in which case we force deposition
+            if(updist(donor) > 0. .and. dist > 0. .and. slp_cr > 0.)then
+              updh = upZ(donor) - pyElev(donor)
+              if(sedFluxes(donor) > 0. .and. updh/updist(donor) < slp_cr .and. updh > 0)then
+                slpdh = perc_dep * updh
+                slpdh = min(slpdh,pyMaxD(donor))
+              endif
+            endif
+            if(dist > 0. .and. slpdh == 0.)then
+              SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (dh/dist)**spl_n
+            endif
           endif
         endif
 
@@ -360,13 +384,15 @@ contains
           maxh = sea - pyElev(donor)
         elseif(waterH > 0.)then
           maxh = min( waterH,maxh )
+        elseif(slpdh > 0. .and. slp_cr > 0.)then
+          maxh = slpdh
         endif
         maxh = 0.95*maxh
         Qs = 0.
 
         ! Deposition case
         if( SPL == 0. .and. pyArea(donor) > 0.)then
-          if(maxh > 0. .and. pyElev(donor) < sea)then
+          if(maxh > 0. .and. pyElev(donor) < sea .and. donor /= recvr)then
               if(sedFluxes(donor)*newdt/pyArea(donor) < maxh)then
                 SPL = sedFluxes(donor)/pyArea(donor)
                 Qs = 0.
@@ -374,6 +400,15 @@ contains
                 SPL = maxh / newdt
                 Qs = sedFluxes(donor) - SPL*pyArea(donor)
               endif
+          ! Alluvial plain deposit
+          elseif(maxh > 0. .and. waterH == 0. .and. donor /= recvr .and. pyElev(donor) > sea)then
+            if(sedFluxes(donor)*newdt/pyArea(donor) < maxh)then
+              SPL = sedFluxes(donor)/pyArea(donor)
+              Qs = 0.
+            else
+              SPL = maxh / newdt
+              Qs = sedFluxes(donor) - SPL*pyArea(donor)
+            endif
           ! Fill depression
           elseif(waterH > 0.0001 .and. donor /= recvr)then
               dh = 0.95*waterH
@@ -386,7 +421,12 @@ contains
               endif
           ! Base-level (sink)
           elseif(donor == recvr .and. pyArea(donor) > 0.)then
+            ! In cases where we want to conserve the mass
             SPL = sedFluxes(donor) / pyArea(donor)
+            ! For now just limit the deposition
+            if(SPL>pyMaxD(donor))then
+              SPL = pyMaxD(donor)
+            endif
             Qs = 0.
           else
             Qs = sedFluxes(donor)
@@ -400,6 +440,7 @@ contains
                 newdt = min( newdt,-0.99*(pyElev(donor)-pyElev(recvr))/SPL)
 
             Qs = -SPL * pyArea(donor) + sedFluxes(donor)
+
         endif
 
         ! Update sediment flux in receiver node
@@ -428,7 +469,7 @@ contains
   end subroutine sedflux_nocapacity
 
   subroutine sedflux_capacity(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
-      pyDischarge, pyElev, pyDiff, pyCum, Cero, spl_m, spl_n, Lb, La, sea, dt, &
+      pyDischarge, pyElev, pyRiv, pyDiff, pyCum, Cero, spl_m, spl_n, Lb, La, sea, dt, &
       pyChange, newdt, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
@@ -450,6 +491,7 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyRiv
 
       real(kind=8),intent(out) :: newdt
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
@@ -460,7 +502,7 @@ contains
 
       newdt = dt
       pyChange = -1.e6
-      sedFluxes = 0.
+      sedFluxes = pyRiv
 
       do n = pylNodesNb, 1, -1
         SPL = 0.
