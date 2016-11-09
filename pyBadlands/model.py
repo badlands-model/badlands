@@ -182,6 +182,7 @@ class Model(object):
             if not self.input.disp3d:
                 # Vertical displacements
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
+                    print "VERTICAL DISPLACEMENT"
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.e6)
                     ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow,self.inIDs)

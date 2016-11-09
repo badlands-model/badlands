@@ -371,11 +371,17 @@ class forceSim:
 
         self.next_disp = self.T_disp[event,1]
 
-        if self.Map_disp[event] != None:
-            dispMap = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
-                               dtype=numpy.float, low_memory=False)
+        if self.injected_disps is not None or self.Map_disp[event] != None:
+            if self.injected_disps is not None:
+                print 'process shape %s' % (self.injected_disps.shape,)
+                dispMap = self.injected_disps
 
-            rectDisp = numpy.reshape(dispMap.values,(len(self.regX), len(self.regY)),order='F')
+            else:
+                dispMap = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
+                                   dtype=numpy.float, low_memory=False).values
+
+
+            rectDisp = numpy.reshape(dispMap,(len(self.regX), len(self.regY)),order='F')
             tinDisp = interpolate.interpn( (self.regX, self.regY), rectDisp, self.tXY[inIDs,:], method='linear')
             dt = (self.T_disp[event,1] - self.T_disp[event,0])
             if dt <= 0:
@@ -452,6 +458,7 @@ class forceSim:
 
             if self.injected_disps is not None:
                 print 'INJECTING'
+                print 'nd = %s, time = %s' % (self.next_disp, time)
                 dvals = self.injected_disps
             else:
                 disps = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
@@ -490,6 +497,7 @@ class forceSim:
 
         self.dispX = dispX
         self.dispY = dispY
+        print 'set self.dispZ'
         self.dispZ = dispZ
 
         if strata:
@@ -563,6 +571,7 @@ class forceSim:
         """
 
         # Apply displacements to TIN points (excluding boundary points)
+        print 'applied dispZ'
         telev += self.dispZ
         tXY = numpy.copy(self.tXY)
         tXY[fixIDs:,0] += self.dispX[fixIDs:]
