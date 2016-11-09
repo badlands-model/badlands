@@ -182,7 +182,7 @@ class Model(object):
             if not self.input.disp3d:
                 # Vertical displacements
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
-                    print "VERTICAL DISPLACEMENT"
+                    print "VERTICAL DISPLACEMENT nd %s now %s" % (self.force.next_disp, self.tNow)
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.e6)
                     ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow,self.inIDs)
@@ -190,6 +190,19 @@ class Model(object):
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
                     self.applyDisp = True
+
+                    '''
+                    if hasattr(self, 'injected
+                    if self.injected_disps is not None:
+                        # remove it from the list
+                        print self.force.next_disp
+                        print self.force.T_disp
+
+                        import sys
+                        sys.exit(0)
+                    '''
+
+
             else:
                 # 3D displacements
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
