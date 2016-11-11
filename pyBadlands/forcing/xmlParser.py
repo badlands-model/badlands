@@ -361,6 +361,9 @@ class xmlParser:
             element = tecto.find('events')
             if element is not None:
                 tmpNb = int(element.text)
+                if tmpNb == 0:
+                    raise ValueError('The number of tectonic events needs to be at least 1 or comment the tectonic structure.')
+
             else:
                 raise ValueError('The number of tectonic events needs to be defined.')
             tmpFile = numpy.empty(tmpNb,dtype=object)
