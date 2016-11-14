@@ -190,19 +190,6 @@ class Model(object):
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
                     self.applyDisp = True
-
-                    '''
-                    if hasattr(self, 'injected
-                    if self.injected_disps is not None:
-                        # remove it from the list
-                        print self.force.next_disp
-                        print self.force.T_disp
-
-                        import sys
-                        sys.exit(0)
-                    '''
-
-
             else:
                 # 3D displacements
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:

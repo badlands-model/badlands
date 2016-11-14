@@ -457,7 +457,7 @@ class forceSim:
             dispZ.fill(-1.e6)
 
             if self.injected_disps is not None:
-                print 'INJECTING'
+                print 'INJECTING 3D'
                 print 'nd = %s, time = %s' % (self.next_disp, time)
                 dvals = self.injected_disps
             else:
