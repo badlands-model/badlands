@@ -163,6 +163,8 @@ class Model(object):
         # Perform main simulation loop
         while self.tNow < tEnd:
 
+            print 'tNow = %s' % self.tNow
+
             # At most, display output every 5 seconds
             tloop = time.clock() - last_time
             if self._rank == 0 and time.clock() - last_output >= 5.0:
