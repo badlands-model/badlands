@@ -749,8 +749,6 @@ class xmlParser:
                 self.nm[id] = 0.005
                 self.cw[id] = 0.005
                 self.hw[id] = 3000.
-                self.rainTime[id,0] = self.tStart
-                self.rainTime[id,1] = tmpTime[0,0]
                 self.ortime[id] = self.tEnd - tmpTime[tmpNb-1,1]
         else:
             self.rainNb = 1
