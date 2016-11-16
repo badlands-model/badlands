@@ -608,6 +608,18 @@ contains
     id2=0
     k1=0
     k2=0
+
+    tri_distance = 0.
+    voronoi_area = 0.
+    tri_voronoi_edge = 0.
+    voronoi_vertexID = -1
+    voronoi_vertexNb = 0
+    voronoi_border = 0
+    voronoi_area = 0.0
+    tri_ngbNb = 0
+    tri_ngbID = -1
+
+
     do c = 1, gnodes
        cell = gIDs(c)
        id1=-1
@@ -626,13 +638,7 @@ contains
            exit lp_ed0
          endif
        enddo lp_ed0
-       tri_ngbNb(cell)=0
-       tri_ngbID(cell,1:20)=-1
-       tri_voronoi_edge(cell,1:20)=0.0
-       voronoi_vertexID(cell,1:20)=-1
-       voronoi_vertexNb(cell)=0
-       voronoi_border(cell)=0
-       voronoi_area(cell)=0.0
+       
        lp_ed1: do n=id1,dedges
           if(tEdge(rk1(n),1)==cell)then
              id1=n
