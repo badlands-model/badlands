@@ -10,7 +10,6 @@
 This module exports the TIN surface with associated parameters based on hdf5.
 """
 
-import time
 import h5py
 import numpy
 import xml.etree.ElementTree as ETO
@@ -266,7 +265,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
 
     return
 
-def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, sealevel, size,
+def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel, size,
               flexOn, rainOn, eroOn):
     """
     This function writes the XmF file which is calling each HFD5 file.
@@ -282,7 +281,7 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
     variable: step
         Output visualisation step.
 
-    variable : time
+    variable : t
         Simulation time.
 
     variable : elems
@@ -321,7 +320,7 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, seale
     f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n')
     f.write(' <Domain>\n')
     f.write('    <Grid GridType="Collection" CollectionType="Spatial">\n')
-    f.write('      <Time Type="Single" Value="%s"/>\n'%time)
+    f.write('      <Time Type="Single" Value="%s"/>\n'%t)
 
     for p in range(size):
         pfile = h5file+str(step)+'.p'+str(p)+'.hdf5'

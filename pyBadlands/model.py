@@ -253,7 +253,7 @@ class Model(object):
                                     self.strata[rid].move_mesh(regdX[rid], regdY[rid], scum, verbose=False)
 
             # Compute stream network
-            self.fillH = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
+            self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
                                               self.flow, self.elevation, self.lGIDs, self.rain, self.tNow, verbose)
             # Compute isostatic flexure
             if self.tNow >= self.force.next_flexure:
@@ -276,9 +276,9 @@ class Model(object):
             if self.tNow >= self.force.next_display:
                 if self.force.next_display > self.input.tStart:
                     outStrata = 1
-                checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
-                                            self.FVmesh, self.tMesh, self.force, self.flow, self.rain, \
-                                            self.elevation, self.cumdiff, self.outputStep, self.mapero, \
+                checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow,
+                                            self.FVmesh, self.tMesh, self.force, self.flow, self.rain,
+                                            self.elevation, self.cumdiff, self.outputStep, self.mapero,
                                             self.cumflex)
                 # Update next display time
                 self.force.next_display += self.input.tDisplay
@@ -303,7 +303,7 @@ class Model(object):
                         tEnd, self.force.next_disp, self.force.next_rain])
 
             # Compute sediment transport up to tStop
-            self.tNow = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, self.FVmesh,
+            self.tNow, self.elevation, self.cumdiff = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, self.FVmesh,
                               self.tMesh, self.flow, self.force, self.applyDisp, self.mapero, self.cumdiff, \
                               self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
