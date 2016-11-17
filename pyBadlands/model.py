@@ -198,8 +198,10 @@ class Model(object):
                         if self.input.region == 0:
                             regdX = [None]
                             regdY = [None]
-                            updateMesh, regdX[0], regdY[0] = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs,
-                                                                True, self.strata[0].xyi, self.strata[0].ids)
+                            if self.strata:
+                                updateMesh, regdX[0], regdY[0] = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs, True, self.strata[0].xyi, self.strata[0].ids)
+                            else:
+                                updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
                         else:
                             regdX = [None] * self.input.region
                             regdY = [None] * self.input.region
@@ -243,7 +245,7 @@ class Model(object):
                         # Rebuild the computational mesh
                         self.rebuild_mesh()
                         # Update the stratigraphic mesh
-                        if self.input.laytime > 0:
+                        if self.input.laytime > 0 and self.strata:
                             if self.input.region == 0:
                                 self.strata[0].move_mesh(regdX[0], regdY[0], scum, verbose=False)
                             else:
@@ -251,9 +253,8 @@ class Model(object):
                                     self.strata[rid].move_mesh(regdX[rid], regdY[rid], scum, verbose=False)
 
             # Compute stream network
-            self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
+            self.fillH = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
                                               self.flow, self.elevation, self.lGIDs, self.rain, self.tNow, verbose)
-
             # Compute isostatic flexure
             if self.tNow >= self.force.next_flexure:
                 flextime = time.clock()
@@ -287,13 +288,14 @@ class Model(object):
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
                 self.force.next_layer += self.input.laytime
-                if self.input.region == 0:
-                    self.strata[0].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
-                        self._rank, outStrata, self.outputStep-1)
-                else:
-                    for rid in range(self.input.region):
-                        self.strata[rid].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                if self.strata:
+                    if self.input.region == 0:
+                        self.strata[0].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
                             self._rank, outStrata, self.outputStep-1)
+                    else:
+                        for rid in range(self.input.region):
+                            self.strata[rid].buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                                self._rank, outStrata, self.outputStep-1)
                 outStrata = 0
 
             # Get the maximum time before updating one of the above processes / components
@@ -301,8 +303,8 @@ class Model(object):
                         tEnd, self.force.next_disp, self.force.next_rain])
 
             # Compute sediment transport up to tStop
-            self.tNow,self.elevation,self.cumdiff = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope,
-                              self.FVmesh, self.tMesh, self.flow, self.force, self.applyDisp, self.mapero, self.cumdiff,
+            self.tNow = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, self.FVmesh,
+                              self.tMesh, self.flow, self.force, self.applyDisp, self.mapero, self.cumdiff, \
                               self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time
