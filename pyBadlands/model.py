@@ -113,7 +113,7 @@ class Model(object):
             self.flex.update_flexure_parameters(self.FVmesh.node_coords[:,:2])
 
         # Update stratigraphic mesh
-        if self.input.laytime > 0:
+        if self.input.laytime > 0 and self.strata:
             if self.input.region == 0:
                 self.strata[0].update_TIN(self.FVmesh.node_coords[:, :2])
             else:
@@ -162,7 +162,6 @@ class Model(object):
 
         # Perform main simulation loop
         while self.tNow < tEnd:
-
             # At most, display output every 5 seconds
             tloop = time.clock() - last_time
             if self._rank == 0 and time.clock() - last_output >= 5.0:
@@ -220,7 +219,7 @@ class Model(object):
                         # Define stratal flags
                         fstrat = 0
                         sload = None
-                        if self.input.laytime > 0:
+                        if self.input.laytime > 0 and self.strata:
                             sload = self.strata[0].oldload
                             fstrat = 1
                         # Define erodibility map flags

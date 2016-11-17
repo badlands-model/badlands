@@ -148,6 +148,7 @@ class forceSim:
 
         self.Map_disp = MapDisp
         self.T_disp = TimeDisp
+        self.injected_disps = None
         self.next_disp = None
 
         self.sea0 = sea0
@@ -436,11 +437,15 @@ class forceSim:
 
         self.next_disp = self.T_disp[event,1]
 
-        if self.Map_disp[event] != None:
-            dispMap = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
-                               dtype=numpy.float, low_memory=False)
+        if self.injected_disps is not None or self.Map_disp[event] != None:
+            if self.injected_disps is not None:
+                dispMap = self.injected_disps
+            else:
+                dispMap = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
+                                   dtype=numpy.float, low_memory=False).values
 
-            rectDisp = numpy.reshape(dispMap.values,(len(self.regX), len(self.regY)),order='F')
+
+            rectDisp = numpy.reshape(dispMap,(len(self.regX), len(self.regY)),order='F')
             tinDisp = interpolate.interpn( (self.regX, self.regY), rectDisp, self.tXY[inIDs,:], method='linear')
             dt = (self.T_disp[event,1] - self.T_disp[event,0])
             if dt <= 0:
@@ -510,16 +515,22 @@ class forceSim:
             self.next_disp = self.T_disp[event,1]
 
         update = False
-        if self.Map_disp[event] != None:
+        if self.injected_disps is not None or self.Map_disp[event] != None:
             dispX.fill(-1.e6)
             dispY.fill(-1.e6)
             dispZ.fill(-1.e6)
-            disps = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
-                               dtype=numpy.float, low_memory=False)
 
-            disprX = numpy.reshape(disps.values[:,0],(len(self.regX), len(self.regY)),order='F')
-            disprY = numpy.reshape(disps.values[:,1],(len(self.regX), len(self.regY)),order='F')
-            disprZ = numpy.reshape(disps.values[:,2],(len(self.regX), len(self.regY)),order='F')
+            if self.injected_disps is not None:
+                dvals = self.injected_disps
+            else:
+                disps = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
+                            dtype=numpy.float, low_memory=False)
+                dvals = disps.values
+
+
+            disprX = numpy.reshape(dvals[:,0],(len(self.regX), len(self.regY)),order='F')
+            disprY = numpy.reshape(dvals[:,1],(len(self.regX), len(self.regY)),order='F')
+            disprZ = numpy.reshape(dvals[:,2],(len(self.regX), len(self.regY)),order='F')
             dispX[inIDs] = interpolate.interpn( (self.regX, self.regY), disprX, dpXY, method='linear')
             dispY[inIDs] = interpolate.interpn( (self.regX, self.regY), disprY, dpXY, method='linear')
             dispZ[inIDs] = interpolate.interpn( (self.regX, self.regY), disprZ, dpXY, method='linear')
@@ -536,8 +547,9 @@ class forceSim:
                 comm.Allreduce(mpi.IN_PLACE, sdispX, op=mpi.MAX)
                 comm.Allreduce(mpi.IN_PLACE, sdispY, op=mpi.MAX)
 
-        if self.time3d > 0. and self.Map_disp[event] != None:
+        if self.time3d > 0. and (self.injected_disps is not None or self.Map_disp[event] != None):
             rate = (self.next_disp - time) / (self.T_disp[event,1] - self.T_disp[event,0])
+            assert rate > 0
             dispX = dispX * rate
             dispY = dispY * rate
             dispZ = dispZ * rate
