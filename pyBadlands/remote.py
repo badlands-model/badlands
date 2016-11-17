@@ -45,19 +45,13 @@ class RemoteModel(object):
         # self._view.apply(relog)
 
     def load_xml(self, filename, verbose=False):
-        try:
-            cwd = os.getcwd()
-            self._view.execute('import os')
-            self._view.execute('os.chdir("%s")' % cwd)
-            self._view.execute('model.load_xml(filename="%s", verbose=%s)' % (filename, verbose))
-        except Exception, e:
-            import pdb; pdb.set_trace()
+        cwd = os.getcwd()
+        self._view.execute('import os')
+        self._view.execute('os.chdir("%s")' % cwd)
+        self._view.execute('model.load_xml(filename="%s", verbose=%s)' % (filename, verbose))
 
     def run_to_time(self, tEnd):
-        try:
-            self._view.execute('model.run_to_time(%s)' % tEnd)
-        except Exception, e:
-            import pdb; pdb.set_trace()
+        self._view.execute('model.run_to_time(%s)' % tEnd)
 
     def ncpus(self):
         """Return the number of CPUs used to generate the results."""
