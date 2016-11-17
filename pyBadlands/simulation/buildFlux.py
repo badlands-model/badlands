@@ -131,6 +131,8 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
             flow.dt_stability(elevation, inGIDs)
 
     CFLtime = min(flow.CFL, hillslope.CFL)
+    if rank == 0:
+        print 'flow CFL is %s, hillslope CFL is %s, now %s end %s' % (flow.CFL, hillslope.CFL, tNow, tEnd)
     CFLtime = max(input.minDT, CFLtime)
     if rank == 0 and verbose:
         print " -   Get CFL time step ", time.clock() - walltime
@@ -145,15 +147,24 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
     walltime = time.clock()
     xyMin = [recGrid.regX.min(), recGrid.regY.min()]
     xyMax = [recGrid.regX.max(), recGrid.regY.max()]
+    if rank == 0:
+        print 'CFLtime is %s' % CFLtime
     tstep, sedrate = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, xyMin, xyMax,
                                           diff_flux, CFLtime, force.sealevel, cumdiff)
+
+    if rank == 0:
+        print 'after sedflux, tstep = %s' % tstep
+
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
 
     # Update surface parameters and time
     timestep = min(tstep, tEnd-tNow)
+    assert tNow <= tEnd, 'ran off the end of the model'
     # bodge around floating point issues, make sure time always advances
     if timestep < 0.0001:
+        if rank == 0:
+            print 'WARNING: timestep is tiny. Your model will take a long time to run.'
         timestep = 0.0001
     diff = sedrate * timestep
 

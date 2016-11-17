@@ -162,9 +162,6 @@ class Model(object):
 
         # Perform main simulation loop
         while self.tNow < tEnd:
-
-            print 'tNow = %s' % self.tNow
-
             # At most, display output every 5 seconds
             tloop = time.clock() - last_time
             if self._rank == 0 and time.clock() - last_output >= 5.0:
@@ -184,7 +181,6 @@ class Model(object):
             if not self.input.disp3d:
                 # Vertical displacements
                 if self.force.next_disp <= self.tNow and self.force.next_disp < self.input.tEnd:
-                    print "VERTICAL DISPLACEMENT nd %s now %s" % (self.force.next_disp, self.tNow)
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.e6)
                     ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow,self.inIDs)

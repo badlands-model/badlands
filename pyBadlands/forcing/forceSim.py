@@ -373,7 +373,6 @@ class forceSim:
 
         if self.injected_disps is not None or self.Map_disp[event] != None:
             if self.injected_disps is not None:
-                print 'process shape %s' % (self.injected_disps.shape,)
                 dispMap = self.injected_disps
 
             else:
@@ -457,8 +456,6 @@ class forceSim:
             dispZ.fill(-1.e6)
 
             if self.injected_disps is not None:
-                print 'INJECTING 3D'
-                print 'nd = %s, time = %s' % (self.next_disp, time)
                 dvals = self.injected_disps
             else:
                 disps = pandas.read_csv(str(self.Map_disp[event]), sep=r'\s+', engine='c', header=None, na_filter=False, \
@@ -497,7 +494,6 @@ class forceSim:
 
         self.dispX = dispX
         self.dispY = dispY
-        print 'set self.dispZ'
         self.dispZ = dispZ
 
         if strata:
@@ -571,7 +567,6 @@ class forceSim:
         """
 
         # Apply displacements to TIN points (excluding boundary points)
-        print 'applied dispZ'
         telev += self.dispZ
         tXY = numpy.copy(self.tXY)
         tXY[fixIDs:,0] += self.dispX[fixIDs:]
