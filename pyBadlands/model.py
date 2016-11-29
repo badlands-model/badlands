@@ -51,7 +51,10 @@ class Model(object):
         seed = self._comm.bcast(seed, root=0)
         np.random.seed(seed)
 
-        self.build_mesh(self.input.demfile, verbose)
+        # If there's no demfile specified, we assume that it will be loaded
+        # later using build_mesh
+        if self.input.demfile:
+            self.build_mesh(self.input.demfile, verbose)
 
     def build_mesh(self, filename, verbose):
 
@@ -134,11 +137,12 @@ class Model(object):
 
         If profile is True, dump cProfile output to /tmp.
         """
-
         if profile:
             pid = os.getpid()
             pr = cProfile.Profile()
             pr.enable()
+
+        assert self.recGrid is not None, "DEM file has not been loaded. Configure one in your XML file or call the build_mesh function."
 
         # Define non-flow related processes times
         if not self.simStarted:

@@ -160,14 +160,11 @@ class xmlParser:
         grid = None
         grid = root.find('grid')
         if grid is not None:
-            element = None
             element = grid.find('demfile')
             if element is not None:
                 self.demfile = element.text
                 if not os.path.isfile(self.demfile):
                     raise ValueError('DEM file is missing or the given path is incorrect.')
-            else:
-                raise ValueError('Error in the definition of the grid structure: DEM file definition is required!')
             element = None
             element = grid.find('boundary')
             if element is not None:
