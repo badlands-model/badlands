@@ -142,7 +142,7 @@ class Model(object):
             pr = cProfile.Profile()
             pr.enable()
 
-        assert self.recGrid is not None, "DEM file has not been loaded. Configure one in your XML file or call the build_mesh function."
+        assert hasattr(self, 'recGrid'), "DEM file has not been loaded. Configure one in your XML file or call the build_mesh function."
 
         # Define non-flow related processes times
         if not self.simStarted:
