@@ -227,7 +227,7 @@ class xmlParser:
             if element is not None:
                 self.tEnd = float(element.text)
             else:
-                raise ValueErself.ror('Error in the definition of the simulation time: end time declaration is required')
+                raise ValueError('Error in the definition of the simulation time: end time declaration is required')
             if self.tStart > self.tEnd:
                 raise ValueError('Error in the definition of the simulation time: start time is greater than end time!')
             element = None
