@@ -100,7 +100,8 @@
         </disp>
     </tectonic>
 
-    <!-- Rivers structure  -->
+    <!-- Rivers structure - This structure is not fully tested and 
+         should be use with caution. -->
     <rivers>
         <!-- Number of rivers events -->
         <riverNb>1</riverNb>
