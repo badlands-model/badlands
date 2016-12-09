@@ -64,7 +64,7 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 Some documentation related to the physics & assumptions of the model can be found in:
 
 + **Salles, T. & Hardiman, L.: [Badlands: An open-source, flexible and parallel framework to study landscape dynamics](http://dx.doi.org/10.1016/j.cageo.2016.03.011), Computers & Geosciences, 91, 77-89, doi:10.1016/j.cageo.2016.03.011, 2016.**
-+ **Salles, T.: [Badlands: A parallel basin and landscape dynamics model](http://dx.doi.org/10.1016/j.softx.2016.08.005), SoftwareX, doi:10.1016/j.softx.2016.08.005, 2016.**
++ **Salles, T.: [Badlands: A parallel basin and landscape dynamics model](http://dx.doi.org/10.1016/j.softx.2016.08.005), SoftwareX, 5, 195–202, doi:10.1016/j.softx.2016.08.005, 2016.**
 
 When you use **Badlands**, please cite the above papers and/or the following code release citable **DOI**:
 
