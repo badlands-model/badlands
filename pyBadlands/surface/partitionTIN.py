@@ -56,7 +56,7 @@ def get_closest_factors(size):
 
     return nb1, nb2
 
-@jit
+#@jit
 def simple(X, Y, Xdecomp=1, Ydecomp=1):
     """
     This function defines a simple partitioning of the computational domain based on
