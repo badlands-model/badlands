@@ -137,7 +137,7 @@ class flowNetwork:
 
         # Call the SFD function from libUtils
         if self.depo == 0 or self.capacity or self.filter:
-            base, receivers = sfd.directions_basenodiff(elev, neighbours, edges, distances, globalIDs, sea)
+            base, receivers = sfd.directions_base(elev, neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
             self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
@@ -149,7 +149,7 @@ class flowNetwork:
             self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
             self.receivers = receivers
         else:
-            base, receivers, maxh, maxdep = sfd.directionsnodiff(fillH, elev, neighbours, edges, distances, globalIDs, sea)
+            base, receivers, maxh, maxdep = sfd.directions(fillH, elev, neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
             self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
