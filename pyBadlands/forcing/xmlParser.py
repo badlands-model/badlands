@@ -913,6 +913,7 @@ class xmlParser:
                 self.Sc = float(element.text)
                 if self.Sc >= 1.:
                     self.nHillslope = True
+                    raise ValueError('Non-linear hillslope diffusion is under development')
                 else:
                     self.Sc = 0.
                     self.Hillslope = True

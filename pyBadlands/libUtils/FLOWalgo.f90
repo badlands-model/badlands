@@ -141,7 +141,7 @@ contains
   end subroutine flowcfl
 
   subroutine sedflux_ero_only(pyStack, pyRcv, pyXY, pyXYmin, pyXYmax, pyDischarge, &
-      pyElev, pyDiff, Cero, spl_m, spl_n, sea, dt, pyChange, newdt, pylNodesNb, pygNodesNb)
+      pyElev, Cero, spl_m, spl_n, sea, dt, pyChange, newdt, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
@@ -157,7 +157,6 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
       real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
-      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
 
       real(kind=8),intent(out) :: newdt
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChange
@@ -194,7 +193,7 @@ contains
         endif
 
         ! Update sediment flux in receiver node
-        pyChange(donor) = SPL + pyDiff(donor)
+        pyChange(donor) = SPL
 
         ! Update borders
         if(pyXY(donor,1) < pyXYmin(1) .or. pyXY(donor,2) < pyXYmin(2) .or. &
@@ -208,7 +207,7 @@ contains
   end subroutine sedflux_ero_only
 
   subroutine sedflux_nocapacity_quick(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
-      pyDischarge, pyElev, pyRiv, pyDiff, Cero, spl_m, spl_n, sea, dt, pyChange, newdt, &
+      pyDischarge, pyElev, pyRiv, Cero, spl_m, spl_n, sea, dt, pyChange, newdt, &
       pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
@@ -226,7 +225,6 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
       real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
-      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyRiv
 
       real(kind=8),intent(out) :: newdt
@@ -291,7 +289,7 @@ contains
 
         ! Update sediment flux in receiver node
         sedFluxes(recvr) = sedFluxes(recvr) + Qs
-        pyChange(donor) = SPL + pyDiff(donor)
+        pyChange(donor) = SPL
 
         ! Update borders
         if(pyXY(donor,1) < pyXYmin(1) .or. pyXY(donor,2) < pyXYmin(2) .or. &
@@ -304,7 +302,7 @@ contains
   end subroutine sedflux_nocapacity_quick
 
   subroutine sedflux_nocapacity(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
-      pyMaxH, pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, pyDiff, Cero, spl_m, &
+      pyMaxH, pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, spl_m, &
       spl_n, perc_dep, slp_cr, sea, dt, pyChange, newdt, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
@@ -327,7 +325,6 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyMaxD
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyFillH
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
-      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyRiv
 
       real(kind=8),intent(out) :: newdt
@@ -440,7 +437,7 @@ contains
 
         ! Update sediment flux in receiver node
         sedFluxes(recvr) = sedFluxes(recvr) + Qs
-        pyChange(donor) = SPL + pyDiff(donor)
+        pyChange(donor) = SPL
 
         ! Update borders
         if(pyXY(donor,1) < pyXYmin(1) .or. pyXY(donor,2) < pyXYmin(2) .or. &
@@ -472,7 +469,7 @@ contains
   end subroutine sedflux_nocapacity
 
   subroutine sedflux_capacity(pyStack, pyRcv, pyXY, pyArea, pyXYmin, pyXYmax, &
-      pyDischarge, pyElev, pyRiv, pyDiff, pyCum, Cero, spl_m, spl_n, Lb, La, sea, dt, &
+      pyDischarge, pyElev, pyRiv, pyCum, Cero, spl_m, spl_n, Lb, La, sea, dt, &
       pyChange, newdt, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
@@ -493,7 +490,6 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
       real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
-      real(kind=8),dimension(pygNodesNb),intent(in) :: pyDiff
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyRiv
 
       real(kind=8),intent(out) :: newdt
@@ -565,7 +561,7 @@ contains
 
         ! Update sediment flux in receiver node
         sedFluxes(recvr) = sedFluxes(recvr) + Qs
-        pyChange(donor) = SQL + pyDiff(donor)
+        pyChange(donor) = SQL
 
         ! Update borders
         if(pyXY(donor,1) < pyXYmin(1) .or. pyXY(donor,2) < pyXYmin(2) .or. &

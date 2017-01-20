@@ -15,7 +15,7 @@
 
 void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
     double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double sealimit, int pyBase[],
-    int pyRcv[], double pyMaxh[], double pyMaxDep[], double pyDiff[],
+    int pyRcv[], double pyMaxh[], double pyMaxDep[],
     int pylocalNb, int pyglobalNb)
 {
     int i;
@@ -25,7 +25,6 @@ void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], dou
         pyRcv[i] = -1;
         pyMaxh[i] = 1.e6;
         pyMaxDep[i] = 0.;
-        pyDiff[i] = 0.;
     }
 
     int k;
@@ -55,7 +54,6 @@ void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], dou
             if (dh > diffD) {
                 diffD = dh;
             }
-            pyDiff[gid] += pyEdge[gid][p] * dh / pyDist[gid][p];
         }
 
         pyRcv[gid] = lowestID;
@@ -78,15 +76,13 @@ void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], dou
 
 void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
     double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double sealimit, int pyBase[],
-    int pyRcv[], double pyDiff[],
-    int pylocalNb, int pyglobalNb)
+    int pyRcv[], int pylocalNb, int pyglobalNb)
 {
     int i;
 
     for (i = 0; i < pyglobalNb; i++) {
         pyBase[i] = -1;
         pyRcv[i] = -1;
-        pyDiff[i] = 0.;
     }
 
     int k;
@@ -111,7 +107,6 @@ void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[]
             if (dh > diffD) {
                 diffD = dh;
             }
-            pyDiff[gid] += pyEdge[gid][p] * dh / pyDist[gid][p];
         }
 
         pyRcv[gid] = lowestID;
@@ -121,6 +116,31 @@ void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[]
 
         if (gid == pyRcv[gid] && pyZ[gid] + diffD > sealimit) {
             pyBase[gid] = gid;
+        }
+    }
+}
+
+void diffusion(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
+    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double pyDiff[], int pylocalNb, int pyglobalNb)
+{
+    int i;
+
+    for (i = 0; i < pyglobalNb; i++) {
+        pyDiff[i] = 0.;
+    }
+
+    int k;
+    for (k = 0; k < pylocalNb; k++) {
+        int gid = pyGIDs[k];
+        int p;
+
+        for (p = 0; p < MAX_NEIGHBOURS; p++) {
+            int ngbid = pyNgbs[gid][p];
+            if (ngbid < 0) {
+                break;
+            }
+
+            pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
         }
     }
 }

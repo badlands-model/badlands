@@ -103,7 +103,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
 
     return fillH, elevation
 
-def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDisp, \
+def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, applyDisp, \
                   mapero, cumdiff, fillH, disp, inGIDs, elevation, tNow, tEnd, verbose=False):
     """
     Compute sediment fluxes.
@@ -146,17 +146,12 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
     # Compute sediment fluxes
     # Initial cumulative elevation change
     walltime = time.clock()
-    diff_flux = hillslope.sedflux(flow.diff_flux, force.sealevel, elevation, FVmesh.control_volumes)
-    if rank == 0 and verbose:
-        print " -   Get hillslope fluxes ", time.clock() - walltime
-
-    walltime = time.clock()
     xyMin = [recGrid.regX.min(), recGrid.regY.min()]
     xyMax = [recGrid.regX.max(), recGrid.regY.max()]
     ids = np.where(force.rivQs>0)
     tmp = force.rivQs[ids]
     tstep, sedrate = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, xyMin, xyMax,
-                                          diff_flux, CFLtime, force.rivQs, force.sealevel, cumdiff,
+                                          CFLtime, force.rivQs, force.sealevel, cumdiff,
                                           input.perc_dep, input.slp_cr)
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
@@ -170,7 +165,6 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
             print 'WARNING: timestep is tiny. Your model will take a long time to run.'
         timestep = 0.0001
     diff = sedrate * timestep
-
     if input.filter:
         smthdiff = flow.gaussian_filter(diff)
         smthdiff[:recGrid.boundsPt] = 0.
@@ -179,6 +173,17 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, applyDi
     else:
         elevation += diff
         cumdiff += diff
+
+    # Compute hillslope processes
+    walltime = time.clock()
+    flow.compute_hillslope_diffusion(elevation, FVmesh.neighbours,
+                       FVmesh.vor_edges, FVmesh.edge_length,lGIDs)
+    diff_flux = hillslope.sedflux(flow.diff_flux, force.sealevel, elevation, FVmesh.control_volumes)
+    diff = diff_flux * timestep
+    elevation += diff
+    cumdiff += diff
+    if rank == 0 and verbose:
+        print " -   Get hillslope fluxes ", time.clock() - walltime
 
     if applyDisp:
         elevation += disp * timestep

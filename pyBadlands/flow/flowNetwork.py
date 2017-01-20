@@ -78,6 +78,33 @@ class flowNetwork:
         self._rank = self._comm.Get_rank()
         self._size = self._comm.Get_size()
 
+    def compute_hillslope_diffusion(self, elev, neighbours, edges, distances, globalIDs):
+        """
+        Perform hillslope evolution based on diffusion processes.
+
+        Parameters
+        ----------
+        variable : elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        variable : neighbours
+            Numpy integer-type array with the neighbourhood IDs.
+
+        variable : edges
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+
+        variable : distances
+            Numpy real-type array with the distances between each connection in the TIN.
+
+        variable: globalIDs
+            Numpy integer-type array containing for local nodes their global IDs.
+        """
+        diff_flux = sfd.diffusion(elev, neighbours, edges, distances, globalIDs)
+
+        # Send local diffusion flux globally
+        self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+        self.diff_flux = diff_flux
+
     def SFD_receivers(self, fillH, elev, neighbours, edges, distances, globalIDs, sea):
         """
         Single Flow Direction function computes downslope flow directions by inspecting the neighborhood
@@ -110,7 +137,7 @@ class flowNetwork:
 
         # Call the SFD function from libUtils
         if self.depo == 0 or self.capacity or self.filter:
-            base, receivers, diff_flux = sfd.directions_base(elev, neighbours, edges, distances, globalIDs, sea)
+            base, receivers = sfd.directions_basenodiff(elev, neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
             self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
@@ -121,12 +148,8 @@ class flowNetwork:
             # Send local receivers globally
             self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
             self.receivers = receivers
-
-            # Send local diffusion flux globally
-            self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
-            self.diff_flux = diff_flux
         else:
-            base, receivers, maxh, maxdep, diff_flux = sfd.directions(fillH, elev, neighbours, edges, distances, globalIDs, sea)
+            base, receivers, maxh, maxdep = sfd.directionsnodiff(fillH, elev, neighbours, edges, distances, globalIDs, sea)
 
             # Send local base level globally
             self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
@@ -145,10 +168,6 @@ class flowNetwork:
             # Send local maximum deposition globally
             self._comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
             self.maxdep = maxdep
-
-            # Send local diffusion flux globally
-            self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
-            self.diff_flux = diff_flux
 
     def SFD_nreceivers(self, Sc, fillH, elev, neighbours, edges, distances, globalIDs, sea):
         """
@@ -333,7 +352,7 @@ class flowNetwork:
 
         return
 
-    def compute_sedflux(self, Acell, elev, fillH, xymin, xymax, diff_flux, dt, rivqs, sealevel,
+    def compute_sedflux(self, Acell, elev, fillH, xymin, xymax, dt, rivqs, sealevel,
         cumdiff, perc_dep, slp_cr):
         """
         Calculates the sediment flux at each node.
@@ -354,9 +373,6 @@ class flowNetwork:
 
         variable : xymax
             Numpy array containing the maximal XY coordinates of TIN grid (excuding border cells).
-
-        variable : diff_flux
-            Numpy arrays representing the fluxes due to linear diffusion equation.
 
         variable : dt
             Real value corresponding to the maximal stability time step.
@@ -388,24 +404,24 @@ class flowNetwork:
         if self.spl and self.depo == 0:
             sedflux, newdt = FLOWalgo.flowcompute.sedflux_ero_only(self.localstack,self.receivers, \
                      self.xycoords,xymin,xymax,self.discharge,elev, \
-                     diff_flux,self.erodibility,self.m,self.n,sealevel,dt)
+                     self.erodibility,self.m,self.n,sealevel,dt)
 
         # Stream power law and mass is not conserved
         elif self.spl and self.filter:
             sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity_quick(self.localstack,self.receivers, \
-                     self.xycoords,Acell,xymin,xymax,self.discharge,elev,rivqs,diff_flux,self.erodibility, \
+                     self.xycoords,Acell,xymin,xymax,self.discharge,elev,rivqs,self.erodibility, \
                      self.m,self.n,sealevel,dt)
 
         # Stream power law
         elif self.spl:
             sedflux, newdt = FLOWalgo.flowcompute.sedflux_nocapacity(self.localstack,self.receivers,self.xycoords, \
-                     Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs,diff_flux, \
+                     Acell,xymin,xymax,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
                      self.erodibility,self.m,self.n,perc_dep,slp_cr,sealevel,dt)
 
         # River carrying capacity case
         else:
             sedflux, newdt = FLOWalgo.flowcompute.sedflux_capacity(self.localstack,self.receivers,self.xycoords,\
-                     Acell,xymin,xymax,self.discharge,elev,rivqs,diff_flux,cumdiff,self.erodibility, \
+                     Acell,xymin,xymax,self.discharge,elev,rivqs,cumdiff,self.erodibility, \
                      self.m,self.n,self.bedrock,self.alluvial,sealevel,dt)
 
         # Parallel case
