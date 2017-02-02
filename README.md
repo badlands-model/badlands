@@ -61,14 +61,19 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 + flexural response due to loading and unloading under variable elastic thickness [nbviewer](http://nbviewer.jupyter.org/github/badlands-model/pyBadlands/blob/master/Examples/flexure/flexure.ipynb)
 + quick setup of real topography/bathymetry model using etopo1 [nbviewer](http://nbviewer.jupyter.org/github/badlands-model/pyBadlands/blob/master/Examples/etopo/etopo.ipynb)
 
-Some documentation related to the physics & assumptions of the model can be found in:
+### Documentation related to the physics & assumptions
 
 + **Salles, T. & Hardiman, L.: [Badlands: An open-source, flexible and parallel framework to study landscape dynamics](http://dx.doi.org/10.1016/j.cageo.2016.03.011), Computers & Geosciences, 91, 77-89, doi:10.1016/j.cageo.2016.03.011, 2016.**
 + **Salles, T.: [Badlands: A parallel basin and landscape dynamics model](http://dx.doi.org/10.1016/j.softx.2016.08.005), SoftwareX, 5, 195–202, doi:10.1016/j.softx.2016.08.005, 2016.**
 
-Published work using the code:
+### Published research study using Badlands:
 
 + **Salles, T., N. Flament, and D. Muller: [Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period](http://dx.doi.org/10.1002/2016GC006617), Geochem. Geophys. Geosyst., 18, doi:10.1002/2016GC006617, 2017.** 
+[Supplementary materials: Australian Landscape Dynamic](https://github.com/badlands-model/g-cubed-2016)
+
+<div align="center">
+    <img width=750 src="https://github.com/badlands-model/g-cubed-2016/blob/master/visual/topochange.png" alt="Topographic evolution at given time intervals" title="Topographic evolution at given time intervals"</img>
+</div>
 
 When you use **Badlands**, please cite the above papers and/or the following code release citable **DOI**:
 
