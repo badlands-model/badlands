@@ -51,7 +51,7 @@ _Release v1.1.0 :_
 + **[Release 2: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
 
 _v2.0.0 Release Candidate :_
-+ The ```master``` branch is a stable version of the code with the most recent developments embedded and is expected to be release as **version 2.0.0**
++ The ```master``` branch is a stable version of the code with the most recent developments embedded and is expected to be released as **version 2.0.0**
 
 ### Reporting  
 
