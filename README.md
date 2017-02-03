@@ -80,5 +80,6 @@ When you use **Badlands**, please cite the above papers and/or the following cod
 
 _Release v1.0.0 :_  
 + **[Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
+
 _Release v1.1.0 :_  
 + **[Release 2: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
