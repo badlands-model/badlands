@@ -79,4 +79,6 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 When you use **Badlands**, please cite the above papers and/or the following code release citable **DOI**:
 
 _Release v1.0.0 :_  
-+ **Salles, T. & Howson, I.: [Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
++ **[Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
+_Release v1.1.0 :_  
++ **[Release 2: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
