@@ -69,6 +69,7 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 ### Published research study using Badlands:
 
 + **Salles, T., N. Flament, and D. Muller: [Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period](http://dx.doi.org/10.1002/2016GC006617), Geochem. Geophys. Geosyst., 18, doi:10.1002/2016GC006617, 2017.** 
+
 [Supplementary materials: Australian Landscape Dynamic](https://github.com/badlands-model/g-cubed-2016)
 
 <div align="center">
