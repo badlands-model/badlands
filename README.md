@@ -42,6 +42,17 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Lesser General Public License along with this program.  If not, see <http://www.gnu.org/licenses/lgpl-3.0.en.html>.
 
+### Versioning  
+
+_Release v1.0.0 :_  
++ **[Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
+
+_Release v1.1.0 :_  
++ **[Release 2: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
+
+_v2.0.0 Release Candidate :_
++ The ```master``` branch is a stable version of the code with the most recent developments embedded and is expected to be release as **version 2.0.0**
+
 ### Reporting  
 
 If you come accross a bug or if you need some help compiling or using the code you can: 
@@ -66,7 +77,7 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 + **Salles, T. & Hardiman, L.: [Badlands: An open-source, flexible and parallel framework to study landscape dynamics](http://dx.doi.org/10.1016/j.cageo.2016.03.011), Computers & Geosciences, 91, 77-89, doi:10.1016/j.cageo.2016.03.011, 2016.**
 + **Salles, T.: [Badlands: A parallel basin and landscape dynamics model](http://dx.doi.org/10.1016/j.softx.2016.08.005), SoftwareX, 5, 195–202, doi:10.1016/j.softx.2016.08.005, 2016.**
 
-### Published research study using Badlands:
+### Published research studies using Badlands:
 
 + **Salles, T., N. Flament, and D. Muller: [Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period](http://dx.doi.org/10.1002/2016GC006617), Geochem. Geophys. Geosyst., 18, doi:10.1002/2016GC006617, 2017.** 
 
@@ -77,9 +88,3 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 </div>
 
 When you use **Badlands**, please cite the above papers and/or the following code release citable **DOI**:
-
-_Release v1.0.0 :_  
-+ **[Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
-
-_Release v1.1.0 :_  
-+ **[Release 2: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
