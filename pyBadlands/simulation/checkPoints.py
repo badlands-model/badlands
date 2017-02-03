@@ -17,8 +17,8 @@ import mpi4py.MPI as mpi
 from pyBadlands import (visualiseFlow, visualiseTIN, eroMesh)
 
 def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
-                      tMesh, force, flow, rain, elevation, cumdiff, \
-                      step, mapero=None, cumflex=None):
+                      tMesh, force, flow, rain, elevation, fillH, \
+                      cumdiff, step, mapero=None, cumflex=None):
     """
     Create the checkpoint files (used for HDF5 output).
     """
@@ -61,19 +61,24 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
 
     # Compute flow parameters
     flow.compute_parameters()
+    visdis = np.copy(flow.discharge)
+    seaIDs = np.where(elevation<force.sealevel)[0]
+    if len(seaIDs)>0:
+        visdis[seaIDs] = 1.
+    visdis[visdis<1.] = 1.
 
     # Write HDF5 files
     if input.flexure:
         visualiseTIN.write_hdf5_flexure(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
-                                    elevation[lGIDs], rain[lGIDs], flow.discharge[lGIDs], cumdiff[lGIDs],
+                                    elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
                                     cumflex[lGIDs], outCells, rank, input.oroRain, eroOn, flow.erodibility[lGIDs])
     else:
         visualiseTIN.write_hdf5(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
-                                elevation[lGIDs], rain[lGIDs], flow.discharge[lGIDs], cumdiff[lGIDs],
+                                elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
                                 outCells, rank, input.oroRain, eroOn, flow.erodibility[lGIDs])
 
     visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2],
-                             elevation[flowIDs], flow.discharge[flowIDs], flow.chi[flowIDs],
+                             elevation[flowIDs], visdis[flowIDs], flow.chi[flowIDs],
                              flow.basinID[flowIDs], polylines, rank)
 
     # Combine HDF5 files and write time series

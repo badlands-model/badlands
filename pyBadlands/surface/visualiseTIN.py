@@ -96,6 +96,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
     variable : coords
         Numpy float-type array containing X, Y coordinates of the local TIN nodes.
 
+    variable : sealevel
+        Level of sea water
+
     variable : elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
 

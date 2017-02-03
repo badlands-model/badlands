@@ -5,8 +5,6 @@
     <grid>
         <!-- Digital elevation model file path -->
         <demfile>data/deltaHR.csv</demfile>
-        <!-- Boundary type: flat, slope or wall -->
-        <boundary>slope</boundary>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
@@ -20,21 +18,24 @@
         <start>0.</start>
         <!-- Simulation end time [a] -->
         <end>500000.</end>
-        <!-- Minim time step [a] -->
-        <mindt>1.</mindt>
         <!-- Display interval [a] -->
         <display>5000.</display>
     </time>
 
+    <!-- Simulation stratigraphic structure -->
+    <strata>
+        <!-- Stratal grid resolution [m] -->
+        <stratdx>500.</stratdx>
+        <!-- Stratal layer interval [a] -->
+        <laytime>2500.</laytime>
+    </strata>
+    
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
-        <position>0.</position>
+        <position>-50.</position>
         <!-- Sea-level curve - (optional) -->
         <curve>data/sea.csv</curve>
-        <!-- Limit flow network computation based on
-             water depth [m] -->
-        <limit>100.</limit>
     </sea>
 
     <!-- Precipitation structure -->
@@ -58,13 +59,6 @@
          to be equal to the local carrying capacity, which is itself a function of
          boundary shear stress. -->
     <sp_law>
-        <!-- Make the distinction between purely erosive models (0) and erosion /
-            deposition ones (1). Default value is 1 -->
-        <dep>1</dep>
-        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
-              to defined maximum accumulation thickness in depression area per time
-              step. Default value is set to 1. -->
-        <fillmax>1.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.

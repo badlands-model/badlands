@@ -13,6 +13,7 @@ This file is the main entry point to compute flow network and associated sedimen
 import time
 import numpy as np
 import mpi4py.MPI as mpi
+from matplotlib import path
 
 from pyBadlands import (elevationTIN)
 
@@ -37,54 +38,31 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
     force.getRivers(tNow)
     riverrain = rain+force.rivQw
 
-    if input.depo == 0 or input.capacity or input.filter:
-        flow.maxdep = 0.
-        flow.maxh = 0.
-        if flow.esmooth is None and input.filter:
-            flow.esmooth = 0
-        if flow.dsmooth is None and input.filter:
-            flow.dsmooth = 0
-        # Build an initial depression-less surface at start time if required
-        if input.tStart == tNow and input.nopit == 1:
-            sea_lvl =  force.sealevel - input.sealimit
-            elevation = elevationTIN.pit_stack_PD(elevation,sea_lvl,input.nopit)
-            fillH = elevation
+    # Build an initial depression-less surface at start time if required
+    if input.tStart == tNow and input.nopit == 1 :
+        fillH = elevationTIN.pit_stack_PD(elevation,input.nopit,force.sealevel)
+        elevation = fillH
     else:
-        # fillH = elevationTIN.pit_filling_PD(elevation, FVmesh.neighbours,
-        #                            recGrid.boundsPt, force.sealevel-input.sealimit
-        #                            input.fillmax)
-        sea_lvl =  force.sealevel - input.sealimit
-        #fillH = elevationTIN.pit_stack_PD(elevation,sea_lvl)
-        # Build an initial depression-less surface at start time if required
-        if input.tStart == tNow and input.nopit == 1 :
-            fillH = elevationTIN.pit_stack_PD(elevation,sea_lvl,input.nopit)
-            elevation = fillH
-        else:
-            fillH = elevationTIN.pit_stack_PD(elevation,sea_lvl,0)
+        fillH = elevationTIN.pit_stack_PD(elevation,0,force.sealevel)
 
-    if rank == 0 and verbose and input.spl and not input.filter:
+    if rank == 0 and verbose and input.spl:
         print " -   depression-less algorithm PD with stack", time.clock() - walltime
 
     # Compute stream network
     walltime = time.clock()
-    if input.nHillslope:
-        flow.SFD_nreceivers(hillslope.Sc, fillH, elevation, FVmesh.neighbours,
-                            FVmesh.vor_edges, FVmesh.edge_length,
-                            lGIDs, force.sealevel-input.sealimit)
-    else:
-        flow.SFD_receivers(fillH, elevation, FVmesh.neighbours,
-                           FVmesh.vor_edges, FVmesh.edge_length,
-                           lGIDs, force.sealevel-input.sealimit)
+    flow.SFD_receivers(fillH, elevation, FVmesh.neighbours,
+                       FVmesh.vor_edges, FVmesh.edge_length,
+                       lGIDs)
 
     if rank == 0 and verbose:
         print " -   compute receivers parallel ", time.clock() - walltime
 
-    # Distribute evenly local minimas to processors
+    # Distribute evenly local minimas to processors on filled surface
     walltime = time.clock()
     flow.localbase = np.array_split(flow.base, size)[rank]
-    flow.ordered_node_array()
+    flow.ordered_node_array_filled()
     if rank == 0 and verbose:
-        print " -   compute stack order locally ", time.clock() - walltime
+        print " -   compute stack order locally for filled surface", time.clock() - walltime
 
     walltime = time.clock()
     stackNbs = comm.allgather(len(flow.localstack))
@@ -93,7 +71,26 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
                     recvbuf=[globalstack, (stackNbs, None), mpi.INT])
     flow.stack = globalstack
     if rank == 0 and verbose:
-        print " -   send stack order globally ", time.clock() - walltime
+        print " -   send stack order for filled surface globally ", time.clock() - walltime
+
+    # Distribute evenly local minimas on real surface
+    walltime = time.clock()
+    flow.localbase1 = np.array_split(flow.base1, size)[rank]
+    flow.ordered_node_array_elev()
+    if rank == 0 and verbose:
+        print " -   compute stack order locally for real surface", time.clock() - walltime
+
+    walltime = time.clock()
+    stackNbs1 = comm.allgather(len(flow.localstack1))
+    globalstack1 = np.zeros(sum(stackNbs1), dtype=flow.localstack1.dtype)
+    comm.Allgatherv(sendbuf=[flow.localstack1, mpi.INT],
+                    recvbuf=[globalstack1, (stackNbs1, None), mpi.INT])
+    flow.stack1 = globalstack1
+    if rank == 0 and verbose:
+        print " -   send stack order for real surface globally ", time.clock() - walltime
+
+    # Compute a unique ID for each local depression and their downstream draining nodes
+    flow.compute_parameters_depression(fillH,elevation,FVmesh.control_volumes,force.sealevel)
 
     # Compute discharge
     walltime = time.clock()
@@ -117,29 +114,17 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     walltime = time.clock()
     if input.Hillslope:
         hillslope.dt_stability(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
-    elif input.nHillslope:
-        hillslope.dt_stability(flow.diff_cfl)
     else:
         hillslope.CFL = tEnd-tNow
-
-    if input.depo == 1:
-        if input.filter:
-            flow.CFL = input.maxDT
-        elif input.spl:
-            flow.dt_stability(fillH, inGIDs)
-        else:
-            flow.dt_stability(elevation, inGIDs)
-    else:
-        if input.filter:
-            flow.CFL = input.maxDT
-        else:
-            flow.dt_stability(elevation, inGIDs)
-
+    flow.dt_stability(fillH, inGIDs)
     CFLtime = min(flow.CFL, hillslope.CFL)
+    if CFLtime>1.:
+        CFLtime = float(round(CFLtime-0.5,0))
+    if rank == 0 and verbose:
+        print 'CFL for hillslope and flow ',hillslope.CFL,flow.CFL,CFLtime
     CFLtime = min(CFLtime, tEnd - tNow)
     CFLtime = max(input.minDT, CFLtime)
-    CFLtime = min(input.maxiDT, CFLtime)
-
+    CFLtime = min(input.maxDT, CFLtime)
     if rank == 0 and verbose:
         print " -   Get CFL time step ", time.clock() - walltime
 
@@ -148,37 +133,28 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     walltime = time.clock()
     xyMin = [recGrid.regX.min(), recGrid.regY.min()]
     xyMax = [recGrid.regX.max(), recGrid.regY.max()]
+    domain = path.Path([(xyMin[0],xyMin[1]),(xyMax[0],xyMin[1]), (xyMax[0],xyMax[1]), (xyMin[0],xyMax[1])])
+    insideIDs = domain.contains_points(flow.xycoords)
+
     ids = np.where(force.rivQs>0)
     tmp = force.rivQs[ids]
-    tstep, sedrate = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, xyMin, xyMax,
+    timestep, sedrate = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, xyMin, xyMax,
                                           CFLtime, force.rivQs, force.sealevel, cumdiff,
-                                          input.perc_dep, input.slp_cr)
+                                          input.perc_dep, input.slp_cr, input.diffsigma, verbose)
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
 
-    # Update surface parameters and time
-    timestep = min(tstep, tEnd-tNow)
-    assert tNow <= tEnd, 'ran off the end of the model'
-    # bodge around floating point issues, make sure time always advances
-    if timestep < 0.0001:
-        if rank == 0:
-            print 'WARNING: timestep is tiny. Your model will take a long time to run.'
-        timestep = 0.0001
-    diff = sedrate * timestep
-    if input.filter:
-        smthdiff = flow.gaussian_filter(diff)
-        smthdiff[:recGrid.boundsPt] = 0.
-        elevation += smthdiff
-        cumdiff += smthdiff
-    else:
-        elevation += diff
-        cumdiff += diff
+    # Update surface parameters
+    elevation += sedrate
+    cumdiff += sedrate
 
     # Compute hillslope processes
     walltime = time.clock()
     flow.compute_hillslope_diffusion(elevation, FVmesh.neighbours,
                        FVmesh.vor_edges, FVmesh.edge_length,lGIDs)
-    diff_flux = hillslope.sedflux(flow.diff_flux, force.sealevel, elevation, FVmesh.control_volumes)
+    cdiff = hillslope.sedflux(flow.diff_flux, force.sealevel, elevation, FVmesh.control_volumes)
+    diff_flux = np.zeros(len(cdiff))
+    diff_flux[insideIDs] = cdiff[insideIDs]
     diff = diff_flux * timestep
     elevation += diff
     cumdiff += diff

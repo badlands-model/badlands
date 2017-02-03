@@ -22,10 +22,8 @@ LIBDIR = .
 INCDIR = .
 
 # Depression filling algorithm using Planchon and Darboux
+PD_FMOD = PDclass
 PD_LMOD = PDalgo
-
-# Single flow direction
-SFD_LMOD = SFDalgo
 
 # Flow parameters computation
 FLOW_LMOD = FLOWalgo
@@ -45,7 +43,7 @@ FV_LMOD = FVframe
 OR_FMOD = ORclass
 OR_LMOD = ORmodel
 
-all: ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
+all: ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
 
 	@echo ""
 	@echo ""
@@ -64,11 +62,11 @@ all: ${PD_LMOD}.so ${SFD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.s
 	@echo ""
 	@echo ""
 
-${PD_LMOD}.so: ${PD_LMOD}.f90
-	${F2PY} ${F2PY_FLAGS} -c -m ${PD_LMOD} $<
+${PD_FMOD}.so: ${PD_FMOD}.f90
+	${F90} ${FFLAGS} -o lib${PD_FMOD}.so $<
 
-${SFD_LMOD}.so: ${SFD_LMOD}.f90
-	${F2PY} ${F2PY_FLAGS} -c -m ${SFD_LMOD} $<
+${PD_LMOD}.so: ${PD_LMOD}.f90
+	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${PD_FMOD} -m ${PD_LMOD} $<
 
 ${FLOW_LMOD}.so: ${FLOW_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -m ${FLOW_LMOD} $<
@@ -100,4 +98,3 @@ sfd.so: sfd.c sfd.pyf
 clean:
 	rm -fv *~ *.bak *.o *.mod *.original *.so
 	rm -rfv *.dSYM
-

@@ -5,8 +5,6 @@
     <grid>
         <!-- Digital elevation model file path -->
         <demfile>data/nodes.csv</demfile>
-        <!-- Boundary type: flat, slope or wall -->
-        <boundary>slope</boundary>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
@@ -20,8 +18,6 @@
         <start>0.</start>
         <!-- Simulation end time [a] -->
         <end>100000.</end>
-        <!-- Minim time step [a] -->
-        <mindt>1.</mindt>
         <!-- Display interval [a] -->
         <display>2000.</display>
     </time>
@@ -30,9 +26,6 @@
     <sea>
         <!-- Relative sea-level position [m] -->
         <position>-2000.</position>
-        <!-- Limit flow network computation based on
-             water depth [m] -->
-        <limit>100.</limit>
     </sea>
 
     <!-- Tectonic structure -->
@@ -105,7 +98,7 @@
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>100000.</rend>
+            <rend>200000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
             <rval>1.</rval>
         </rain>
@@ -117,13 +110,10 @@
          to be equal to the local carrying capacity, which is itself a function of
          boundary shear stress. -->
     <sp_law>
-        <!-- Make the distinction between purely erosive models (0) and erosion /
-            deposition ones (1). Default value is 1 -->
-        <dep>1</dep>
-        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
-              to defined maximum accumulation thickness in depression area per time
-              step. Default value is set to 1. -->
-        <fillmax>5.</fillmax>
+        <!-- Maximum lake water filling thickness. This parameter is used
+             to defined maximum water level in depression area.
+             Default value is set to 200 m. -->
+        <fillmax>100.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.
@@ -134,7 +124,7 @@
          <!-- The erodibility coefficient is scale-dependent and its value depend
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
-        <erodibility>2.5e-6</erodibility>
+        <erodibility>1.e-5</erodibility>
     </sp_law>
     
     <!-- Linear slope diffusion parameters:
@@ -142,9 +132,9 @@
          law which states that transport rate depends linearly on topographic gradient. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
-        <caerial>1.e-3</caerial>
+        <caerial>5.e-1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
-        <cmarine>1.e-3</cmarine>
+        <cmarine>5.e-1</cmarine>
     </creep>
 
     <!-- Output folder path -->

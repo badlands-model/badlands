@@ -207,7 +207,7 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
 
     return elev
 
-def assign_parameter_pit(neighbours, boundPts, fillTH=1., epsilon=0.01):
+def assign_parameter_pit(neighbours, edge_length, area, diffslp, boundPts, fillTH=1., epsilon=0.01):
     """
     This function defines global variables used in the pit filling algorithm.
 
@@ -215,6 +215,15 @@ def assign_parameter_pit(neighbours, boundPts, fillTH=1., epsilon=0.01):
     ----------
     variable : neighbours
         Numpy integer-type array containing for each nodes its neigbhours IDs.
+
+    variable : edge_length
+        Numpy float-type array containing the lengths to each neighbour.
+
+    variable : area
+        Numpy float-type array containing the area of each cell.
+
+    variable : diffslp
+        Marine diffusion slope value.
 
     variable : boundPts
         Number of nodes on the edges of the TIN surface.
@@ -228,10 +237,10 @@ def assign_parameter_pit(neighbours, boundPts, fillTH=1., epsilon=0.01):
         pathways. Default is set to 0.01 metres.
     """
 
-    PDalgo.pdstack.pitparams(neighbours, fillTH, epsilon, boundPts)
+    PDalgo.pdstack.pitparams(neighbours, edge_length, area, diffslp, fillTH, epsilon, boundPts)
 
 
-def pit_stack_PD(elev, sea, allFill):
+def pit_stack_PD(elev, allFill, sealevel):
     """
     This function calls a depression-less algorithm from Planchon & Darboux to compute the flow
     pathway using stack.
@@ -241,11 +250,11 @@ def pit_stack_PD(elev, sea, allFill):
     variable : elev
         Numpy arrays containing the nodes elevation.
 
-    variable : sea
-        Current elevation of sea level.
-
     variable : allFill
         Produce depression-less surface.
+
+    variable : sealevel
+        Current elevation of sea level.
 
     Return
     ----------
@@ -254,44 +263,6 @@ def pit_stack_PD(elev, sea, allFill):
     """
 
     # Call stack based pit filling function from libUtils
-    fillH = PDalgo.pdstack.pitfilling(elev, sea, allFill)
-
-    return fillH
-
-
-def pit_filling_PD(elev, neighbours, boundPts, sea, fillTH=1., epsilon=0.01):
-    """
-    This function calls a depression-less algorithm from Planchon & Darboux to compute the flow pathway.
-
-    Parameters
-    ----------
-    variable : elev
-        Numpy arrays containing the nodes elevation.
-
-    variable : neighbours
-        Numpy integer-type array containing for each nodes its neigbhours IDs.
-
-    variable : boundPts
-        Number of nodes on the edges of the TIN surface.
-
-    variable : sea
-        Current elevation of sea level.
-
-    variable : fillTH
-        Limit the filling algorithm to a specific height to prevent complete filling of depression.
-        Default is set to 1.0 metre.
-
-    variable : epsilon
-        Force a minimal slope to form the depression instead of a flat area to build continuous flow
-        pathways. Default is set to 0.01 metres.
-
-    Return
-    ----------
-    variable: fillH
-        Numpy array containing the filled elevations.
-    """
-
-    # Call pit filling function from libUtils
-    fillH = PDalgo.pdcompute.filling(elev, neighbours, fillTH, epsilon, boundPts, sea )
+    fillH = PDalgo.pdstack.pitfilling(elev, allFill, sealevel)
 
     return fillH

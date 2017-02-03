@@ -5,8 +5,6 @@
     <grid>
         <!-- Digital elevation model file path -->
         <demfile>data/nodes.csv</demfile>
-        <!-- Boundary type: flat, slope or wall -->
-        <boundary>slope</boundary>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
@@ -20,11 +18,13 @@
         <start>0.</start>
         <!-- Simulation end time [a] -->
         <end>200000.</end>
-        <!-- Minimum time step [a] -->
-        <mindt>0.5</mindt>
         <!-- Display interval [a] -->
-        <display>1000.</display>
+        <display>5000.</display>
     </time>
+    
+    <sea>
+      <position>-1000.</position>  
+    </sea>
 
     <!-- Precipitation structure -->
     <precipitation>
@@ -47,13 +47,10 @@
          to be equal to the local carrying capacity, which is itself a function of
          boundary shear stress. -->
     <sp_law>
-        <!-- Make the distinction between purely erosive models (0) and erosion /
-            deposition ones (1). Default value is 1 -->
-        <dep>1</dep>
-        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
-              to defined maximum accumulation thickness in depression area per time
-              step. Default value is set to 1. -->
-        <fillmax>2.</fillmax>
+        <!-- Maximum lake water filling thickness. This parameter is used
+             to defined maximum water level in depression area.
+             Default value is set to 200 m. -->
+        <fillmax>15.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.
@@ -64,7 +61,7 @@
          <!-- The erodibility coefficient is scale-dependent and its value depend
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
-        <erodibility>8.e-5</erodibility>
+        <erodibility>9.e-5</erodibility>
     </sp_law>
 
     <!-- Linear slope diffusion parameters:
@@ -72,28 +69,10 @@
          law which states that transport rate depends linearly on topographic gradient. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
-        <caerial>5.e-2</caerial>
+        <caerial>2.5e-2</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>5.e-2</cmarine>
     </creep>
-    
-    <!-- Filter for erosion/deposition :
-         Gaussian filter used to smooth erosion and deposition thicknesses when
-         the model is forced with a large simulation time step. Using this oper-
-         ation implies that the resulting simulation is not conserving mass.
-         Both the stream power law and river carrying capacity models will use the
-         gaussian filter operator if you set this filter element within your input
-         file.  -->
-    <filter>
-        <!-- Time step used to perform the gaussian filter smoothing. In cases
-              where the transport capacity model is used the time step is auto-
-              matically reset to the maxdt parameter. -->
-        <gtime>100.0</gtime>
-        <!-- Erosion smoothing standard deviation for Gaussian kernel. -->
-        <esmooth>0.0001</esmooth>
-        <!-- Deposition smoothing standard deviation for Gaussian kernel. -->
-        <dsmooth>8.</dsmooth>
-    </filter>
     
     <!-- Output folder path -->
     <outfolder>output</outfolder>

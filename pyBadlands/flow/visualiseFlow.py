@@ -142,6 +142,8 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, basin, c
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
 
+    return
+
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """
     This function writes the XDmF file which is calling the XmF file.

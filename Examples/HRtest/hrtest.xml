@@ -5,13 +5,11 @@
     <grid>
         <!-- Digital elevation model file path -->
         <demfile>data/regularHR2.csv</demfile>
-        <!-- Boundary type: flat, slope or wall -->
-        <boundary>slope</boundary>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
              accordingly.  -->
-        <resfactor>1</resfactor>
+        <resfactor>10</resfactor>
     </grid>
 
     <!-- Simulation time structure -->
@@ -19,7 +17,7 @@
         <!-- Simulation start time [a] -->
         <start>0.</start>
         <!-- Simulation end time [a] -->
-        <end>100.</end>
+        <end>1000.</end>
         <!-- Minim time step [a] -->
         <mindt>1.</mindt>
         <!-- Display interval [a] -->
@@ -30,9 +28,6 @@
     <sea>
         <!-- Relative sea-level position [m] -->
         <position>-38000.</position>
-        <!-- Limit flow network computation based on
-             water depth [m] -->
-        <limit>100.</limit>
     </sea>
 
     <!-- Precipitation structure -->
@@ -62,7 +57,7 @@
         <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
               to defined maximum accumulation thickness in depression area per time
               step. Default value is set to 1. -->
-        <fillmax>1.</fillmax>
+        <fillmax>1000.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.

@@ -2,7 +2,7 @@ import time
 import numpy as np
 import mpi4py.MPI as mpi
 
-from pyBadlands import (diffLinear, diffnLinear, flowNetwork, buildMesh,
+from pyBadlands import (diffLinear, flowNetwork, buildMesh,
                         checkPoints, buildFlux, xmlParser)
 
 # profiling support
@@ -65,15 +65,9 @@ class Model(object):
 
         # Define hillslope parameters
         self.rain = np.zeros(self.totPts, dtype=float)
-        if self.input.nHillslope:
-            self.hillslope = diffnLinear()
-            self.hillslope.CDaerial = self.input.CDa
-            self.hillslope.CDmarine = self.input.CDm
-            self.hillslope.Sc = self.input.Sc
-        else:
-            self.hillslope = diffLinear()
-            self.hillslope.CDaerial = self.input.CDa
-            self.hillslope.CDmarine = self.input.CDm
+        self.hillslope = diffLinear()
+        self.hillslope.CDaerial = self.input.CDa
+        self.hillslope.CDmarine = self.input.CDm
 
         # Define flow parameters
         self.flow = flowNetwork()
@@ -84,14 +78,8 @@ class Model(object):
         self.flow.m = self.input.SPLm
         self.flow.n = self.input.SPLn
         self.flow.mindt = self.input.minDT
-        self.flow.bedrock = self.input.bedrock
-        self.flow.alluvial = self.input.alluvial
-        self.flow.esmooth = self.input.esmooth
-        self.flow.dsmooth = self.input.dsmooth
         self.flow.xycoords = self.FVmesh.node_coords[:,:2]
         self.flow.spl = self.input.spl
-        self.flow.capacity = self.input.capacity
-        self.flow.filter = self.input.filter
         self.flow.depo = self.input.depo
 
     def rebuild_mesh(self, verbose=False):
@@ -212,6 +200,7 @@ class Model(object):
                             for rid in range(self.input.region):
                                 updateMesh, regdX[rid], regdY[rid] = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs,
                                                                     True, self.strata[rid].xyi, self.strata[rid].ids)
+
                     # Update mesh when a 3D displacements field has been loaded
                     if updateMesh:
                         self.force.dispZ = self.force.disp_border(self.force.dispZ, self.FVmesh.neighbours,
@@ -247,18 +236,19 @@ class Model(object):
                             self.mapero.Ke = Ke
                             self.mapero.thickness = Th
                         # Rebuild the computational mesh
-                        self.rebuild_mesh()
+                        self.rebuild_mesh(verbose)
                         # Update the stratigraphic mesh
                         if self.input.laytime > 0 and self.strata:
                             if self.input.region == 0:
-                                self.strata[0].move_mesh(regdX[0], regdY[0], scum, verbose=False)
+                                self.strata[0].move_mesh(regdX[0], regdY[0], scum, verbose)
                             else:
                                 for rid in range(self.input.region):
-                                    self.strata[rid].move_mesh(regdX[rid], regdY[rid], scum, verbose=False)
+                                    self.strata[rid].move_mesh(regdX[rid], regdY[rid], scum, verbose)
 
             # Compute stream network
             self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
                                               self.flow, self.elevation, self.lGIDs, self.rain, self.tNow, verbose)
+
             # Compute isostatic flexure
             if self.tNow >= self.force.next_flexure:
                 flextime = time.clock()
@@ -282,8 +272,8 @@ class Model(object):
                     outStrata = 1
                 checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow,
                                             self.FVmesh, self.tMesh, self.force, self.flow, self.rain,
-                                            self.elevation, self.cumdiff, self.outputStep, self.mapero,
-                                            self.cumflex)
+                                            self.elevation, self.fillH, self.cumdiff, self.outputStep,
+                                            self.mapero, self.cumflex)
                 # Update next display time
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
@@ -335,7 +325,7 @@ class Model(object):
         # Create checkpoint files and write HDF5 output
         checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
                                 self.FVmesh, self.tMesh, self.force, self.flow, self.rain, \
-                                self.elevation, self.cumdiff, self.outputStep, self.mapero, \
+                                self.elevation, self.fillH, self.cumdiff, self.outputStep, self.mapero, \
                                 self.cumflex)
         self.force.next_display += self.input.tDisplay
         self.outputStep += 1

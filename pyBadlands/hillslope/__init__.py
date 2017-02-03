@@ -11,4 +11,3 @@
 """
 
 from .diffLinear import diffLinear
-from .diffnLinear import diffnLinear

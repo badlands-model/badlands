@@ -14,7 +14,7 @@
 #define MAX_NEIGHBOURS 20
 
 void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
-    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double sealimit, int pyBase[],
+    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], int pyBase[],
     int pyRcv[], double pyMaxh[], double pyMaxDep[],
     int pylocalNb, int pyglobalNb)
 {
@@ -57,11 +57,8 @@ void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], dou
         }
 
         pyRcv[gid] = lowestID;
-        if (pyZ[gid] < sealimit) {
-            pyRcv[gid] = gid;
-        }
 
-        if (gid == pyRcv[gid] && pyZ[gid] + diffD > sealimit) {
+        if (gid == pyRcv[gid]) {
             pyBase[gid] = gid;
         }
 
@@ -75,7 +72,7 @@ void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], dou
 }
 
 void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
-    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double sealimit, int pyBase[],
+    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], int pyBase[],
     int pyRcv[], int pylocalNb, int pyglobalNb)
 {
     int i;
@@ -110,11 +107,7 @@ void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[]
         }
 
         pyRcv[gid] = lowestID;
-        if (pyZ[gid] < sealimit) {
-            pyRcv[gid] = gid;
-        }
-
-        if (gid == pyRcv[gid] && pyZ[gid] + diffD > sealimit) {
+        if (gid == pyRcv[gid]) {
             pyBase[gid] = gid;
         }
     }

@@ -638,7 +638,7 @@ contains
            exit lp_ed0
          endif
        enddo lp_ed0
-       
+
        lp_ed1: do n=id1,dedges
           if(tEdge(rk1(n),1)==cell)then
              id1=n

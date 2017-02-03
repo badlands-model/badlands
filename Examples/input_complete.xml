@@ -5,8 +5,6 @@
     <grid>
         <!-- Digital elevation model file path -->
         <demfile>data/regularMR.csv</demfile>
-        <!-- Boundary type: flat, slope or wall -->
-        <boundary>slope</boundary>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
@@ -31,9 +29,10 @@
         <start>0.</start>
         <!-- Simulation end time [a] -->
         <end>100000.</end>
-        <!-- Minimum time step [a] -->
+        <!-- Minimum time step [a]. Default is 1. -->
         <mindt>1.</mindt>
-        <!-- Maximum time step [a] (optional) -->
+        <!-- Maximum time step [a] (optional).
+             Set to display interval is not provided. -->
         <maxdt>1000.</maxdt>
         <!-- Display interval [a] -->
         <display>5000.</display>
@@ -63,12 +62,9 @@
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
-        <position>-103450.</position>
+        <position>-100.</position>
         <!-- Sea-level curve - (optional) -->
         <!--curve>data/sealvl.csv</curve-->
-        <!-- Limit flow network computation based on
-             water depth [m] -->
-        <limit>100.</limit>
     </sea>
 
     <!-- Tectonic structure -->
@@ -100,7 +96,7 @@
         </disp>
     </tectonic>
 
-    <!-- Rivers structure - This structure is not fully tested and 
+    <!-- Rivers structure - This structure is not fully tested and
          should be use with caution. -->
     <rivers>
         <!-- Number of rivers events -->
@@ -188,12 +184,6 @@
         </rain>
     </precipitation>
 
-    <!--
-         Sediment transport equation: user can choose between 2 approaches:
-            - stream power law model <sp_law>
-            - transport capacity model <tc_law>
-    -->
-
     <!-- Stream power law parameters:
          The stream power law is a simplified form of the usual expression of
          sediment transport by water flow, in which the transport rate is assumed
@@ -201,7 +191,7 @@
          boundary shear stress. -->
     <sp_law>
         <!-- Make the distinction between purely erosive models (0) and erosion /
-            deposition ones (1). Default value is 1 -->
+            deposition ones (1). Default value is 1. -->
         <dep>1</dep>
         <!-- Critical slope used to force aerial deposition for alluvial plain,
              in [m/m] (optional). -->
@@ -209,10 +199,10 @@
         <!-- Maximum percentage of deposition at any given time interval from rivers
              sedimentary load in alluvial plain. Value ranges between [0,1] (optional). -->
         <perc_dep>0.5</perc_dep>
-        <!-- Planchon & Darboux filling thickness limit [m]. This parameter is used
-              to defined maximum accumulation thickness in depression area per time
-              step. Default value is set to 1. -->
-        <fillmax>1.</fillmax>
+        <!-- Maximum lake water filling thickness. This parameter is used
+             to defined maximum water level in depression area.
+             Default value is set to 200 m. -->
+        <fillmax>50.</fillmax>
         <!-- Values of m and n indicate how the incision rate scales
              with bed shear stress for constant value of sediment flux
              and sediment transport capacity.
@@ -221,41 +211,18 @@
         <m>0.5</m>
         <n>1.0</n>
         <!-- The erodibility coefficient is scale-dependent and its value depend
-              on lithology and mean precipitation rate, channel width, flood
-              frequency, channel hydraulics. In case where the erodibility
-              structure is turned on, this coefficient is applied to the reworked
-              sediments. -->
+             on lithology and mean precipitation rate, channel width, flood
+             frequency, channel hydraulics. In case where the erodibility
+             structure is turned on, this coefficient is applied to the reworked
+             sediments. -->
         <erodibility>1.e-6</erodibility>
+        <!-- Maximal marine sedimentation depositional slope used to transport
+             sediment in the marine realm. Default value is 1 in [m/m] (optional) -->
+        <marslp>0.05</marslp>
+        <!-- Marine sedimentation gaussian filtering parameter. Default value is
+             set to 0. (optional) -->
+        <sigma>2.</sigma>
     </sp_law>
-
-    <!-- Transport capacity model parameters:
-         Limited river carrying capacity law for modelling sediment transport. This
-         law is appropriate when modelling erosion/deposition by channelised flow on
-         time scale larger than the recurrence time of maximum size flood. -->
-    <tc_law>
-        <!-- The sediment transport law for the carrying capacity model is defined as
-              a non-linear relationship dependent of the river discharge and the slope.
-              For long time scale however several authors suggest that this relation can
-              be linear. Here we give the user the possibility to set either a non-linear
-              or a linear relationship.
-              Default values of m and n are set to 1 (linear case). -->
-        <m>1.0</m>
-        <n>1.0</n>
-        <!-- Effective transport efficiency coefficient. For the linear relationship this
-              coefficient is adimensional and contains information about lithology and
-              climate. In case where the erodibility structure is turned on,
-              this coefficient is applied to the reworked sediments. -->
-        <transport>5.e-2</transport>
-        <!-- A maximum time step used to perform erosion / deposition laws [a].
-              Usually this time step is set close to 10 for landscape evolution
-              model. In cases where you want to force the system to use a longer
-              time step it is recommended to set the filter parameters.-->
-        <maxdt>1000</maxdt>
-        <!-- Length scale for erosion in alluvial channels [m]. -->
-        <ascale>10e3</ascale>
-        <!-- Length scale for erosion in bedrock channels [m]. -->
-        <bscale>100e3</bscale>
-    </tc_law>
 
     <!-- Erodibility structure
          This option allows you to specify different erodibility values either on the surface
@@ -298,16 +265,12 @@
 
     <!-- Hillslope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport
-         law which states that transport rate depends linearly on topographic gradient or
-         the non-linear diffusion law where a critical slope parameter needs to be defined. -->
+         law which states that transport rate depends linearly on topographic gradient. -->
     <creep>
         <!-- Surface diffusion coefficient [m2/a] -->
         <caerial>0.001</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>0.005</cmarine>
-        <!-- Critical slope for non-linear diffusion needs to be greater than 1. (optional).
-             Default is 0 for simple creep.-->
-        <cslp>1.25</cslp>
     </creep>
 
     <!-- Flexural isostasy parameters:
@@ -363,24 +326,6 @@
         <boundary_S>0Displacement0Slope</boundary_S>
         <boundary_N>0Displacement0Slope</boundary_N>
     </flexure>
-
-    <!-- Filter for erosion/deposition :
-         Gaussian filter used to smooth erosion and deposition thicknesses when
-         the model is forced with a large simulation time step. Using this oper-
-         ation implies that the resulting simulation is not conserving mass.
-         Both the stream power law and river carrying capacity models will use the
-         gaussian filter operator if you set this filter element within your input
-         file.  -->
-    <filter>
-        <!-- Time step used to perform the gaussian filter smoothing. In cases
-              where the transport capacity model is used the time step is auto-
-              matically reset to the maxdt parameter. -->
-        <gtime>500.0</gtime>
-        <!-- Erosion smoothing standard deviation for Gaussian kernel. -->
-        <esmooth>0.25</esmooth>
-        <!-- Deposition smoothing standard deviation for Gaussian kernel. -->
-        <dsmooth>5.</dsmooth>
-    </filter>
 
     <!-- Output folder path -->
     <outfolder>out</outfolder>

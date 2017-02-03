@@ -41,7 +41,7 @@ class xmlParser:
         self.btype = 'slope'
         self.perc_dep = 0.
         self.slp_cr = 0.
-        self.fillmax = 1.
+        self.fillmax = 200.
         self.Afactor = 1
         self.nopit = 0
 
@@ -52,7 +52,7 @@ class xmlParser:
         self.tEnd = None
         self.tDisplay = None
         self.minDT = 1.
-        self.maxiDT = 1.e6
+        self.maxDT = 1.e6
 
         self.stratdx = 0.
         self.laytime = 0.
@@ -61,7 +61,6 @@ class xmlParser:
         self.urcXY = None
 
         self.seapos = 0.
-        self.sealimit = 100.
         self.seafile = None
 
         self.disp3d = False
@@ -98,21 +97,14 @@ class xmlParser:
         self.SPLm = 0.5
         self.SPLn = 1.
         self.SPLero = 0.
-        self.maxDT = None
-        self.alluvial = 0.
-        self.bedrock = 0.
-        self.esmooth = None
-        self.dsmooth = None
+        self.diffslp = 1.
+        self.diffsigma = 0.
 
         self.spl = False
-        self.capacity = False
-        self.filter = False
         self.Hillslope = False
-        self.nHillslope = False
 
         self.CDa = 0.
         self.CDm = 0.
-        self.Sc = 0.
         self.makeUniqueOutputDir = makeUniqueOutputDir
 
         self.outDir = None
@@ -247,9 +239,9 @@ class xmlParser:
             element = None
             element = time.find('maxdt')
             if element is not None:
-                self.maxiDT = float(element.text)
+                self.maxDT = float(element.text)
             else:
-                self.maxiDT = self.tDisplay
+                self.maxDT = self.tDisplay
         else:
             raise ValueError('Error in the XmL file: time structure definition is required!')
 
@@ -310,12 +302,6 @@ class xmlParser:
             else:
                 self.seapos = 0.
             element = None
-            element = sea.find('limit')
-            if element is not None:
-                self.sealimit = float(element.text)
-            else:
-                self.sealimit = 100.
-            element = None
             element = sea.find('curve')
             if element is not None:
                 self.seafile = element.text
@@ -325,7 +311,6 @@ class xmlParser:
                 self.seafile = None
         else:
             self.seapos = 0.
-            self.sealimit = 100.
             self.seafile = None
 
         # Extract Tectonic structure information
@@ -810,7 +795,7 @@ class xmlParser:
             if element is not None:
                 self.fillmax = float(element.text)
             else:
-                self.fillmax = 1.
+                self.fillmax = 200.
             element = None
             element = spl.find('m')
             if element is not None:
@@ -829,67 +814,25 @@ class xmlParser:
                 self.SPLero = float(element.text)
             else:
                 self.SPLero = 0.
-            self.maxDT = None
-            self.alluvial = 0.
-            self.bedrock = 0.
-            self.esmooth = 0.
-            self.dsmooth = 0.
+            element = None
+            element = spl.find('marslp')
+            if element is not None:
+                self.diffslp = float(element.text)
+            else:
+                self.diffslp = 1.
+            element = None
+            element = spl.find('sigma')
+            if element is not None:
+                self.diffsigma = float(element.text)
+            else:
+                self.diffsigma = 0
         else:
             self.depo = 0
             self.SPLm = 1.
             self.SPLn = 1.
             self.SPLero = 0.
-
-        # Extract Transport Capacity model parameters
-        tc = None
-        tc = root.find('tc_law')
-        if tc is not None:
-            self.capacity = True
-            if self.spl :
-                raise ValueError('Only one of the sediment transport law can be defined.')
-            self.depo = 1
-            element = None
-            element = tc.find('m')
-            if element is not None:
-                self.SPLm = float(element.text)
-            else:
-                self.SPLm = 1.
-            element = None
-            element = tc.find('n')
-            if element is not None:
-                self.SPLn = float(element.text)
-            else:
-                self.SPLn = 1.
-            element = None
-            element = tc.find('transport')
-            if element is not None:
-                self.SPLero = float(element.text)
-            else:
-                self.SPLero = 0.
-            element = None
-            element = tc.find('maxdt')
-            if element is not None:
-                self.maxDT = float(element.text)
-            else:
-                self.maxDT = None
-            element = None
-            element = tc.find('ascale')
-            if element is not None:
-                self.alluvial = float(element.text)
-            else:
-                self.alluvial = 0.
-            element = None
-            element = tc.find('bscale')
-            if element is not None:
-                self.bedrock = float(element.text)
-            else:
-                self.bedrock = 0.
-        else:
-            if not self.spl:
-                self.depo = 0
-                self.SPLm = 1.
-                self.SPLn = 1.
-                self.SPLero = 0.
+            self.diffslp = 1.
+            self.diffsigma = 0.
 
         # Extract linear and nonlinear slope diffusion structure parameters
         creep = None
@@ -907,24 +850,10 @@ class xmlParser:
                 self.CDm = float(element.text)
             else:
                 self.CDm = 0.
-            element = None
-            element = creep.find('cslp')
-            if element is not None:
-                self.Sc = float(element.text)
-                if self.Sc >= 1.:
-                    self.nHillslope = True
-                    raise ValueError('Non-linear hillslope diffusion is under development')
-                else:
-                    self.Sc = 0.
-                    self.Hillslope = True
-            else:
-                self.Sc = 0.
-                self.Hillslope = True
+            self.Hillslope = True
         else:
             self.CDa = 0.
             self.CDm = 0.
-            self.Sc = 0.
-
 
         # Loading variable erodibility layers
         erostruct = None
@@ -1073,36 +1002,6 @@ class xmlParser:
                 self.flexbounds.append(element.text)
             else:
                 raise ValueError('North boundary condition for flexure is not defined')
-
-        # Extract Gaussian Filter structure parameters
-        filter = None
-        filter = root.find('filter')
-        if filter is not None:
-            self.filter = True
-            if not self.capacity:
-                element = None
-                element = filter.find('gtime')
-                if element is not None:
-                    self.maxDT = float(element.text)
-                else:
-                    raise ValueError('Gaussian filter time step needs to be defined.')
-            elif self.maxDT is None:
-                 raise ValueError('tc_law maxdt element needs to be defined.')
-            element = None
-            element = filter.find('esmooth')
-            if element is not None:
-                self.esmooth = float(element.text)
-            else:
-                self.esmooth = 0.
-            element = None
-            element = filter.find('dsmooth')
-            if element is not None:
-                self.dsmooth = float(element.text)
-            else:
-                self.dsmooth = 0.
-        else:
-            self.esmooth = None
-            self.dsmooth = None
 
         # Get output directory
         out = None
