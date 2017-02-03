@@ -44,6 +44,8 @@ You should have received a copy of the GNU Lesser General Public License along w
 
 ### Versioning  
 
+Current releases (**DOI** citable): 
+
 _Release v1.0.0 :_  
 + **[Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
 
@@ -87,4 +89,4 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
     <img width=750 src="https://github.com/badlands-model/g-cubed-2016/blob/master/visual/topochange.png" alt="Topographic evolution at given time intervals" title="Topographic evolution at given time intervals"</img>
 </div>
 
-When you use **Badlands**, please cite the above papers and/or the following code release citable **DOI**:
+When you use **Badlands**, please cite the above papers.
