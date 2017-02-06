@@ -4,9 +4,8 @@ pyBadlands - python version of Badlands
 [![DOI](https://zenodo.org/badge/51286954.svg)](https://zenodo.org/badge/latestdoi/51286954)
     
 <div align="center">
-    <img width=500 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/sketch.png" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
+    <img width=1000 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/StratigraphciModelling.png" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
 </div>
-_A schematic of 2D landscape evolution model illustrating the main variables and forces simulated with Badlands: z is the surface elevation, r refers to rainfall, sl to sea-level fluctuations, f to the flexural isostasy and u to geodynamic forces (from [**Salles & Hardiman, 2016**](http://dx.doi.org/10.1016/j.cageo.2016.03.011))._
 
 ## Overview
 
