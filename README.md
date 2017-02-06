@@ -1,11 +1,10 @@
 pyBadlands - python version of Badlands
 =====
-
-[![DOI](https://zenodo.org/badge/51286954.svg)](https://zenodo.org/badge/latestdoi/51286954)
     
 <div align="center">
     <img width=1000 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/StratigraphciModelling.png" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
 </div>
+[![DOI](https://zenodo.org/badge/51286954.svg)](https://zenodo.org/badge/latestdoi/51286954)
 
 ## Overview
 
