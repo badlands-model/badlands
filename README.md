@@ -10,7 +10,7 @@ pyBadlands - python version of Badlands
 
 **Ba**sin an**d** **Lan**dscape **D**ynamic**s** (**Badlands**) is a parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The model is capable of simulating hillslope processes (**linear** & **non-linear** diffusion), fluvial incision (*'modified'* **Stream Power Law**, **Transport Capacity Law** both for sediment  erosion/transport/deposition), spatially and temporally varying geodynamic (horizontal + vertical displacements) and climatic forces which can be used to simulate changes in base level, as well as effects of climate changes or sea-level fluctuations. The model uses  [**gFlex**](https://github.com/awickert/gFlex) package which is designed to solve elastic plate flexure for applications to Earth's lithosphere.
 
-Presentation: [Badlands overview 2017](http://prezi.com/xfdep0jtcdwp/?utm_campaign=share&utm_medium=copy&rc=ex0share)
+Presentation: [Badlands overview 2017](http://prezi.com/xfdep0jtcdwp/?utm_campaign=share&utm_medium=copy&rc=ex0share){:target="_blank"}
 
 ## Getting started
 
