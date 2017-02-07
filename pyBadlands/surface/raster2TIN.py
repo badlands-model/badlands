@@ -233,7 +233,7 @@ class raster2TIN:
         # Add masks
         self.bmask = numpy.zeros(len(ptsTIN[:,0]))
         self.bmask[:self.boundsPt] = 1
-
+        
         return
 
     def load_hdf5(self, restartFolder, timestep, tXY):

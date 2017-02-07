@@ -103,9 +103,9 @@ def construct_mesh(input, filename, verbose=False):
 
     # Define TIN parameters
     if input.flexure:
-        elevation, cumdiff, cumflex, inIDs = _define_TINparams(totPts, input, FVmesh, recGrid, verbose)
+        elevation, cumdiff, cumflex, inIDs, parentIDs = _define_TINparams(totPts, input, FVmesh, recGrid, verbose)
     else:
-        elevation, cumdiff, inIDs = _define_TINparams(totPts, input, FVmesh, recGrid, verbose)
+        elevation, cumdiff, inIDs, parentIDs = _define_TINparams(totPts, input, FVmesh, recGrid, verbose)
 
     # Build stratigraphic and erodibility meshes
     if input.laytime > 0 and input.erolays >= 0:
@@ -124,7 +124,7 @@ def construct_mesh(input, filename, verbose=False):
                                                 cumdiff, cumflex, totPts, rank, verbose)
 
     return recGrid, FVmesh, force, tMesh, lGIDs, fixIDs, \
-        inIDs, inGIDs, totPts, elevation, cumdiff, \
+        inIDs, parentIDs, inGIDs, totPts, elevation, cumdiff, \
         cumflex, strata, mapero, tinFlex, flex
 
 def reconstruct_mesh(recGrid, input, verbose=False):
@@ -243,7 +243,7 @@ def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
             cumflex = np.zeros(totPts)
 
     # Assign boundary values
-    elevation = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours,
+    elevation, parentIDs = elevationTIN.update_border_elevation(local_elev, FVmesh.neighbours,
                                 FVmesh.edge_length, recGrid.boundsPt, btype=input.btype)
 
     # Define pit filling algorithm
@@ -255,9 +255,9 @@ def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
         print " - define paramters on TIN grid ", time.clock() - walltime
 
     if input.flexure:
-        return elevation, cumdiff, cumflex, inIDs
+        return elevation, cumdiff, cumflex, inIDs, parentIDs
     else:
-        return elevation, cumdiff, inIDs
+        return elevation, cumdiff, inIDs, parentIDs
 
 def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, rank, verbose=False):
     """

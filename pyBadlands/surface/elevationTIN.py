@@ -126,7 +126,34 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
 
-    return elevation
+
+    # Associate TIN edge point to the border for ero/dep updates
+    parentID = numpy.zeros(boundPts,dtype=int)
+    missedPts = []
+    for id in range(boundPts):
+        ngbhs = neighbours[id,:]
+        ids = numpy.where(ngbhs >= boundPts)[0]
+        if len(ids) == 1:
+            parentID[id] = ngbhs[ids]
+        elif len(ids) > 1:
+            lselect = edge_length[id,ids]
+            picked = numpy.argmin(lselect)
+            parentID[id] = ngbhs[ids[picked]]
+        else:
+            missedPts = numpy.append(missedPts,id)
+
+    if len(missedPts) > 0 :
+        for p in range(len(missedPts)):
+            id = int(missedPts[p])
+            ngbhs = neighbours[id,:]
+            ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
+            if len(ids) == 0:
+                raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
+            lselect = edge_length[id,ids]
+            picked = numpy.argmin(lselect)
+            parentID[id] = ngbhs[ids[picked]]
+
+    return elevation, parentID
 
 def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat'):
     """
@@ -172,11 +199,11 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
         if btype == 'slope':
             thetype = 1
 
-        newelev = _boundary_elevation(elev, neighbours, edge_length, boundPts, thetype)
+        newelev, parentID = _boundary_elevation(elev, neighbours, edge_length, boundPts, thetype)
     else:
         raise ValueError('Unknown boundary type ''%s''.' % btype)
 
-    return newelev
+    return newelev, parentID
 
 def getElevation(rX, rY, rZ, coords, interp='linear'):
     """

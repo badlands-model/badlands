@@ -83,6 +83,7 @@ class flowNetwork:
         self.xi = None
         self.yi = None
         self.xyi = None
+        self.parentIDs = None
 
         self._comm = mpi.COMM_WORLD
         self._rank = self._comm.Get_rank()
@@ -446,11 +447,6 @@ class flowNetwork:
             borders = numpy.zeros(len(Acell),dtype=int)
             borders[insideIDs] = 1
 
-            # tmpvol = numpy.zeros(len(Acell))
-            # tmpvol.fill(1.e15)
-            # tmpvol[insideIDs] = self.pitVolume[insideIDs]
-            # self.pitVolume = tmpvol
-
             cdepo, cero = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
                      self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
                      self.erodibility,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
@@ -501,6 +497,7 @@ class flowNetwork:
 
                 # Ensure no overfilling remains
                 ids = numpy.where(numpy.logical_and(volChange>self.pitVolume,self.pitVolume>0.))[0]
+                search = domain.contains_points(self.xycoords[intID])
                 if (len(search)>0) and (len(ids)>0):
                     overfilled = numpy.intersect1d(intID[search],ids)
                     if len(overfilled) > 0:

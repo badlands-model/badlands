@@ -90,7 +90,10 @@ class diffLinear:
             Numpy arrays containing the area of the voronoi polygon for each TIN nodes.
         """
 
-        areacoeff = numpy.where(area > 0, 1 / area, 0)
-        coeff = numpy.where(elevation >= sea, self.CDaerial, self.CDmarine)
+        ids = numpy.where(area > 0)[0]
         
+        areacoeff = numpy.zeros(len(area))
+        areacoeff[ids] = 1./area[ids]
+        coeff = numpy.where(elevation >= sea, self.CDaerial, self.CDmarine)
+
         return numpy.nan_to_num(diff_flux * areacoeff * coeff)

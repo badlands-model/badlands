@@ -2,6 +2,7 @@ import time
 import numpy as np
 import mpi4py.MPI as mpi
 
+from scipy.spatial import cKDTree
 from pyBadlands import (diffLinear, flowNetwork, buildMesh,
                         checkPoints, buildFlux, xmlParser)
 
@@ -59,7 +60,7 @@ class Model(object):
     def build_mesh(self, filename, verbose):
 
         # Construct Badlands mesh and grid to run simulation
-        self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, \
+        self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, parentIDs, \
             self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumflex, self.strata, \
             self.mapero, self.tinFlex, self.flex = buildMesh.construct_mesh(self.input, filename, verbose)
 
@@ -81,6 +82,15 @@ class Model(object):
         self.flow.xycoords = self.FVmesh.node_coords[:,:2]
         self.flow.spl = self.input.spl
         self.flow.depo = self.input.depo
+
+        reassignID = np.where(parentIDs < len(parentIDs))[0]
+        if(len(reassignID)>0):
+            tmpTree = cKDTree(self.flow.xycoords[len(parentIDs):,:2])
+            distances, indices = tmpTree.query(self.flow.xycoords[reassignID,:2], k=1)
+            indices += len(parentIDs)
+            parentIDs[reassignID] = indices
+
+        self.flow.parentIDs = parentIDs
 
     def rebuild_mesh(self, verbose=False):
         """

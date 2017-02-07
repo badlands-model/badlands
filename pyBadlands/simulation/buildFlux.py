@@ -131,8 +131,8 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     # Compute sediment fluxes
     # Initial cumulative elevation change
     walltime = time.clock()
-    xyMin = [recGrid.regX.min(), recGrid.regY.min()]
-    xyMax = [recGrid.regX.max(), recGrid.regY.max()]
+    xyMin = [recGrid.regX.min()-1., recGrid.regY.min()-1.]
+    xyMax = [recGrid.regX.max()+1., recGrid.regY.max()+1.]
     domain = path.Path([(xyMin[0],xyMin[1]),(xyMax[0],xyMin[1]), (xyMax[0],xyMax[1]), (xyMin[0],xyMax[1])])
     insideIDs = domain.contains_points(flow.xycoords)
 
@@ -145,6 +145,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
         print " -   Get stream fluxes ", time.clock() - walltime
 
     # Update surface parameters
+    #sedrate[:len(flow.parentIDs)] = sedrate[flow.parentIDs]
     elevation += sedrate
     cumdiff += sedrate
 
@@ -156,8 +157,11 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     diff_flux = np.zeros(len(cdiff))
     diff_flux[insideIDs] = cdiff[insideIDs]
     diff = diff_flux * timestep
+    #diff[:len(flow.parentIDs)] = diff[flow.parentIDs]
     elevation += diff
+    elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]-1.
     cumdiff += diff
+
     if rank == 0 and verbose:
         print " -   Get hillslope fluxes ", time.clock() - walltime
 
