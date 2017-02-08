@@ -333,12 +333,13 @@ class Model(object):
                 print "   - Compute flexural isostasy ", time.clock() - flextime
 
         # Create checkpoint files and write HDF5 output
-        checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
+        if self.input.udw == 0 or self.tNow == self.input.tEnd or self.tNow == self.force.next_display:
+            checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
                                 self.FVmesh, self.tMesh, self.force, self.flow, self.rain, \
                                 self.elevation, self.fillH, self.cumdiff, self.outputStep, self.mapero, \
                                 self.cumflex)
-        self.force.next_display += self.input.tDisplay
-        self.outputStep += 1
+            self.force.next_display += self.input.tDisplay
+            self.outputStep += 1
 
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:

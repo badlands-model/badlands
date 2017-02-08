@@ -44,6 +44,7 @@ class xmlParser:
         self.fillmax = 200.
         self.Afactor = 1
         self.nopit = 0
+        self.udw = 0
 
         self.restart = False
         self.rForlder = None
@@ -183,6 +184,16 @@ class xmlParser:
                     self.nopit = 1
             else:
                 self.nopit = 0
+            element = None
+            element = grid.find('udw')
+            if element is not None:
+                self.udw = int(element.text)
+                if self.udw < 1:
+                    self.udw = 0
+                else:
+                    self.udw = 1
+            else:
+                self.udw = 0
         else:
             raise ValueError('Error in the XmL file: grid structure definition is required!')
 
