@@ -224,6 +224,8 @@ class Model(object):
                         # Define stratal flags
                         fstrat = 0
                         sload = None
+                        if self.input.udw == 1 and self.tNow == self.input.tStart:
+                            self.strata[0].oldload = np.zeros(len(self.elevation), dtype=float)
                         if self.input.laytime > 0 and self.strata:
                             sload = self.strata[0].oldload
                             fstrat = 1

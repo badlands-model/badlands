@@ -649,7 +649,9 @@ class flowNetwork:
             zd_vals = depZ[indices][:,:,0]
         else:
             zd_vals = depZ[indices]
-        zdi = numpy.average(zd_vals,weights=(1./distances), axis=1)
+            
+        with numpy.errstate(divide='ignore'):
+            zdi = numpy.average(zd_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]
         if len(onIDs) > 0:

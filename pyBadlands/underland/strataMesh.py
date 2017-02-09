@@ -305,7 +305,8 @@ class strataMesh():
 
         # Compute inverse weighting distance
         walltime = time.clock()
-        w = 1.0 / distances**2
+        with numpy.errstate(divide='ignore'):
+            w = 1.0 / distances**2
         w3D = w.reshape((len(self.xyi),4,1))
         weights = numpy.tile(w3D, (1,1,self.step+1))
 
@@ -364,7 +365,8 @@ class strataMesh():
 
         selev = numpy.zeros(len(self.xyi))
         distances, indices = self.tree.query(self.xyi, k=self.searchpts)
-        weights = 1.0 / distances**2
+        with numpy.errstate(divide='ignore'):
+            weights = 1.0 / distances**2
 
         load_diff = cumdiff - self.oldload
         if len(elev[indices].shape) == 3:
