@@ -39,7 +39,7 @@ class xmlParser:
 
         self.demfile = None
         self.btype = 'slope'
-        self.perc_dep = 0.
+        self.perc_dep = 0.5
         self.slp_cr = 0.
         self.fillmax = 200.
         self.Afactor = 1
@@ -800,7 +800,10 @@ class xmlParser:
             if element is not None:
                 self.perc_dep = float(element.text)
             else:
-                self.perc_dep = 0.
+                if self.slp_cr == 0.:
+                    self.perc_dep = 0.
+                else:
+                    self.perc_dep = 0.5
             element = None
             element = spl.find('fillmax')
             if element is not None:
