@@ -193,7 +193,7 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
     if btype == 'wall':
         newelev[:boundPts] = 1.e7
 
-    elif btype == 'flat' or btype == 'slope':
+    elif btype == 'flat' or btype == 'slope' or btype == 'fix':
         newelev[:boundPts] = 1.e7
         thetype = 0
         if btype == 'slope':
