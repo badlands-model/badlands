@@ -83,13 +83,13 @@ contains
           loop: do p = 1, 20
             if(neighbours(i,p)<0) exit loop
             if(elev(i)<sealevel)then
-             topnew = elev(neighbours(i,p)+1) + marineslope*edge_dist(neighbours(i,p)+1,p)
+             topnew = elev(neighbours(i,p)+1) + marineslope*edge_dist(i,p)
              if(topnew>sealevel)then
-               topnew = sealevel + 0.0001*(edge_dist(neighbours(i,p)+1,p)+ &
+               topnew = sealevel + 0.0001*(edge_dist(i,p)+ &
                         (elev(i)-sealevel)/marineslope)
              endif
             else
-             topnew = elev(neighbours(i,p)+1) + 0.0001*edge_dist(neighbours(i,p)+1,p)
+             topnew = elev(neighbours(i,p)+1) + 0.0001*edge_dist(i,p)
             endif
             topmax = min(topmax,topnew)
           enddo loop
@@ -144,7 +144,7 @@ contains
         if(neighbours(k,p)<0) exit loop
         dz = elev(k)-elev(neighbours(k,p)+1)
         if(dz>0.)then
-          slp = dz/edge_dist(neighbours(k,p)+1,p)
+          slp = dz/edge_dist(k,p)
           if(slp>=0.00001)then
             ndown = ndown+1
             down(p) = 1

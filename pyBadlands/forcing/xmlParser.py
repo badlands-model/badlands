@@ -839,7 +839,7 @@ class xmlParser:
             if element is not None:
                 self.diffsigma = float(element.text)
             else:
-                self.diffsigma = 0
+                self.diffsigma = 0.
         else:
             self.depo = 0
             self.SPLm = 1.
