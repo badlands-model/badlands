@@ -24,13 +24,13 @@ def get_closest_factors(size):
     This function finds the two closest integers which, when multiplied, equal a given number.
     This is used to defined the partition of the regular and TIN grids.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : size
         Integer corresponding to the number of CPUs that are used.
 
-    Return
-    ----------
+    Return:
+
     variable: partID
         Numpy integer-type array filled with the ID of the partition each node belongs to.
 
@@ -64,21 +64,23 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
     but lack load-balancing operations.
 
     The purpose of the class is:
+
         1. to efficiently decomposed the domain from the number of processors defined along the X and Y axes
         2. to return to all processors the partition IDs for each vertice of the TIN
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : X, Y
         Numpy arrays containing the X and Y coordinates of the TIN vertices.
 
     variable : Xdecomp, Xdecomp
         Integers which specify the number of processors along each axis. It is a requirement that
         the number of processors used matches the proposed decomposition:
-                    >> nb CPUs = nbprocX x nbprocY
 
-    Return
-    ----------
+            >> nb CPUs = nbprocX x nbprocY
+
+    Return:
+
     variable: partID
         Numpy integer-type array filled with the ID of the partition each node belongs to.
 
@@ -157,26 +159,28 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     to other techniques but lack load-balancing operations.
 
     The purpose of the class is:
+
         1. to efficiently decomposed the domain from the number of processors defined along the X and Y axes
         2. to create an overlapping region between each partition
         3. to return to each processor their contained TIN vertices
         4. to built a local TIN on each of the decomposed domain
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : X, Y
         Numpy arrays containing the X and Y coordinates of the TIN vertices.
 
     variable : nbprocX, nbprocY
         Integers which specify the number of processors along each axis. It is a requirement that
         the number of processors used matches the proposed decomposition:
-                    >> nb CPUs = nbprocX x nbprocY
+
+            >> nb CPUs = nbprocX x nbprocY
 
     variable : overlapLen
         Float defining the length of the overlapping region.
 
-    Return
-    ----------
+    Return:
+
     variable: globIDs
         Numpy integer-type array containing for local nodes their global IDs.
 
@@ -258,13 +262,13 @@ def _robin_distribution(X,Y):
     """
     This function defines an initial distribution using round-robin algorithm.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : X, Y
         Numpy arrays containing the X and Y coordinates of the TIN vertices.
 
-    Return
-    ----------
+    Return:
+
     variable: GIDs
         Numpy integer-type array containing local nodes global IDs.
 
@@ -307,8 +311,8 @@ def _compute_partition_ghosts(size, neighbours, partID):
     """
     This function find the ghosts (nodes) in the vicinity of each decomposition zone.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : size
         Number of processors.
 
@@ -318,8 +322,8 @@ def _compute_partition_ghosts(size, neighbours, partID):
     variable : partID
         Numpy integer-type array containing for each nodes its partition ID
 
-    Return
-    ----------
+    Return:
+
     variable: ghosts
         List containing the ghost nodes for each partition.
     """

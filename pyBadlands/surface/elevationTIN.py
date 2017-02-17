@@ -25,8 +25,8 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
         1. Infinitely flat condition,
         2. Continuous slope condition.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : elevation
         Numpy arrays containing the internal nodes elevation.
 
@@ -42,8 +42,8 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
     variable : btype
         Integer defining the type of boundary: 0 for flat and 1 for slope condition.
 
-    Return
-    ----------
+    Return:
+
     variable: elevation
         Numpy array containing the updated elevations on the edges.
     """
@@ -162,8 +162,8 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
         2. Continuous slope condition,
         3. Wall boundary (closed domain).
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : elev
         Numpy arrays containing the internal nodes elevation.
 
@@ -182,8 +182,8 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
             2. flat: this is the default condition
             3. slope
 
-    Return
-    ----------
+    Return:
+
     variable: newelev
         Numpy array containing the updated elevations on the edges.
     """
@@ -209,8 +209,8 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
     """
     This function interpolates elevation from a regular grid to a cloud of points using SciPy interpolation.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : rX, rY, rZ
         Numpy arrays containing the X, Y & Z coordinates from the regular grid.
 
@@ -220,8 +220,8 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
     variable : interp
         Define the interpolation technique as in SciPy interpn function. The default is 'linear'
 
-    Return
-    ----------
+    Return:
+
     variable: elev
         Numpy array containing the updated elevations for the local domain.
     """
@@ -238,8 +238,8 @@ def assign_parameter_pit(neighbours, edge_length, area, diffslp, boundPts, fillT
     """
     This function defines global variables used in the pit filling algorithm.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : neighbours
         Numpy integer-type array containing for each nodes its neigbhours IDs.
 
@@ -272,8 +272,8 @@ def pit_stack_PD(elev, allFill, sealevel):
     This function calls a depression-less algorithm from Planchon & Darboux to compute the flow
     pathway using stack.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : elev
         Numpy arrays containing the nodes elevation.
 
@@ -283,8 +283,8 @@ def pit_stack_PD(elev, allFill, sealevel):
     variable : sealevel
         Current elevation of sea level.
 
-    Return
-    ----------
+    Return:
+
     variable: fillH
         Numpy array containing the filled elevations.
     """

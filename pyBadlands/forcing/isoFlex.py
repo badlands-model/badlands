@@ -25,8 +25,9 @@ class isoFlex:
     This class uses the gFlex model from Wickert 2015 to compute flexural isostasy. For
     more information regarding the code and the available features it is recommended to
     have a look at:
-        - gFlex github repository: https://github.com/awickert/gFlex
-        - Wickert, A. D.: Open-source modular solutions for flexural isostasy:
+
+    - gFlex github repository: https://github.com/awickert/gFlex
+    - Wickert, A. D.: Open-source modular solutions for flexural isostasy:
             gFlex v1.0, Geosci. Model Dev. Discuss., 8, 4245-4292, 2015
     """
     def __init__(self):
@@ -74,9 +75,10 @@ class isoFlex:
             The elastic thickness. Can be scalar or an array
 
         variable : Boundaries
-            List of string describing boundary conditions for West, East, South and North
+            List of string describing boundary conditions for West, East, South and North.
+
             Choose from '0Slope0Shear', 'Dirichlet0', '0Displacement0Slope',
-                        '0Moment0Shear', 'Periodic', 'Mirror'
+            '0Moment0Shear', 'Periodic', 'Mirror'
 
         variable : xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)

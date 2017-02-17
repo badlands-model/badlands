@@ -173,8 +173,7 @@ class visSurf:
         """
         Use Plotly library to visualise a dataset over a surface in 3D.
 
-        Parameters
-        ----------
+        Parameters:
 
         variable: width
             Figure width.

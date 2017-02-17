@@ -95,22 +95,12 @@ class flowNetwork:
         """
         Perform hillslope evolution based on diffusion processes.
 
-        **Parameters**
-
-        variable : elev
-            Numpy arrays containing the elevation of the TIN nodes.
-
-        variable : neighbours
-            Numpy integer-type array with the neighbourhood IDs.
-
-        variable : edges
-            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
-
-        variable : distances
-            Numpy real-type array with the distances between each connection in the TIN.
-
-        variable: globalIDs
-            Numpy integer-type array containing for local nodes their global IDs.
+        Parameters:
+            elev: Numpy arrays containing the elevation of the TIN nodes.
+            neighbours: Numpy integer-type array with the neighbourhood IDs.
+            edges: Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+            distances: Numpy real-type array with the distances between each connection in the TIN.
+            globalIDs: Numpy integer-type array containing for local nodes their global IDs.
         """
         diff_flux = sfd.diffusion(elev, neighbours, edges, distances, globalIDs)
 
@@ -124,8 +114,8 @@ class flowNetwork:
         elevations around each node. The SFD method assigns a unique flow direction towards the steepest
         downslope neighbor.
 
-        **Parameters**
-
+        Parameters
+        ----------
         variable : fillH
             Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
 
@@ -281,8 +271,8 @@ class flowNetwork:
         """
         Calculates the drainage area and water discharge at each node.
 
-        **Parameters**
-
+        Parameters
+        ----------
         variable : Acell
             Numpy float-type array containing the voronoi area for each nodes (in m2)
 
@@ -386,8 +376,8 @@ class flowNetwork:
         """
         Calculates the sediment flux at each node.
 
-        **Parameters**
-
+        Parameters
+        ----------
         variable : Acell
             Numpy float-type array containing the voronoi area for each nodes (in m2)
 
@@ -606,8 +596,8 @@ class flowNetwork:
         Gaussian filter operation used to smooth diffusion related deposition
         thicknesses.
 
-        **Parameters**
-
+        Parameters
+        ----------
         variable : diff
             Numpy arrays containing the deposition thicknesses.
 
@@ -674,8 +664,8 @@ class flowNetwork:
         coefficients, discharges plus elevations and distances between TIN nodes and
         their respective reveivers.
 
-        **Parameters**
-
+        Parameters
+        ----------
         variable : elev
             Numpy arrays containing the elevation of the TIN nodes.
 
@@ -704,8 +694,8 @@ class flowNetwork:
         """
         Debugging function used to plot draining pathway between depressions.
 
-        **Parameters**
-
+        Parameters
+        ----------
         variable : pIDs
             Numpy array containing all depression node IDs.
 

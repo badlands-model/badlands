@@ -6,7 +6,7 @@ You should install Sphinx in the same virtualenv or Python environment as pyBadl
 
 To build documentation:
 
-    env READTHEDOCS=True make clean html
+    READTHEDOCS=True make clean html
 
 Documentation is hosted on pybadlands.readthedocs.io. RTD's builder can't build
 the FORTRAN components of pyBadlands, so we stub them out with MagicMock, per

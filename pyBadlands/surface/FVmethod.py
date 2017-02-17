@@ -26,8 +26,8 @@ class FVmethod:
         1. the voronoi cell area
         2. an ordered list of voronoi edges length
 
-    Parameters
-    ----------
+    Parameters:
+
     string : nodes
         The 2D coordinates of TIN nodes coordinates.
 
@@ -56,8 +56,8 @@ class FVmethod:
         This function constructs the Finite Volume discretisation for each local
         triangularised grid.
 
-        Parameters
-        ----------
+        Parameters:
+
         variable : lGIDs
             Numpy integer-type array filled with the global vertex IDs for each local grid located
             within the partition (including those on the edges).
@@ -95,14 +95,14 @@ class FVmethod:
         """
         Gather local IDs to all processors.
 
-        Parameters
-        ----------
+        Parameters:
+
         variable : lGIDs
             Numpy integer-type array filled with the global vertex IDs for each local grid located
             within the partition (including those on the edges).
 
-        Return
-        ----------
+        Return:
+
         variable: exportGIDs
             Numpy integer-type array filled with the global vertex IDs ordered by processor ID.
 
@@ -131,13 +131,13 @@ class FVmethod:
         """
         Gather local voronoi area to all processors.
 
-        Parameters
-        ----------
+        Parameters:
+
         variable : localPtsNb
             Number of points on each local partition.
 
-        Return
-        ----------
+        Return:
+
         variable : exportVols
             Numpy float-type array containing the voronoi area for each TIN node.
         """
@@ -163,16 +163,16 @@ class FVmethod:
         """
         Gather local neigbours ID to all processors.
 
-        Parameters
-        ----------
+        Parameters:
+
         variable : localPtsNb
             Number of points on each local partition.
 
         variable : totPts
             Total number of points on the global TIN surface.
 
-        Return
-        ----------
+        Return:
+
         variable : exportNgbhIDs
             Numpy integer-type array filled with the global neighbourhood IDs.
 
@@ -208,8 +208,8 @@ class FVmethod:
         """
         Gather local edges to all processors.
 
-        Parameters
-        ----------
+        Parameters:
+
         variable : localPtsNb
             Number of points on each local partition.
 
@@ -219,8 +219,8 @@ class FVmethod:
         variable : ngbhNbs
             Numpy integer-type array filled with the local neighbourhood IDs.
 
-        Return
-        ----------
+        Return:
+
         variable : exportEdges
             Numpy float-type array containing the lengths to each neighbour.
         """
@@ -245,8 +245,8 @@ class FVmethod:
         """
         Gather local voronoi edges to all processors.
 
-        Parameters
-        ----------
+        Parameters:
+
         variable : localPtsNb
             Number of points on each local partition.
 
@@ -256,8 +256,8 @@ class FVmethod:
         variable : ngbhNbs
             Numpy integer-type array filled with the local neighbourhood IDs.
 
-        Return
-        ----------
+        Return:
+
         variable : exportVors
             Numpy float-type array containing the voronoi edge lengths to each neighbour.
         """
@@ -299,7 +299,7 @@ class FVmethod:
             Resolution of the tin edges.
 
         Return
-        ----------
+        ------
         variable: exportGIDs
             Numpy integer-type array filled with the global vertex IDs ordered by processor ID.
 

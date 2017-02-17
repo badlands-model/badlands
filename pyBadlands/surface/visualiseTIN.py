@@ -18,8 +18,8 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
     """
     This function defines the cells used for visualising the TIN surface.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : lGIDs
         Numpy integer-type array filled with the global vertex IDs for each local grid located
         within the partition (including those on the edges).
@@ -37,8 +37,8 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
     variable: cells
         Numpy integer-type array filled with the global cell IDs.
 
-    Return
-    ----------
+    Return:
+
     variable: outPts
         Numpy integer-type array containing the output node IDs.
 
@@ -82,8 +82,8 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
     """
     This function writes for each processor the HDF5 file containing surface information.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : folder
         Name of the output folder.
 
@@ -157,8 +157,8 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
     """
     This function writes for each processor the HDF5 file containing surface information.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : folder
         Name of the output folder.
 
@@ -234,8 +234,8 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
     """
     This function writes the XDmF file which is calling the XmF file.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : folder
         Name of the output folder.
 
@@ -273,8 +273,8 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
     """
     This function writes the XmF file which is calling each HFD5 file.
 
-    Parameters
-    ----------
+    Parameters:
+
     variable : folder
         Name of the output folder.
 
