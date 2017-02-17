@@ -11,8 +11,11 @@ Examples/.ipynb_checkpoints/
 .ipynb_checkpoints
 build/
 output_*
+output/
 .AppleDouble
 __MACOSX
 .DS_Store
 *.dSYM
-
+doc/_build/
+tags
+doc/env/

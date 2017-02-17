@@ -23,14 +23,10 @@ class diffLinear:
     """
 
     def __init__(self):
-
-        '''Initialization.
-        '''
+        '''Initialization.'''
         self.CDaerial = None
         self.CDmarine = None
         self.CFL = None
-
-        return
 
     def dt_stability(self, edgelen):
         """
@@ -41,8 +37,8 @@ class diffLinear:
         and therefore the maximal hillslope timestep to ensure stability just needs to be
         computed once for each given TIN grid.
 
-        Parameters
-        ----------
+        **Parameters**
+
         variable : edgelen
             Numpy arrays containing the edges of the TIN surface for the considered partition.
         """
@@ -74,8 +70,8 @@ class diffLinear:
         segment (i.e. height differences divided by the length of the mesh edge) as well as the length
         of the corresponding voronoi edge.
 
-        Parameters
-        ----------
+        **Parameters**
+
         variable : diff_flux
             Numpy arrays representing for each node the sum of the ratio between the height differences
             and  the length of the mesh edge multiply by the length of the corresponding voronoi edge.

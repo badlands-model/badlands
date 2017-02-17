@@ -19,8 +19,8 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
     """
     This function defines the connectivity array for visualising flow network.
 
-    Parameters
-    ----------
+    **Parameters**
+
     variable : outPts
         Numpy integer-type array containing the output node IDs.
 
@@ -33,8 +33,8 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
     variable: coordXY
         Numpy float-type array containing X, Y coordinates of the local nodes.
 
-    Return
-    ----------
+    **Return**
+
     variable: flowIDs
         Numpy integer-type array containing the output node IDs for the flow network.
 
@@ -89,8 +89,8 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, basin, c
     """
     This function writes for each processor the HDF5 file containing flow network information.
 
-    Parameters
-    ----------
+    **Parameters**
+
     variable : folder
         Name of the output folder.
 
@@ -186,8 +186,8 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
     """
     This function writes the XmF file which is calling each HFD5 file.
 
-    Parameters
-    ----------
+    **Parameters**
+
     variable : folder
         Name of the output folder.
 

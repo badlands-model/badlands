@@ -27,4 +27,10 @@ from .forcing import isoFlex
 from .simulation import buildMesh
 from .simulation import checkPoints
 from .simulation import buildFlux
-from .libUtils import *
+
+# To build documentation, readthedocs.io loads pyBadlands into a virtualenv.
+# It can't load the binary parts, though. To allow pyBadlands to be imported
+# without the binaries, we check for the 'READTHEDOCS' environment variable.
+import os
+if 'READTHEDOCS' not in os.environ:
+    from .libUtils import *
