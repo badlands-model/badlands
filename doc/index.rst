@@ -1,6 +1,10 @@
 pyBadlands
 ==========
 
+<div align="center">
+    <img width=1000 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/StratigraphciModelling.png" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
+</div>
+
 Basin and Landscape Dynamics (Badlands) is a parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The model is capable of simulating hillslope processes (**linear** & **non-linear** diffusion), fluvial incision (*'modified'* **Stream Power Law**, **Transport Capacity Law** both for sediment  erosion/transport/deposition), spatially and temporally varying geodynamic (horizontal + vertical displacements) and climatic forces which can be used to simulate changes in base level, as well as effects of climate changes or sea-level fluctuations. The model uses `gFlex <https://github.com/awickert/gFlex>`_ package which is designed to solve elastic plate flexure for applications to Earth's lithosphere.
 
 Usage documentation and tutorials can be found on the `pyBadlands Wiki <https://github.com/badlands-model/pyBadlands/wiki>`_
