@@ -98,9 +98,8 @@ class xmlParser:
         self.SPLm = 0.5
         self.SPLn = 1.
         self.SPLero = 0.
-        self.diffslp = 1.
+        self.diffnb = 5
         self.diffsigma = 0.
-
         self.spl = False
         self.Hillslope = False
 
@@ -829,11 +828,11 @@ class xmlParser:
             else:
                 self.SPLero = 0.
             element = None
-            element = spl.find('marslp')
+            element = spl.find('diffnb')
             if element is not None:
-                self.diffslp = float(element.text)
+                self.diffnb = int(element.text)
             else:
-                self.diffslp = 1.
+                self.diffnb = 5
             element = None
             element = spl.find('sigma')
             if element is not None:
@@ -845,7 +844,7 @@ class xmlParser:
             self.SPLm = 1.
             self.SPLn = 1.
             self.SPLero = 0.
-            self.diffslp = 1.
+            self.diffnb = 5
             self.diffsigma = 0.
 
         # Extract linear and nonlinear slope diffusion structure parameters

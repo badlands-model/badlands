@@ -133,129 +133,138 @@ contains
 
   end subroutine allfillPD
 
-  subroutine marine_sed(elevation, seavol, border, sealevel, seadep, pydnodes)
+  subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diffsed, pydnodes, pyIDs)
 
-    integer :: pydnodes
+    integer :: pydnodes, pyIDs
+    integer,dimension(pyIDs),intent(in) :: depIDs
     integer,dimension(pydnodes),intent(in) :: border
-
     real(kind=8),intent(in) :: sealevel
-    real(kind=8),dimension(pydnodes),intent(in) :: elevation
     real(kind=8),dimension(pydnodes),intent(in) :: seavol
+    real(kind=8),dimension(pydnodes),intent(in) :: elevation
 
-    real(kind=8),dimension(pydnodes),intent(out) :: seadep
+    real(kind=8),dimension(pydnodes),intent(out) :: diffsed
 
+    real(kind=8),dimension(pydnodes) :: elev, seadep
 
-    real(kind=8),dimension(pydnodes) :: difo, difp, cdif, elev, depo
+    integer :: it, m, n, p, k, pid, nid, id, nup, ndown, ngbh(20)
+    real(kind=8) :: dh, vol, minz, maxz
 
-    integer :: n, k, p, iter, ndown
-    integer,dimension(20) :: down
-
-    real(kind=8) :: cc, volsum, difsed, fc, difmax
-    real(kind=8),dimension(20) :: vol
-
-    seadep = 0.
+    dnodes = pydnodes
     elev = elevation
 
-    depo = 0.
-    ! Deposit sediment in diff_nb increments
-    do n = 1, diff_nb
-
-      ! Initialise sediments
-      difsed = 0.
-      difo = seavol/diff_nb
-      difp = 0.
-
-      ! Move sediment to downstream nodes as long as there is sediment in the buffer.
-      difmax = 1.0e20
-      iter = 0
-      sediment_diffusion: do
-        if(difmax<=diff_res*meanarea .or. iter>=max_it_cyc) exit sediment_diffusion
-        difsed = 0.
-        difmax = 0.
-        iter = iter + 1
-        ! Determine the fraction of buffer that will be deposited at current node
-        cdif = 0.
-        ! Get maximum elevation at current nodes to ensure sediment stability
-        call find_maximum_elevation(difo,elev,sealevel,border,cdif,depo)
-
-        ! Calculate individual and cumulative accomodation space for each downstream node
-        do k = 1,pydnodes
-          if(difo(k)>0.)then
-            if(cdif(k)<1.)then
-              call get_available_volume_remaining(k,elev,volsum,vol,down,ndown)
-              ! Remaining volume of sediment to distribute
-              cc = difo(k)*(1.-cdif(k))
-              difsed = difsed + cc
-
-              ! If enough downstream volume is available weight sediment by
-              ! available volume and diffuse sediment to downstream nodes
-              if(volsum>=cc)then
-                ! Loop over neighboring cell
-                loop1: do p = 1, 20
-                  if(neighbours(k,p)<0) exit loop1
-                  difp(neighbours(k,p)+1) = difp(neighbours(k,p)+1)+cc*vol(p)/volsum
-                enddo loop1
-
-              ! If not enough downstream volume is available weight sediment
-              ! by available volume and distribute rest equally among
-              ! connected downstream nodes or if no downstream nodes are
-              ! connected assume that enough downstream volume is available
-              ! and weight sediment by the number of neighboring nodes
-              else
-                if(ndown>0)then
-                  fc = (cc-volsum)/float(ndown)
-                  ! Loop over neighboring cell
-                  loop2: do p = 1, 20
-                    if(neighbours(k,p)<0) exit loop2
-                    if(down(p)==1)then
-                      difp(neighbours(k,p)+1) = difp(neighbours(k,p)+1)+vol(p)+fc
-                    endif
-                  enddo loop2
-                ! If there are no downtream nodes, just smear it all around
-                ! and hope the next iteration looks after it
-                else
-                  fc = cc/maxngb(k)
-                  ! Loop over neighboring cell
-                  loop3: do p = 1, 20
-                     if(neighbours(k,p)<0) exit loop3
-                     difp(neighbours(k,p)+1) = difp(neighbours(k,p)+1)+fc
-                  enddo loop3
-                endif
-              endif
+    do m = 1, diffnbmax
+      seadep = seavol/float(diffnbmax)
+      do k = 1, pyIDs
+        n = depIDs(k)+1
+        id = n
+        pid = n
+        it = 0
+        sfd_loop: do
+            if(border(id)<1)then
+              seadep(id) = 0.
+              exit sfd_loop
             endif
-          endif
-        enddo
+            if(it==0)then
+              vol = max(0.,0.9*(sealevel-elev(id))*area(id))
+            else
+              vol = max(0.0,0.9*(elev(pid)-elev(id))*area(id))
+            endif
+            if(it>max_it_cyc)then
+              elev(id) = elev(id) + seadep(id)/area(id)
+              seadep(id) = 0.
+              exit sfd_loop
+            endif
+            if(seadep(id)/area(id)<diff_res)then
+              elev(id) = elev(id) + seadep(id)/area(id)
+              seadep(id) = 0.
+              exit sfd_loop
+            endif
+            it = it+1
+            if(seadep(id)<vol)then
+              elev(id) = elev(id) + seadep(id)/area(id)
+              seadep(id) = 0.
+              exit sfd_loop
+            else
+              seadep(id) = seadep(id) - vol
+              elev(id) = elev(id) + vol/area(id)
+            endif
+            if(seadep(id)>0.)then
+              minz = 1.e8 !elev(id)
+              nid = 0
+              nup = 0
+              ndown = 0
+              maxz = -1.e8
+              loop: do p = 1, 20
+                if( neighbours(id,p) < 0 ) exit loop
+                ndown = ndown + 1
+                ngbh(ndown) = neighbours(id,p)+1
+                if(minz>elev(neighbours(id,p)+1))then
+                  nid = neighbours(id,p)+1
+                  minz = elev(nid)
+                endif
+                if(maxz<elev(neighbours(id,p)+1))then
+                  maxz = elev(neighbours(id,p)+1)
+                  nup = neighbours(id,p)+1
+                endif
+              enddo loop
+              if(nid==0)then
+                dh = maxz-elev(id)+0.1
+                if(seadep(id) > dh*area(id))then
+                  elev(id) = elev(id) + dh
+                  seadep(id) = seadep(id) - dh*area(id)
+                  seadep(nup) = seadep(id)
+                  pid = id
+                  id = nup
+                  ! vol = (seadep(id) - dh*area(id))/ndown
+                  ! do p = 1, ndown
+                  !   elev(ngbh(p)) = elev(ngbh(p)) + vol/area(id)
+                  ! enddo
+                else
+                  elev(id) = elev(id) + seadep(id)/area(id)
+                  exit sfd_loop
+                endif
+              else
+                if(minz>elev(id))then
+                  dh = (minz-elev(id))+0.1
+                  if(seadep(id) > dh*area(id))then
+                    elev(id) = elev(id) + dh
+                    seadep(id) = seadep(id) - dh*area(id)
+                  else
+                    elev(id) = elev(id) + seadep(id)/area(id)
+                    exit sfd_loop
+                  endif
+                endif
+                seadep(nid) = seadep(id)
+                pid = id
+                id = nid
+              endif
+            else
+              exit sfd_loop
+            endif
+        enddo sfd_loop
 
-        ! Store sediment still to be diffused in difo for next iteration
-        difo = difp
-        difp = 0.0_8
-        difmax = max(difsed,difmax)
-
-      enddo sediment_diffusion
+      enddo
     enddo
 
-    seadep = depo
+    diffsed = elev - elevation
 
     return
 
-  end subroutine marine_sed
+  end subroutine marine_distribution
 
-  subroutine pitparams(pyNgbs,pyDist,pyArea,pySlp,fillTH,epsilon,pybounds,pydnodes)
+  subroutine pitparams(pyNgbs,pyArea,pySlp,fillTH,epsilon,pybounds,pydnodes)
 
     integer :: pydnodes
     integer,intent(in) :: pybounds
     real(kind=8),intent(in) :: fillTH
     real(kind=8),intent(in) :: epsilon
-    real(kind=8),intent(in) :: pySlp
+    integer,intent(in) :: pySlp
     integer,intent(in) :: pyNgbs(pydnodes,20)
-    real(kind=8),intent(in) :: pyDist(pydnodes,20)
     real(kind=8),intent(in) :: pyArea(pydnodes)
-
-    integer :: k, p
-
+    
     dnodes = pydnodes
 
-    marineslope = pySlp
+    diffnbmax = pySlp
     bds = pybounds
     block_size = pydnodes - bds
     eps = epsilon
@@ -264,19 +273,7 @@ contains
     call defineparameters
 
     neighbours = pyNgbs
-    edge_dist = pyDist
     area = pyArea
-    meanarea = 0.
-
-    do k = 1,dnodes
-      maxngb(k) = 0
-      meanarea = meanarea+area(k)
-      loop: do p = 1, 20
-        if(neighbours(k,p)<0) exit loop
-        maxngb(k) = maxngb(k) + 1
-      enddo loop
-    enddo
-    meanarea = meanarea/dnodes
 
     return
 

@@ -110,6 +110,17 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD
 
+    # Find border/inside nodes
+    ids = np.arange(len(FVmesh.control_volumes))
+    tmp1 = np.where(FVmesh.control_volumes>0.)[0]
+    xyMin = [recGrid.regX.min()-1., recGrid.regY.min()-1.]
+    xyMax = [recGrid.regX.max()+1., recGrid.regY.max()+1.]
+    domain = path.Path([(xyMin[0],xyMin[1]),(xyMax[0],xyMin[1]), (xyMax[0],xyMax[1]), (xyMin[0],xyMax[1])])
+    tmp2 = domain.contains_points(flow.xycoords)
+    insideIDs = np.intersect1d(tmp1,ids[tmp2])
+    borders = np.zeros(len(FVmesh.control_volumes),dtype=int)
+    borders[insideIDs] = 1
+
     # Compute CFL condition
     walltime = time.clock()
     if input.Hillslope:
@@ -131,23 +142,18 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     # Compute sediment fluxes
     # Initial cumulative elevation change
     walltime = time.clock()
-    xyMin = [recGrid.regX.min()-1., recGrid.regY.min()-1.]
-    xyMax = [recGrid.regX.max()+1., recGrid.regY.max()+1.]
-    domain = path.Path([(xyMin[0],xyMin[1]),(xyMax[0],xyMin[1]), (xyMax[0],xyMax[1]), (xyMin[0],xyMax[1])])
-    insideIDs = domain.contains_points(flow.xycoords)
-
     ids = np.where(force.rivQs>0)
     tmp = force.rivQs[ids]
-    timestep, sedrate = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, xyMin, xyMax,
-                                          CFLtime, force.rivQs, force.sealevel, cumdiff,
-                                          input.perc_dep, input.slp_cr, input.diffsigma, verbose)
+    timestep, sedchange = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, borders, domain,
+                                          CFLtime, force.rivQs, force.sealevel, cumdiff, input.perc_dep,
+                                          input.slp_cr, input.diffsigma, FVmesh.neighbours, verbose)
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
 
     # Update surface parameters
-    #sedrate[:len(flow.parentIDs)] = sedrate[flow.parentIDs]
-    elevation += sedrate
-    cumdiff += sedrate
+    #sedchange[:len(flow.parentIDs)] = sedchange[flow.parentIDs]
+    elevation += sedchange
+    cumdiff += sedchange
 
     # Compute hillslope processes
     walltime = time.clock()
