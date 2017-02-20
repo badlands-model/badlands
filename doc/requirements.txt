@@ -1,3 +1,4 @@
 Sphinx
 mock
 numpy
+-e ../
