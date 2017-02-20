@@ -59,28 +59,31 @@ class isoFlex:
 
         Parameters
         ----------
-        variable : nx, ny
-            Number of points along the X and Y axis
+        nx
+            Number of points along the X axis
 
-        variable : youngMod
+        y
+            Number of points along the Y axis
+
+        youngMod
             Young's modulus
 
-        variable : mantleDensity
+        mantleDensity
             Mantle density
 
-        variable : sedimentDensity
+        sedimentDensity
             Sediment density
 
-        variable : elasticT
+        elasticT
             The elastic thickness. Can be scalar or an array
 
-        variable : Boundaries
+        Boundaries
             List of string describing boundary conditions for West, East, South and North.
 
             Choose from '0Slope0Shear', 'Dirichlet0', '0Displacement0Slope',
             '0Moment0Shear', 'Periodic', 'Mirror'
 
-        variable : xyTIN
+        xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
         """
         # Build the flexural grid
@@ -157,7 +160,9 @@ class isoFlex:
         """
         Update TIN variables after 3D displacements.
 
-        variable : xyTIN
+        Parameters
+        ----------
+        xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m2)
         """
 
@@ -188,24 +193,24 @@ class isoFlex:
 
         Parameters
         ----------
-        variable : elev
+        elev
             Numpy array containing TIN surface elevation
 
-        variable : cumdiff
+        cumdiff
             Numpy array containing TIN cumulative erosion/deposition
 
-        variable : boundsPt
+        boundsPt
             Number of points along the boundary
 
-        variable : sea
+        sea
             Sea-level.
 
-        variable : initFlex
+        initFlex
             Initialise simulation flexural values
 
-        Return
-        ----------
-        variable : flexureTIN
+        Returns
+        -------
+        flexureTIN
             Numpy array containing flexural deflection values for the TIN.
         """
 

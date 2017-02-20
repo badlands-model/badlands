@@ -37,9 +37,9 @@ class diffLinear:
         and therefore the maximal hillslope timestep to ensure stability just needs to be
         computed once for each given TIN grid.
 
-        **Parameters**
-
-        variable : edgelen
+        Parameters
+        ----------
+        edgelen
             Numpy arrays containing the edges of the TIN surface for the considered partition.
         """
 
@@ -70,19 +70,19 @@ class diffLinear:
         segment (i.e. height differences divided by the length of the mesh edge) as well as the length
         of the corresponding voronoi edge.
 
-        **Parameters**
-
-        variable : diff_flux
+        Parameters
+        ----------
+        diff_flux
             Numpy arrays representing for each node the sum of the ratio between the height differences
-            and  the length of the mesh edge multiply by the length of the corresponding voronoi edge.
+            and the length of the mesh edge multiply by the length of the corresponding voronoi edge.
 
-        variable : sea
+        sea
             Real value giving the sea-level height at considered time step.
 
-        variable : elevation
+        elevation
             Numpy arrays containing the elevation of the nodes.
 
-        variable : area
+        area
             Numpy arrays containing the area of the voronoi polygon for each TIN nodes.
         """
 

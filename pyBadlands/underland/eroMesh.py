@@ -30,44 +30,47 @@ class eroMesh():
 
         Parameters
         ----------
-        variable: layNb
+        layNb
             Total number of erosion stratigraphic layers
 
-        variable: eroMap
+        eroMap
             Erodibility map for each erosion stratigraphic layers
 
-        variable: eroVal
+        eroVal
             Erodibility value for each erosion stratigraphic layers
 
-        variable: eroTop
+        eroTop
             Erodibility value for reworked sediment
 
-        variable: thickMap
+        thickMap
             Thickness map for each erosion stratigraphic layers
 
-        variable: thickVal
+        thickVal
             Thickness value for each erosion stratigraphic layers
 
-        variable : xyTIN
+        xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
 
-        variable : folder
+        folder
             Name of the output folder.
 
-        float : regX
+        regX : float
             Numpy array containing the X-coordinates of the regular input grid.
 
-        float : regY
+        regY : float
             Numpy array containing the Y-coordinates of the regular input grid.
 
-        integer : bPts
+        bPts : integer
             Boundary points for the TIN.
 
-        integer : ePts
+        ePts : integer
             Boundary points for the regular grid.
 
-        variable: rfolder, rstep
-            Restart folder and step.
+        rfolder
+            Restart folder.
+
+        rstep
+            Restart step.
         """
 
         self.regX = regX
@@ -147,13 +150,13 @@ class eroMesh():
             # Bottom layer is supposed to be infinitely thick
             self.thickness[:,self.layNb-1] += 1.e6
 
-        return
-
     def getErodibility(self, cumThick):
         """
         Get the erodibility values for the surface based on underlying erosive stratigraphic layer.
 
-        variable : cumThick
+        Parameters
+        ----------
+        cumThick
             Numpy float-type array containing the cumulative erosion/deposition of the nodes in the TIN
         """
 
@@ -195,16 +198,13 @@ class eroMesh():
             if(len(numpy.where(self.erodibility == 0)[0]) == 0):
                 break
 
-        return
-
     def write_hdf5_erolay(self, outstep):
         """
         This function writes the HDF5 file containing erosive layers information.
 
         Parameters
         ----------
-
-        variable : outstep
+        outstep
             Output time step.
         """
 
@@ -219,6 +219,3 @@ class eroMesh():
             # Write erodibility for each layers
             f.create_dataset('elayKe',shape=(ptsNb,self.layNb), dtype='float32', compression='gzip')
             f["elayKe"][:,:self.layNb] = self.Ke
-
-
-        return

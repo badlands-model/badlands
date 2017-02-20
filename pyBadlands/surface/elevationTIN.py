@@ -25,26 +25,26 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
         1. Infinitely flat condition,
         2. Continuous slope condition.
 
-    Parameters:
-
-    variable : elevation
+    Parameters
+    ----------
+    elevation
         Numpy arrays containing the internal nodes elevation.
 
-    variable : neighbours
+    neighbours
         Numpy integer-type array containing for each nodes its neigbhours IDs.
 
-    variable : edge_length
+    edge_length
         Numpy float-type array containing the lengths to each neighbour.
 
-    variable : boundPts
+    boundPts
         Number of nodes on the edges of the TIN surface.
 
-    variable : btype
+    btype
         Integer defining the type of boundary: 0 for flat and 1 for slope condition.
 
-    Return:
-
-    variable: elevation
+    Returns
+    -------
+    elevation
         Numpy array containing the updated elevations on the edges.
     """
 
@@ -162,29 +162,30 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
         2. Continuous slope condition,
         3. Wall boundary (closed domain).
 
-    Parameters:
-
-    variable : elev
+    Parameters
+    ----------
+    elev
         Numpy arrays containing the internal nodes elevation.
 
-    variable : neighbours
+    neighbours
         Numpy integer-type array containing for each nodes its neigbhours IDs.
 
-    variable : edge_length
+    edge_length
         Numpy float-type array containing the lengths to each neighbour.
 
-    variable : boundPts
+    boundPts
         Number of nodes on the edges of the TIN surface.
 
-    variable : btype
+    btype
         Integer defining the type of boundary. Possible conditions are:
-            1. wall
-            2. flat: this is the default condition
-            3. slope
 
-    Return:
+        1. wall
+        2. flat: this is the default condition
+        3. slope
 
-    variable: newelev
+    Returns
+    -------
+    newelev
         Numpy array containing the updated elevations on the edges.
     """
 
@@ -209,20 +210,26 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
     """
     This function interpolates elevation from a regular grid to a cloud of points using SciPy interpolation.
 
-    Parameters:
+    Parameters
+    ----------
+    rX
+        Numpy arrays containing the X coordinates from the regular grid.
 
-    variable : rX, rY, rZ
-        Numpy arrays containing the X, Y & Z coordinates from the regular grid.
+    rY
+        Numpy arrays containing the Y coordinates from the regular grid.
 
-    variable : coords
+    rZ
+        Numpy arrays containing the Z coordinates from the regular grid.
+
+    coords
         Numpy float-type array containing X, Y coordinates for the TIN nodes.
 
-    variable : interp
+    interp
         Define the interpolation technique as in SciPy interpn function. The default is 'linear'
 
-    Return:
-
-    variable: elev
+    Returns
+    -------
+    lev
         Numpy array containing the updated elevations for the local domain.
     """
 
@@ -238,28 +245,28 @@ def assign_parameter_pit(neighbours, edge_length, area, diffslp, boundPts, fillT
     """
     This function defines global variables used in the pit filling algorithm.
 
-    Parameters:
-
-    variable : neighbours
+    Parameters
+    ----------
+    neighbours
         Numpy integer-type array containing for each nodes its neigbhours IDs.
 
-    variable : edge_length
+    edge_length
         Numpy float-type array containing the lengths to each neighbour.
 
-    variable : area
+    area
         Numpy float-type array containing the area of each cell.
 
-    variable : diffslp
+    diffslp
         Marine diffusion slope value.
 
-    variable : boundPts
+    boundPts
         Number of nodes on the edges of the TIN surface.
 
-    variable : fillTH
+    fillTH
         Limit the filling algorithm to a specific height to prevent complete filling of depression.
         Default is set to 1.0 metre.
 
-    variable : epsilon
+    epsilon
         Force a minimal slope to form the depression instead of a flat area to build continuous flow
         pathways. Default is set to 0.01 metres.
     """
@@ -272,20 +279,20 @@ def pit_stack_PD(elev, allFill, sealevel):
     This function calls a depression-less algorithm from Planchon & Darboux to compute the flow
     pathway using stack.
 
-    Parameters:
-
-    variable : elev
+    Parameters
+    ----------
+    elev
         Numpy arrays containing the nodes elevation.
 
-    variable : allFill
+    allFill
         Produce depression-less surface.
 
-    variable : sealevel
+    sealevel
         Current elevation of sea level.
 
-    Return:
-
-    variable: fillH
+    Returns
+    -------
+    fillH
         Numpy array containing the filled elevations.
     """
 

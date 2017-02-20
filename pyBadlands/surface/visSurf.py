@@ -41,21 +41,20 @@ class visSurf:
 
         Parameters
         ----------
-        variable : folder
+        folder
             Folder path to Badlands outputs.
 
-        variable: ncpus
+        ncpus
             Number of CPUs used to run the simulation.
 
-        variable: dx
+        dx
             Discretisation value in metres.
 
-        variable : timestep
+        timestep
             Time step to load.
 
-        variable : crange
+        crange
             Min/max plotting range for cumulative erosion/deposition [m].
-
         """
 
         self.folder = folder
@@ -92,9 +91,8 @@ class visSurf:
 
         Parameters
         ----------
-        variable : timestep
+        timestep
             Time step to load.
-
         """
 
         for i in range(0, self.ncpus):
@@ -173,32 +171,32 @@ class visSurf:
         """
         Use Plotly library to visualise a dataset over a surface in 3D.
 
-        Parameters:
-
-        variable: width
+        Parameters
+        ----------
+        width
             Figure width.
 
-        variable: height
+        height
             Figure height.
 
-        variable: zmin
+        zmin
             Minimal Z-axis value.
 
-        variable: zmax
+        zmax
             Maximal Z-axis value.
 
-        variable: color
+        color
             Color scale.
 
-        variable: reverse
+        reverse
             Reverse color scale.
 
-        variable: dataV
+        dataV
             Dataset to plot choices are 'z' for elevation, 'd' for
-            discharge (log-scale) and 'c' for cumulative erosion/
-            deposition changes.
+            discharge (log-scale) and 'c' for cumulative erosion/ deposition
+            changes.
 
-        variable: subsample
+        subsample
             Subsampling data everythin nth value.
         """
 
@@ -273,5 +271,3 @@ class visSurf:
 
         fig = Figure(data=data, layout=layout)
         plotly.offline.iplot(fig)
-
-        return

@@ -26,85 +26,85 @@ class forceSim:
 
     Parameters
     ----------
-    string : seafile
+    seafile : string
         Path to the sea level fluctuation file (if any).
 
-    float : sea0
+    sea0 : float
         Relative sea level position in case no sea level curve is provided (default is 0.).
 
-    string : MapRain
+    MapRain : string
         Numpy array containing the rain map file names.
 
-    float : TimeRain
+    TimeRain : float
         Numpy array containing the start and end times for each rain event in years.
 
-    float : ValRain
+    ValRain : float
         Value of precipitation rate for each rain event in m/a.
 
-    bool : orographic
+    orographic : bool
         Numpy boolean array defining orographic calculation if any.
 
-    float : rbgd
+    rbgd : float
         Numpy array of background precipitation.
 
-    float : rmin
+    rmin : float
         Numpy array of minimal precipitation.
 
-    float : rmax
+    rmax : float
         Numpy array of maximal precipitation.
 
-    float : windx
+    windx : float
         Numpy array of wind velocity along X.
 
-    float : windy
+    windy : float
         Numpy array of wind velocity along Y.
 
-    float : tauc
+    tauc : float
         Numpy array of time conversion from cloud water to hydrometeors.
 
-    float : tauf
+    tauf : float
         Numpy array of time for hydrometeor fallout.
 
-    float : nm
+    nm : float
         Numpy array of moist stability frequency.
 
-    float : cw
+    cw : float
         Numpy array of uplift sensitivity factor.
 
-    float : hw
+    hw : float
         Numpy array of depth of the moist layer.
 
-    float : ortime
+    ortime : float
         Numpy array of rain computation time step.
 
-    string : MapDisp
+    MapDisp : string
         Numpy array containing the cumulative displacement map file names.
 
-    float : TimeDisp
+    TimeDisp : float
         Numpy array containing the start and end times for each displacement period in years.
 
-    float : regX
+    regX : float
         Numpy array containing the X-coordinates of the regular input grid.
 
-    float : regY
+    regY : float
         Numpy array containing the Y-coordinates of the regular input grid.
 
-    float : rivPos
+    rivPos : float
         Numpy array containing the XY position of the rivers.
 
-    float : rivTime
+    rivTime : float
         Numpy array containing the active time for the rivers.
 
-    float : rivQws
+    rivQws : float
         Numpy array containing the water and sediment discharge for the rivers.
 
-    float : rivWth
+    rivWth : float
         Numpy array containing the width of the rivers.
 
-    int : rivNb
+    rivNb : int
         Number of rivers.
 
-    float : Tdisplay
+    Tdisplay : float
         Display interval (in years).
     """
 
@@ -173,8 +173,6 @@ class forceSim:
         if self.seafile != None:
             self._build_Sea_function()
 
-        return
-
     def _build_Sea_function(self):
         """
         Using Pandas library to read the sea level file and define sea level interpolation
@@ -190,15 +188,13 @@ class forceSim:
         self.seaval = seadata.values[:,1]
         self.seaFunc = interpolate.interp1d(self.seatime, self.seaval, kind='linear')
 
-        return
-
     def getSea(self, time):
         """
         Computes for a given time the sea level according to input file parameters.
 
         Parameters
         ----------
-        float : time
+        time : float
             Requested time for which to compute sea level elevation.
         """
 
@@ -211,8 +207,6 @@ class forceSim:
                 time = self.seatime.max()
             self.sealevel = self.seaFunc(time)
 
-        return
-
     def getRivers(self, time):
         """
         Finds for a given time the active rivers and allocates corresponding points with
@@ -220,15 +214,15 @@ class forceSim:
 
         Parameters
         ----------
-        float : time
+        time : float
             Requested time for which to compute sea level elevation.
 
-        Return
-        ----------
-        variable: rivQw
+        Returns
+        -------
+        rivQw
             Numpy array containing flow discharge from rivers.
 
-        variable: rivQs
+        rivQs
             Numpy array containing sediment discharge from rivers.
         """
 
@@ -253,20 +247,18 @@ class forceSim:
                         self.rivQw[ids] += riv_qw
                         self.rivQs[ids] += riv_qs
 
-        return
-
     def update_force_TIN(self, tXY):
         """
         Update TIN variables after 3D displacements.
 
-        variable : tXY
+        Parameters
+        ----------
+        tXY
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m2)
         """
         self.tXY = tXY
         self.tree = cKDTree(self.tXY)
         self.dx = self.tXY[1,0] - self.tXY[0,0]
-
-        return
 
     def get_Rain(self, time, elev, inIDs):
         """
@@ -274,18 +266,18 @@ class forceSim:
 
         Parameters
         ----------
-        float : time
+        time : float
             Requested time interval rain map to load.
 
-        float : elev
+        elev : float
             Unstructured grid (TIN) Z coordinates.
 
-        integer : inDs
+        inDs : integer
             List of unstructured vertices contained in each partition.
 
-        Return
-        ----------
-        variable: tinRain
+        Returns
+        -------
+        tinRain
             Numpy array containing the updated rainfall for the local domain.
         """
 
@@ -319,18 +311,18 @@ class forceSim:
 
         Parameters
         ----------
-        float : event
+        event : float
             rain event number.
 
-        float : elev
+        elev : float
             Unstructured grid (TIN) Z coordinates.
 
-        integer : inDs
+        inDs : integer
             List of unstructured vertices contained in each partition.
 
-        Return
-        ----------
-        variable: tinRain
+        Returns
+        -------
+        tinRain
             Numpy array containing the updated rainfall for the local domain.
         """
 
@@ -366,21 +358,21 @@ class forceSim:
 
         Parameters
         ----------
-        variable : disp
+        disp
             Numpy arrays containing the internal nodes displacement value.
 
-        variable : neighbours
+        neighbours
             Numpy integer-type array containing for each nodes its neigbhours IDs.
 
-        variable : edge_length
+        edge_length
             Numpy float-type array containing the lengths to each neighbour.
 
-        variable : boundPts
+        boundPts
             Number of nodes on the edges of the TIN surface.
 
-        Return
-        ----------
-        variable: disps
+        Returns
+        -------
+        disps
             Numpy array containing the updated displacements on the edges.
         """
 
@@ -417,15 +409,15 @@ class forceSim:
 
         Parameters
         ----------
-        float : time
+        time : float
             Requested time interval rain map to load.
 
-        integer : inDs
+        inDs : integer
             List of unstructured vertices contained in each partition.
 
-        Return
-        ----------
-        variable: tinDisp
+        Returns
+        -------
+        tinDisp
             Numpy array containing the updated displacement rate for the local domain.
         """
 
@@ -462,22 +454,22 @@ class forceSim:
 
         Parameters
         ----------
-        float : time
+        time : float
             Requested time interval rain map to load.
 
-        float : tXY
+        tXY : float
             Unstructured grid (TIN) XY coordinates.
 
-        integer : inIDs
+        inIDs : integer
             List of unstructured vertices contained in each partition.
 
-        boolean : strata
+        strata : boolean
             Stratigraphic module flag.
 
-        float : sXY
+        sXY : float
             Stratigraphic regular grid XY coordinates.
 
-        integer : insIDs
+        insIDs : integer
             List of stratigraphic vertices contained in each partition.
         """
 
@@ -573,62 +565,61 @@ class forceSim:
 
         Parameters
         ----------
-        float : area
+        area : float
             Averaged area of the irregular grid delaunay cells.
 
-        integer : fixIDs
+        fixIDs : integer
             Number of unstructured vertices which needs to stay fix (edges and borders nodes).
 
-        float : elev
+        elev : float
             Numpy array with elevation of previous TIN nodes.
 
-        float : tcum
+        tcum : float
             Numpy array with erosion/deposition values from previous TIN nodes.
 
-        float : tflex
+        tflex : float
             Numpy array with cumulative flexural values from previous TIN nodes.
 
-        float : scum
+        scum : float
             Numpy array with erosion/deposition used for stratal mesh.
 
-        float : Te
+        Te : float
             Numpy array with thickness used for erosional mesh.
 
-        float : Ke
+        Ke : float
             Numpy array with erodibility used for erosional mesh.
 
-        integer : flexure
+        flexure : integer
             Integer flagging flexural isostasy.
 
-        integer : strat
+        strat : integer
             Integer flagging stratigraphic mesh model.
 
-        integer : ero
+        ero : integer
             Integer flagging erosional mesh model.
 
-        Return
-        ----------
-        variable: tinMesh
+        Returns
+        -------
+        tinMesh
             Delaunay mesh generated after displacements.
 
-        variable: newelev
+        newelev
             Numpy array containing the updated elevation for the new TIN.
 
-        variable: newcum
+        newcum
             Numpy array containing the updated erosion/deposition values for the new TIN.
 
-        variable: newcumf
+        newcumf
             Numpy array containing the updated cumulative flexural values for the new TIN.
 
-        variable: newscum
+        newscum
             Numpy array containing the updated erosion/deposition values used in the stratal mesh.
 
-        variable: newKe
+        newKe
             Numpy array containing the updated erodibility values for the new TIN.
 
-        variable: newTe
+        newTe
             Numpy array containing the updated thickness values used in the erosional mesh.
-
         """
 
         # Apply displacements to TIN points (excluding boundary points)

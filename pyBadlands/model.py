@@ -35,6 +35,14 @@ class Model(object):
     def load_xml(self, filename, verbose=False):
         """
         Load an XML configuration file.
+
+        Parameters
+        ----------
+        filename : string
+            Path to the XML file to load.
+
+        verbose : bool
+            When True, output additional debug information.
         """
 
         # only the first node should create a unique output dir
@@ -58,7 +66,6 @@ class Model(object):
             self.build_mesh(self.input.demfile, verbose)
 
     def build_mesh(self, filename, verbose):
-
         # Construct Badlands mesh and grid to run simulation
         self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, parentIDs, \
             self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumflex, self.strata, \
@@ -133,7 +140,16 @@ class Model(object):
         """
         Run the simulation to a specified point in time (tEnd).
 
-        If profile is True, dump cProfile output to /tmp.
+        Parameters
+        ----------
+        tEnd : float
+            Run the simulation to this many years.
+
+        profile : bool
+            If True, dump cProfile output to /tmp.
+
+        verbose : bool
+            If True, output additional debug information.
         """
         if profile:
             pid = os.getpid()

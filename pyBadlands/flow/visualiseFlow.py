@@ -19,26 +19,29 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
     """
     This function defines the connectivity array for visualising flow network.
 
-    **Parameters**
-
-    variable : outPts
+    Parameters
+    ----------
+    outPts
         Numpy integer-type array containing the output node IDs.
 
-    variable: inIDs
+    inIDs
         Numpy array containing the receiver node IDs.
 
-    variable: visXlim, visYlim
+    visXlim
         Numpy array containing the extent of visualisation grid.
 
-    variable: coordXY
+    visYlim
+        Numpy array containing the extent of visualisation grid.
+
+    coordXY
         Numpy float-type array containing X, Y coordinates of the local nodes.
 
-    **Return**
-
-    variable: flowIDs
+    Returns
+    -------
+    flowIDs
         Numpy integer-type array containing the output node IDs for the flow network.
 
-    variable: polyline
+    polyline
         Numpy 2D integer-type array containing the connectivity IDs for each polyline.
     """
 
@@ -89,36 +92,36 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, basin, c
     """
     This function writes for each processor the HDF5 file containing flow network information.
 
-    **Parameters**
-
-    variable : folder
+    Parameters
+    ----------
+    folder
         Name of the output folder.
 
-    variable: h5file
+    h5file
         First part of the hdf5 file name.
 
-    variable: step
+    step
         Output visualisation step.
 
-    variable : coords
+    coords
         Numpy float-type array containing X, Y coordinates of the local TIN nodes.
 
-    variable : elevation
+    elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
 
-    variable : discharge
+    discharge
         Numpy float-type array containing the discharge values of the local TIN.
 
-    variable : chi
+    chi
         Numpy float-type array containing the chi values of the local TIN.
-
-    variable : basin
+        
+    basin
         Numpy integer-type array containing the basin IDs values of the local TIN.
 
-    variable: connect
+    connect
         Numpy 2D integer-type array containing the local nodes IDs for each connected network.
 
-    variable : rank
+    rank
         ID of the local partition.
     """
 
@@ -142,24 +145,22 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, basin, c
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
 
-    return
-
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """
     This function writes the XDmF file which is calling the XmF file.
 
     Parameters
     ----------
-    variable : folder
+    folder
         Name of the output folder.
 
-    variable: xdmffile
+    xdmffile
         XDmF file name.
 
-    variable: xmffile
+    xmffile
         First part of the XmF file name.
 
-    variable: step
+    step
         Output visualisation step.
     """
 
@@ -180,39 +181,35 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
     f.write('</Xdmf>\n')
     f.close()
 
-    return
-
 def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size):
     """
     This function writes the XmF file which is calling each HFD5 file.
 
-    **Parameters**
+    Parameters
+    ----------
 
-    variable : folder
+    folder
         Name of the output folder.
 
-    variable: xmffile
+    xmffile
         First part of the XmF file name.
 
-    variable: step
+    step
         Output visualisation step.
 
-    variable : time
+    time
         Simulation time.
 
-    variable : elems
+    elems
         Numpy integer-type array containing the number of elements of each local partition.
 
-    variable : nodes
+    nodes
         Numpy integer-type array containing the number of nodes of each local partition.
 
-    variable : nodes
-        Numpy float-type array containing the discharge values of the local TIN.
-
-    variable: h5file
+    h5file
         First part of the hdf5 file name.
 
-    variable : size
+    size
         Number of partitions.
     """
 
@@ -264,5 +261,3 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
     f.close()
 
     _write_xdmf(folder, xdmffile, xmffile, step)
-
-    return

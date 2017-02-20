@@ -18,31 +18,31 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
     """
     This function defines the cells used for visualising the TIN surface.
 
-    Parameters:
-
-    variable : lGIDs
+    Parameters
+    ----------
+    lGIDs
         Numpy integer-type array filled with the global vertex IDs for each local grid located
         within the partition (including those on the edges).
 
-    variable: inIDs
+    inIDs
         Numpy integer-type array filled with the global vertex IDs for each local grid located
         within the partition (not those on the edges).
 
-    variable: visXlim, visYlim
+    visXlim, visYlim
         Numpy array containing the extent of visualisation grid.
 
-    variable: coords
+    coords
         Numpy float-type array containing X, Y coordinates of the local TIN nodes.
 
-    variable: cells
+    cells
         Numpy integer-type array filled with the global cell IDs.
 
-    Return:
-
-    variable: outPts
+    Returns
+    -------
+    outPts
         Numpy integer-type array containing the output node IDs.
 
-    variable: cells
+    cells
         Numpy integer-type array containing the output cell IDs.
     """
 
@@ -82,48 +82,48 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
     """
     This function writes for each processor the HDF5 file containing surface information.
 
-    Parameters:
-
-    variable : folder
+    Parameters
+    ----------
+    folder
         Name of the output folder.
 
-    variable: h5file
+    h5file
         First part of the hdf5 file name.
 
-    variable: step
+    step
         Output visualisation step.
 
-    variable : coords
+    coords
         Numpy float-type array containing X, Y coordinates of the local TIN nodes.
 
-    variable : sealevel
+    sealevel
         Level of sea water
 
-    variable : elevation
+    elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
 
-    variable : rain
+    rain
         Numpy float-type array containing rain value of the local TIN nodes.
 
-    variable : discharge
+    discharge
         Numpy float-type array containing the discharge values of the local TIN.
 
-    variable : cumdiff
+    cumdiff
         Numpy float-type array containing the cumulative elevation changes values of the local TIN.
 
-    variable : erodibility
+    erodibility
         Numpy float-type array containing the top surface erodibility values of the local TIN.
 
-    variable: cells
+    cells
         Numpy integer-type array filled with the global cell IDs.
 
-    variable : rank
+    rank
         ID of the local partition.
 
-    variable : rainOn
+    rainOn
         Boolean for orographic precipitation.
 
-    variable : eroOn
+    eroOn
         Boolean for erodibility values.
     """
 
@@ -157,48 +157,48 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
     """
     This function writes for each processor the HDF5 file containing surface information.
 
-    Parameters:
-
-    variable : folder
+    Parameters
+    ----------
+    folder
         Name of the output folder.
 
-    variable: h5file
+    h5file
         First part of the hdf5 file name.
 
-    variable: step
+    step
         Output visualisation step.
 
-    variable : coords
+    coords
         Numpy float-type array containing X, Y coordinates of the local TIN nodes.
 
-    variable : elevation
+    elevation
         Numpy float-type array containing Z coordinates of the local TIN nodes.
 
-    variable : rain
+    rain
         Numpy float-type array containing rain value of the local TIN nodes.
 
-    variable : discharge
+    discharge
         Numpy float-type array containing the discharge values of the local TIN.
 
-    variable : cumdiff
+    cumdiff
         Numpy float-type array containing the cumulative elevation changes values of the local TIN.
 
-    variable : erodibility
+    erodibility
         Numpy float-type array containing the top surface erodibility values of the local TIN.
 
-    variable : cumflex
+    cumflex
         Numpy float-type array containing the cumulative flexural changes values of the local TIN.
 
-    variable: cells
+    cells
         Numpy integer-type array filled with the global cell IDs.
 
-    variable : rank
+    rank
         ID of the local partition.
 
-    variable : rainOn
+    rainOn
         Boolean for orographic precipitation.
 
-    variable : eroOn
+    eroOn
         Boolean for erodibility values.
     """
 
@@ -234,18 +234,18 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
     """
     This function writes the XDmF file which is calling the XmF file.
 
-    Parameters:
-
-    variable : folder
+    Parameters
+    ----------
+    folder
         Name of the output folder.
 
-    variable: xdmffile
+    xdmffile
         XDmF file name.
 
-    variable: xmffile
+    xmffile
         First part of the XmF file name.
 
-    variable: step
+    step
         Output visualisation step.
     """
 
@@ -273,45 +273,42 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
     """
     This function writes the XmF file which is calling each HFD5 file.
 
-    Parameters:
-
-    variable : folder
+    Parameters
+    ----------
+    folder
         Name of the output folder.
 
-    variable: xmffile
+    xmffile
         First part of the XmF file name.
 
-    variable: step
+    step
         Output visualisation step.
 
-    variable : t
+    t
         Simulation time.
 
-    variable : elems
+    elems
         Numpy integer-type array containing the number of cells of each local partition.
 
-    variable : nodes
+    nodes
         Numpy integer-type array containing the number of nodes of each local partition.
 
-    variable : nodes
-        Numpy float-type array containing the discharge values of the local TIN.
-
-    variable: h5file
+    h5file
         First part of the hdf5 file name.
 
-    variable: sealevel
+    sealevel
         Sealevel elevation.
 
-    variable : size
+    size
         Number of partitions.
 
-    variable : flexOn
+    flexOn
         Boolean for flexural isostasy.
 
-    variable : rainOn
+    rainOn
         Boolean for orographic precipitation.
 
-    variable : eroOn
+    eroOn
         Boolean for erodibility values.
     """
 
@@ -382,5 +379,3 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
     f.close()
 
     _write_xdmf(folder, xdmffile, xmffile, step)
-
-    return

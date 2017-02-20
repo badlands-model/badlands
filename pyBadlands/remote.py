@@ -21,7 +21,7 @@ class RemoteModel(object):
     MPI details.
 
     The public interface is identical to Model, so you should be able to
-    substitute one for the other as desired..
+    substitute one for the other as desired.
 
     We use MPI in a master-slave architecture. This object runs on the master
     and handles all communication with the slaves. The slaves run the native
@@ -45,12 +45,33 @@ class RemoteModel(object):
         # self._view.apply(relog)
 
     def load_xml(self, filename, verbose=False):
+        """
+        Load an XML configuration file.
+
+        Parameters
+        ----------
+        filename : string
+            Path to the XML file to load.
+
+            All slave nodes must have the same filesystem layout as the master.
+
+        verbose : bool
+            If True, output additional debug information.
+        """
         cwd = os.getcwd()
         self._view.execute('import os')
         self._view.execute('os.chdir("%s")' % cwd)
         self._view.execute('model.load_xml(filename="%s", verbose=%s)' % (filename, verbose))
 
     def run_to_time(self, tEnd):
+        """
+        Run the simulation to a specified point in time (tEnd).
+
+        Parameters
+        ----------
+        tEnd : float
+            Run the simulation to this many years.
+        """
         self._view.execute('model.run_to_time(%s)' % tEnd)
 
     def ncpus(self):
@@ -63,7 +84,6 @@ class RemoteModel(object):
 
     def __setattr__(self, name, value):
         """If we don't define an attribute locally, write its value to all nodes"""
-
         if name in RemoteModel.REMOTEMODEL_ATTRIBUTES:
             self.__dict__[name] = value
         else:

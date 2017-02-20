@@ -95,12 +95,22 @@ class flowNetwork:
         """
         Perform hillslope evolution based on diffusion processes.
 
-        Parameters:
-            elev: Numpy arrays containing the elevation of the TIN nodes.
-            neighbours: Numpy integer-type array with the neighbourhood IDs.
-            edges: Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
-            distances: Numpy real-type array with the distances between each connection in the TIN.
-            globalIDs: Numpy integer-type array containing for local nodes their global IDs.
+        Parameters
+        ----------
+        elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        neighbours
+            Numpy integer-type array with the neighbourhood IDs.
+
+        edges
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+
+        distances
+            Numpy real-type array with the distances between each connection in the TIN.
+
+        globalIDs
+            Numpy integer-type array containing for local nodes their global IDs.
         """
         diff_flux = sfd.diffusion(elev, neighbours, edges, distances, globalIDs)
 
@@ -116,22 +126,22 @@ class flowNetwork:
 
         Parameters
         ----------
-        variable : fillH
+        fillH
             Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
 
-        variable : elev
+        elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        variable : neighbours
+        neighbours
             Numpy integer-type array with the neighbourhood IDs.
 
-        variable : edges
+        edges
             Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
 
-        variable : distances
+        distances
             Numpy real-type array with the distances between each connection in the TIN.
 
-        variable: globalIDs
+        globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
         """
 
@@ -181,8 +191,6 @@ class flowNetwork:
         self.arrdonor[:(maxID+1)] = numpy.bincount(self.receivers)
         self.maxdonors = self.arrdonor.max()
 
-        return
-
     def _delta_array(self):
         """
         Creates the "delta" array, which is a list containing, for each
@@ -195,8 +203,6 @@ class flowNetwork:
         self.delta.fill(nbdonors)
         self.delta[-2::-1] -= numpy.cumsum(self.arrdonor[::-1])
 
-        return
-
     def _donors_number_array1(self):
         """
         Creates an array containing the number of donors for each node.
@@ -208,8 +214,6 @@ class flowNetwork:
         maxID = numpy.max(self.receivers1)
         self.arrdonor[:(maxID+1)] = numpy.bincount(self.receivers1)
         self.maxdonors = self.arrdonor.max()
-
-        return
 
     def _delta_array1(self):
         """
@@ -244,8 +248,6 @@ class flowNetwork:
         stids = numpy.where(lstcks > -1 )[0]
         self.localstack = lstcks[stids]
 
-        return
-
     def ordered_node_array_elev(self):
         """
         Creates an array of node IDs that is arranged in order from downstream
@@ -265,18 +267,16 @@ class flowNetwork:
         stids = numpy.where(lstcks > -1 )[0]
         self.localstack1 = lstcks[stids]
 
-        return
-
     def compute_flow(self, Acell, rain):
         """
         Calculates the drainage area and water discharge at each node.
 
         Parameters
         ----------
-        variable : Acell
-            Numpy float-type array containing the voronoi area for each nodes (in m2)
+        Acell
+            Numpy float-type array containing the voronoi area for each nodes (in m^2)
 
-        variable : rain
+        rain
             Numpy float-type array containing the precipitation rate for each nodes (in m/a).
         """
 
@@ -314,22 +314,23 @@ class flowNetwork:
         self.chi = chi
         self.basinID = basinID
 
-        return
-
     def compute_parameters_depression(self, fillH, elev, Acell, sealevel, debug=False):
         """
         Calculates each depression maximum deposition volume and its downstream draining node.
 
-        variable : fillH
+        Parameters
+        ----------
+
+        fillH
             Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
 
-        variable : elev
+        elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        variable : Acell
+        Acell
             Numpy float-type array containing the voronoi area for each nodes (in m2)
 
-        variable : sealevel
+        sealevel
             Real value giving the sea-level height at considered time step.
         """
 
@@ -369,8 +370,6 @@ class flowNetwork:
             self.pitDrain = -numpy.ones(len(pitID))
             self.allDrain = -numpy.ones(len(pitID))
 
-        return
-
     def compute_sedflux(self, Acell, elev, fillH, xymin, xymax, dt, rivqs, sealevel,
         cumdiff, perc_dep, slp_cr, sigma, verbose=False):
         """
@@ -378,40 +377,40 @@ class flowNetwork:
 
         Parameters
         ----------
-        variable : Acell
-            Numpy float-type array containing the voronoi area for each nodes (in m2)
+        Acell
+            Numpy float-type array containing the voronoi area for each nodes (in m^2)
 
-        variable : elev
+        elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        variable : fillH
+        fillH
             Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
 
-        variable : xymin
+        xymin
             Numpy array containing the minimal XY coordinates of TIN grid (excuding border cells).
 
-        variable : xymax
+        xymax
             Numpy array containing the maximal XY coordinates of TIN grid (excuding border cells).
 
-        variable : dt
+        dt
             Real value corresponding to the maximal stability time step.
 
-        variable : rivqs
+        rivqs
             Numpy arrays representing the sediment fluxes from rivers.
 
-        variable : sealevel
+        sealevel
             Real value giving the sea-level height at considered time step.
 
-        variable : cumdiff
+        cumdiff
             Numpy array containing the cumulative deposit thicknesses.
 
-        variable : slp_cr
+        slp_cr
             Critical slope used to force aerial deposition for alluvial plain.
 
-        variable : perc_dep
+        perc_dep
             Maximum percentage of deposition at any given time interval.
 
-        variable : sigma
+        sigma
             Marine sedimentation gaussian filter parameter.
         """
 
@@ -598,10 +597,10 @@ class flowNetwork:
 
         Parameters
         ----------
-        variable : diff
+        diff
             Numpy arrays containing the deposition thicknesses.
 
-        variable : dsmooth
+        dsmooth
             Smoothing parameter.
         """
 
@@ -666,10 +665,10 @@ class flowNetwork:
 
         Parameters
         ----------
-        variable : elev
+        elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        variable: locIDs
+        locIDs
             Numpy integer-type array containing for local nodes their global IDs.
         """
 
@@ -696,16 +695,16 @@ class flowNetwork:
 
         Parameters
         ----------
-        variable : pIDs
+        pIDs
             Numpy array containing all depression node IDs.
 
-        variable : elev
+        elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        variable : drain
+        drain
             Numpy arrays containing the draining pit ID.
 
-        variable : filename
+        filename
             Name of the output file.
         """
 
@@ -759,5 +758,3 @@ class flowNetwork:
 
         # df = pd.DataFrame({'X':self.xycoords[:,0],'Y':self.xycoords[:,1],'Z':elev[:],'W':fillH[:]})
         # df.to_csv(filename+'water.csv',columns=['X', 'Y', 'Z', 'W'], sep=',', index=False)
-
-        return

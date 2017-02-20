@@ -26,16 +26,16 @@ class strataMesh():
 
     Parameters
     ----------
-    variable: stratIn
+    stratIn
         Numpy array flaging the presence of a stratigraphic layer for each node
 
-    variable: stratElev
+    stratElev
         Numpy array containing the relative elevation of the layer at the time of deposition
 
-    variable: stratThick
+    stratThick
         Numpy array containing the thickness of each stratigraphic layer
 
-    variable: stratDepth
+    stratDepth
         Numpy array containing the current depth of each stratigraphic layer
     """
 
@@ -46,34 +46,37 @@ class strataMesh():
 
         Parameters
         ----------
-        variable: sdx
+        sdx
             Discretisation value [m]
 
-        variable: bbX
+        bbX
             Extent of stratal regular grid along X
 
-        variable: bbY
+        bbY
             Extent of stratal regular grid along Y
 
-        variable: layNb
+        layNb
             Total number of stratigraphic layers
 
-        variable : xyTIN
+        xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
 
-        variable : folder
+        folder
             Name of the output folder.
 
-        variable: h5file
+        h5file
             First part of the hdf5 file name.
 
-        variable: cumdiff
+        cumdiff
             Numpy array containing  cumulative erosion/deposition from previous simulation.
 
-        variable: rfolder, rstep
-            Restart folder and step.
+        rfolder
+            Restart folder.
+        
+        rstep
+            Restart step.
 
-        variable: regionID
+        regionID
             Stratal domain ID.
         """
 
@@ -157,12 +160,12 @@ class strataMesh():
                 fcum[onIDs] = cumdiff[indices[onIDs,0]]
             self.oldload = cumdiff
 
-        return
-
     def update_TIN(self, xyTIN):
         """
         Update stratal mesh after 3D displacements.
 
+        Parameters
+        ----------
         variable : xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
         """
@@ -170,19 +173,19 @@ class strataMesh():
         # Update TIN grid kdtree for interpolation
         self.tree = cKDTree(xyTIN)
 
-        return
-
     def move_mesh(self, dispX, dispY, cumdiff, verbose=False):
         """
         Update stratal mesh after 3D displacements.
 
-        variable : dispX
+        Parameters
+        ----------
+        dispX
             Numpy float-type array containing X-displacement for each nodes in the stratal mesh
 
-        variable : dispY
+        dispY
             Numpy float-type array containing Y-displacement for each nodes in the stratal mesh
 
-        variable : cumdiff
+        cumdiff
             Numpy float-type array containing the cumulative erosion/deposition of the nodes in the TIN
         """
 
@@ -338,28 +341,28 @@ class strataMesh():
 
         self.oldload = numpy.copy(cumdiff)
 
-        return
-
     def buildStrata(self, elev, cumdiff, sea, rank, write=0, outstep=0):
         """
         Build the stratigraphic layer on the regular grid.
 
-        variable : elev
+        Parameters
+        ----------
+        elev
             Numpy float-type array containing the elevation of the nodes in the TIN
 
-        variable : cumdiff
+        cumdiff
             Numpy float-type array containing the cumulative erosion/deposition of the nodes in the TIN
 
-        variable : sea
+        sea
             Sea level elevation
 
-        variable : rank
+        rank
             Rank of the given processor
 
-        variable : write
+        write
             Flag for output generation
 
-        variable : outstep
+        outstep
             Step for output generation
         """
 
@@ -464,10 +467,10 @@ class strataMesh():
 
         Parameters
         ----------
-        variable: ids
+        ids
             Index of points subject to deposition
 
-        variable: depo
+        depo
             Value of the deposition for the given point [m]
         """
 
@@ -486,10 +489,10 @@ class strataMesh():
 
         Parameters
         ----------
-        variable: nids
+        nids
             Index of points subject to erosion
 
-        variable: erosion
+        erosion
             Value of the erosion for the given points [m]
         """
 
@@ -535,8 +538,7 @@ class strataMesh():
 
         Parameters
         ----------
-
-        variable: topsurf
+        topsurf
             Elevation of the regular surface
         """
 
@@ -567,17 +569,15 @@ class strataMesh():
 
         Parameters
         ----------
-
-        variable : outstep
+        outstep
             Output time step.
 
-        variable : rank
+        rank
             ID of the local partition.
         """
 
         sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p'+str(rank)+'.hdf5'
         with h5py.File(sh5file, "w") as f:
-
             # Write node coordinates
             f.create_dataset('coords',shape=(self.ptsNb,2), dtype='float32', compression='gzip')
             f["coords"][:,:2] = self.xyi[self.ids]
@@ -593,5 +593,3 @@ class strataMesh():
             # Write stratal layers thicknesses per cells
             f.create_dataset('layThick',shape=(self.ptsNb,self.step+1), dtype='float32', compression='gzip')
             f["layThick"][:,:self.step+1] = self.stratThick[self.ids,:self.step+1]
-
-        return

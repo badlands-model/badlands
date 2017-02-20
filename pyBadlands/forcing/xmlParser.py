@@ -18,17 +18,17 @@ import xml.etree.ElementTree as ET
 class xmlParser:
     """
     This class defines XmL input file variables.
-
-    Parameters
-    ----------
-    string : inputfile
-        The XmL input file name.
     """
 
     def __init__(self, inputfile = None, makeUniqueOutputDir=True):
         """
         If makeUniqueOutputDir is set, we create a uniquely-named directory for
         the output. If it's clear, we blindly accept what's in the XML file.
+
+        Parameters
+        ----------
+        inputfile : string
+            The XmL input file name.
         """
 
         if inputfile==None:
@@ -137,8 +137,6 @@ class xmlParser:
         self.thickVal = None
 
         self._get_XmL_Data()
-
-        return
 
     def _get_XmL_Data(self):
         """
@@ -1033,5 +1031,3 @@ class xmlParser:
             os.makedirs(self.outDir+'/h5')
             os.makedirs(self.outDir+'/xmf')
             shutil.copy(self.inputfile,self.outDir)
-
-        return

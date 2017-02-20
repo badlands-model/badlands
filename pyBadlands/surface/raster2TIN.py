@@ -34,38 +34,39 @@ class raster2TIN:
         1. to read and store the regular grid coordinates in numpy arrays format
         2. to define the edges of the grid computation by adding ghost vertices
 
-    Parameters:
-        string : inputfile
-            This is a string containing the path to the regular grid file.
+    Parameters
+    ----------
+    inputfile : string
+        This is a string containing the path to the regular grid file.
 
-        integer : rank
-            Rank of processor.
+    rank : integer
+        Rank of processor.
 
-        string : delimiter
-            The delimiter between columns from the regular grid file. The regular file contains
-            coordinates of each nodes and is ordered by row from SW to NE corner. The file has no
-            header.
-            Default: ' '
+    delimiter : string
+        The delimiter between columns from the regular grid file. The regular file contains
+        coordinates of each nodes and is ordered by row from SW to NE corner. The file has no
+        header.
 
-        variable: resRecFactor
-            This integer gives the factor that will be used to define the resolution of the
-            irregular grid edges
+        Default: ' '
 
-                >> TIN edges resolution = DEM resolution x resRecFactor
+    resRecFactor
+        This integer gives the factor that will be used to define the resolution of the
+        irregular grid edges
 
-            Default: 1
+            >> TIN edges resolution = DEM resolution x resRecFactor
 
-        variable: areaDelFactor
-            This integer gives the factor that will be used to define the averaged area of the
-            irregular grid delaunay cells
+        Default: 1
 
-                >> TIN cells resolution = areaDelFactor x (TIN edges resolution)^2
+    areaDelFactor
+        This integer gives the factor that will be used to define the averaged area of the
+        irregular grid delaunay cells
 
-            Default: 1
+            >> TIN cells resolution = areaDelFactor x (TIN edges resolution)^2
+
+        Default: 1
     """
 
     def __init__(self, inputfile=None, rank=0, delimiter=r'\s+', resRecFactor=1, areaDelFactor=1):
-
         if inputfile==None:
             raise RuntimeError('DEM input file name must be defined to construct Badlands irregular grid.')
         if not os.path.isfile(inputfile):
@@ -243,23 +244,23 @@ class raster2TIN:
         """
         Read the HDF5 file for a given time step.
 
-        Parameters:
-
-        variable : restartFolder
+        Parameters
+        ----------
+        restartFolder
             Restart folder name.
 
-        variable : timestep
+        timestep
             Time step to load.
 
-        variable : tXY
+        tXY
             TIN grid local coordinates.
 
-        Return:
-
-        variable: elev
+        Returns
+        -------
+        elev
             Numpy array containing the updated elevation from the restart model.
 
-        variable: cum
+        cum
             Numpy array containing the updated erosion/deposition values from the restart model.
         """
 
@@ -311,26 +312,26 @@ class raster2TIN:
         """
         Read the HDF5 file for a given time step when flexural isostasy is on.
 
-        Parameters:
-
-        variable : restartFolder
+        Parameters
+        ----------
+        restartFolder
             Restart folder name.
 
-        variable : timestep
+        timestep
             Time step to load.
 
-        variable : tXY
+        tXY
             TIN grid local coordinates.
 
-        Return:
-
-        variable: elev
+        Returns
+        -------
+        elev
             Numpy array containing the updated elevation from the restart model.
 
-        variable: cum
+        cum
             Numpy array containing the updated erosion/deposition values from the restart model.
 
-        variable: cumf
+        cumf
             Numpy array containing the cumulative flexural isostasy values from the restart model.
         """
 
