@@ -89,6 +89,7 @@ class Model(object):
         self.flow.xycoords = self.FVmesh.node_coords[:,:2]
         self.flow.spl = self.input.spl
         self.flow.depo = self.input.depo
+        self.flow.xgrid = None
 
         reassignID = np.where(parentIDs < len(parentIDs))[0]
         if(len(reassignID)>0):
@@ -135,6 +136,7 @@ class Model(object):
             self.flow.erodibility = self.mapero.erodibility
 
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
+        self.flow.xgrid = None
 
     def run_to_time(self, tEnd, profile=False, verbose=False):
         """

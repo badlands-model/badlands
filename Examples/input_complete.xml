@@ -218,9 +218,9 @@
              structure is turned on, this coefficient is applied to the reworked
              sediments. -->
         <erodibility>1.e-6</erodibility>
-        <!-- Maximal marine sedimentation depositional slope used to transport
-             sediment in the marine realm. Default value is 1 in [m/m] (optional) -->
-        <marslp>0.05</marslp>
+        <!-- Number of steps used to distribute marine deposit.
+             Default value is 5 (integer). -->
+        <diffnb>5</diffnb>
         <!-- Marine sedimentation gaussian filtering parameter. Default value is
              set to 0. (optional) -->
         <sigma>2.</sigma>

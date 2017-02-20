@@ -81,11 +81,16 @@ class flowNetwork:
         self.allDrain = None
 
         self.xgrid = None
-        self.xgrid = None
+        self.ygrid = None
         self.xi = None
         self.yi = None
         self.xyi = None
+        self.Afactor = None
         self.parentIDs = None
+        self.dx = None
+        self.distances = None
+        self.indices = None
+        self.onIDs = None
 
         self._comm = mpi.COMM_WORLD
         self._rank = self._comm.Get_rank()
@@ -370,8 +375,8 @@ class flowNetwork:
             self.pitDrain = -numpy.ones(len(pitID))
             self.allDrain = -numpy.ones(len(pitID))
 
-    def compute_sedflux(self, Acell, elev, fillH, xymin, xymax, dt, rivqs, sealevel,
-        cumdiff, perc_dep, slp_cr, sigma, verbose=False):
+    def compute_sedflux(self, Acell, elev, fillH, borders, domain, dt, rivqs, sealevel,
+        cumdiff, perc_dep, slp_cr, sigma, ngbh, verbose=False):
         """
         Calculates the sediment flux at each node.
 
@@ -384,13 +389,13 @@ class flowNetwork:
             Numpy arrays containing the elevation of the TIN nodes.
 
         fillH
-            Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
+            Numpy array containing the lake elevations.
 
-        xymin
-            Numpy array containing the minimal XY coordinates of TIN grid (excuding border cells).
+        borders
+            Numpy array containing identifying borders and insides points.
 
-        xymax
-            Numpy array containing the maximal XY coordinates of TIN grid (excuding border cells).
+        domain
+            Shape of the inside points IDs.
 
         dt
             Real value corresponding to the maximal stability time step.
@@ -430,13 +435,7 @@ class flowNetwork:
                 time1 = time.clock()
 
             # Find border/inside nodes
-            ids = numpy.arange(len(Acell))
-            tmp1 = numpy.where(Acell>0.)[0]
-            domain = path.Path([(xymin[0],xymin[1]),(xymax[0],xymin[1]), (xymax[0],xymax[1]), (xymin[0],xymax[1])])
-            tmp2 = domain.contains_points(self.xycoords)
-            insideIDs = numpy.intersect1d(tmp1,ids[tmp2])
-            borders = numpy.zeros(len(Acell),dtype=int)
-            borders[insideIDs] = 1
+            insideIDs = numpy.where(borders>0)[0]
 
             cdepo, cero = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
                      self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
@@ -560,16 +559,15 @@ class flowNetwork:
                     seavol = numpy.zeros(len(depo))
                     seavol[seaIDs] = depo[seaIDs]
                     # Distribute marine sediments based on angle of repose
-                    seadep = PDalgo.pdstack.marine_sed(elev, seavol, borders, sealevel)
+                    seadep = PDalgo.pdstack.marine_distribution(elev, seavol, sealevel, borders, seaIDs)
+                    if sigma>0.:
+                        smthdep = self.gaussian_diffusion(seadep, sigma)
+                        deposition += smthdep
+                    else:
+                        deposition += seadep
                     if rank==0 and verbose:
                         print "   - Compute marine deposition ", time.clock() - time1
                         time1 = time.clock()
-                    if sigma > 0.:
-                        smthdep = self.gaussian_diffusion(seadep,sigma)
-                        frac = numpy.sum(seadep*Acell)/numpy.sum(smthdep*Acell)
-                        deposition += smthdep*frac
-                    else:
-                        deposition += seadep
                     depo[seaIDs] = 0.
                     if rank==0 and verbose:
                         print "   - Smooth marine deposition ", time.clock() - time1
@@ -615,37 +613,40 @@ class flowNetwork:
             # Querying the cKDTree later becomes a bottleneck, so distribute the xyi array across all MPI nodes
             xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
             splits = numpy.array_split(xyi, self._size)
-            self.split_lengths = numpy.array(map(len, splits)) * 3
-            self.localxyi = splits[self._rank]
-            self.query_shape = (xyi.shape[0], 3)
+            split_lengths = numpy.array(map(len, splits)) * 3
+            localxyi = splits[self._rank]
+            query_shape = (xyi.shape[0], 3)
+
+            # Build Tree
+            tree = cKDTree(self.xycoords[:,:2])
+
+            # Querying the KDTree is rather slow, so we split it across MPI nodes
+            nelems = query_shape[0] * query_shape[1]
+            indices = numpy.empty(query_shape, dtype=numpy.int64)
+            localdistances, localindices = tree.query(localxyi, k=3)
+
+            distances_flat = numpy.empty(nelems, dtype=numpy.float64)
+            self._comm.Allgatherv(numpy.ravel(localdistances), [distances_flat, (split_lengths, None)])
+
+            indices_flat = numpy.empty(nelems, dtype=numpy.int64)
+            self._comm.Allgatherv(numpy.ravel(localindices), [indices_flat, (split_lengths, None)])
+
+            self.distances = distances_flat.reshape(query_shape)
+            self.indices = indices_flat.reshape(query_shape)
+            self.onIDs = numpy.where(self.distances[:,0] == 0)[0]
 
         depZ = numpy.copy(diff)
-        tree = cKDTree(self.xycoords[:,:2])
 
-        # Querying the KDTree is rather slow, so we split it across MPI nodes
-        nelems = self.query_shape[0] * self.query_shape[1]
-        indices = numpy.empty(self.query_shape, dtype=numpy.int64)
-        localdistances, localindices = tree.query(self.localxyi, k=3)
-
-        distances_flat = numpy.empty(nelems, dtype=numpy.float64)
-        self._comm.Allgatherv(numpy.ravel(localdistances), [distances_flat, (self.split_lengths, None)])
-
-        indices_flat = numpy.empty(nelems, dtype=numpy.int64)
-        self._comm.Allgatherv(numpy.ravel(localindices), [indices_flat, (self.split_lengths, None)])
-
-        distances = distances_flat.reshape(self.query_shape)
-        indices = indices_flat.reshape(self.query_shape)
-
-        if len(depZ[indices].shape) == 3:
-            zd_vals = depZ[indices][:,:,0]
+        if len(depZ[self.indices].shape) == 3:
+            zd_vals = depZ[self.indices][:,:,0]
         else:
-            zd_vals = depZ[indices]
-        with numpy.errstate(divide='ignore'):
-            zdi = numpy.average(zd_vals,weights=(1./distances), axis=1)
+            zd_vals = depZ[self.indices]
 
-        onIDs = numpy.where(distances[:,0] == 0)[0]
-        if len(onIDs) > 0:
-            zdi[onIDs] = depZ[indices[onIDs,0]]
+        with numpy.errstate(divide='ignore'):
+            zdi = numpy.average(zd_vals,weights=(1./self.distances), axis=1)
+
+        if len(self.onIDs) > 0:
+            zdi[self.onIDs] = depZ[self.indices[self.onIDs,0]]
 
         depzi = numpy.reshape(zdi,(len(self.ygrid),len(self.xgrid)))
 

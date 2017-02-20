@@ -241,7 +241,7 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
 
     return elev
 
-def assign_parameter_pit(neighbours, edge_length, area, diffslp, boundPts, fillTH=1., epsilon=0.01):
+def assign_parameter_pit(neighbours, area, diffnb, boundPts, fillTH=1., epsilon=0.01):
     """
     This function defines global variables used in the pit filling algorithm.
 
@@ -256,8 +256,8 @@ def assign_parameter_pit(neighbours, edge_length, area, diffslp, boundPts, fillT
     area
         Numpy float-type array containing the area of each cell.
 
-    diffslp
-        Marine diffusion slope value.
+    diffnb
+        Marine diffusion distribution steps.
 
     boundPts
         Number of nodes on the edges of the TIN surface.
@@ -271,7 +271,7 @@ def assign_parameter_pit(neighbours, edge_length, area, diffslp, boundPts, fillT
         pathways. Default is set to 0.01 metres.
     """
 
-    PDalgo.pdstack.pitparams(neighbours, edge_length, area, diffslp, fillTH, epsilon, boundPts)
+    PDalgo.pdstack.pitparams(neighbours, area, diffnb, fillTH, epsilon, boundPts)
 
 
 def pit_stack_PD(elev, allFill, sealevel):
