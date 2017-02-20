@@ -1,23 +1,23 @@
 Forcing
 =======
 
-.. automodule:: forcing
+.. automodule:: pyBadlands.forcing
     :members:
 
 forceSim
 --------
 
-.. automodule:: forcing.forceSim
+.. automodule:: pyBadlands.forcing.forceSim
     :members:
 
 isoFlex
 -------
 
-.. automodule:: forcing.isoFlex
+.. automodule:: pyBadlands.forcing.isoFlex
     :members:
 
 xmlParser
 ---------
 
-.. automodule:: forcing.xmlParser
+.. automodule:: pyBadlands.forcing.xmlParser
     :members:

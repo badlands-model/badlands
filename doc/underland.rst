@@ -1,17 +1,17 @@
 Underland
 =========
 
-.. automodule:: underland
+.. automodule:: pyBadlands.underland
     :members:
 
 eroMesh
 --------
 
-.. automodule:: underland.eroMesh
+.. automodule:: pyBadlands.underland.eroMesh
     :members:
 
 strataMesh
 ----------
 
-.. automodule:: underland.strataMesh
+.. automodule:: pyBadlands.underland.strataMesh
     :members:

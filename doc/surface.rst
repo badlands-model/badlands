@@ -1,41 +1,41 @@
 Surface
 =======
 
-.. automodule:: surface
+.. automodule:: pyBadlands.surface
     :members:
 
 FVmethod
 --------
 
-.. automodule:: surface.FVmethod
+.. automodule:: pyBadlands.surface.FVmethod
     :members:
 
 elevationTIN
 ------------
 
-.. automodule:: surface.elevationTIN
+.. automodule:: pyBadlands.surface.elevationTIN
     :members:
 
 partitionTIN
 ------------
 
-.. automodule:: surface.partitionTIN
+.. automodule:: pyBadlands.surface.partitionTIN
     :members:
 
 raster2TIN
 ----------
 
-.. automodule:: surface.raster2TIN
+.. automodule:: pyBadlands.surface.raster2TIN
     :members:
 
 visSurf
 --------
 
-.. automodule:: surface.visSurf
+.. automodule:: pyBadlands.surface.visSurf
     :members:
 
 visualiseTIN
 ------------
 
-.. automodule:: surface.visualiseTIN
+.. automodule:: pyBadlands.surface.visualiseTIN
     :members:

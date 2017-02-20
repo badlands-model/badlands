@@ -1,23 +1,23 @@
 Simulation
 ==========
 
-.. automodule:: simulation
+.. automodule:: pyBadlands.simulation
     :members:
 
 buildFlux
 ---------
 
-.. automodule:: simulation.buildFlux
+.. automodule:: pyBadlands.simulation.buildFlux
     :members:
 
 buildMesh
 ---------
 
-.. automodule:: simulation.buildMesh
+.. automodule:: pyBadlands.simulation.buildMesh
     :members:
 
 checkPoints
 -----------
 
-.. automodule:: simulation.checkPoints
+.. automodule:: pyBadlands.simulation.checkPoints
     :members:

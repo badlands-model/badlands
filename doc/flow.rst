@@ -1,17 +1,17 @@
 Flow Network
 ============
 
-.. automodule:: flow
+.. automodule:: pyBadlands.flow
     :members:
 
 flowNetwork
 -----------
 
-.. automodule:: flow.flowNetwork
+.. automodule:: pyBadlands.flow.flowNetwork
     :members:
 
 visualiseFlow
 -------------
 
-.. automodule:: flow.visualiseFlow
+.. automodule:: pyBadlands.flow.visualiseFlow
     :members:

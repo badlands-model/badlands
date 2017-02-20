@@ -1,11 +1,11 @@
 Hillslope
 =========
 
-.. automodule:: hillslope
+.. automodule:: pyBadlands.hillslope
     :members:
 
 diffLinear
 ----------
 
-.. automodule:: hillslope.diffLinear
+.. automodule:: pyBadlands.hillslope.diffLinear
     :members:
