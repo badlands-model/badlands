@@ -5,13 +5,13 @@
     <grid>
         <!-- Digital elevation model file path -->
         <demfile>data/nodes.csv</demfile>
+        <!-- Boundary type: flat, slope, fixed or wall -->
+        <boundary>fixed</boundary>
         <!-- Optional parameter (integer) used to decrease TIN resolution.
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
              accordingly.  -->
         <resfactor>1</resfactor>
-        <!-- Boundary type: flat, slope or wall -->
-        <boundary>fix</boundary>
     </grid>
 
     <!-- Simulation time structure -->
@@ -162,5 +162,5 @@
 
     <!-- Output folder path -->
     <outfolder>output</outfolder>
-
+    
 </badlands>

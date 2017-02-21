@@ -113,7 +113,7 @@ void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[]
     }
 }
 
-void diffusion(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
+void diffusion(double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
     double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double pyDiff[], int pylocalNb, int pyglobalNb)
 {
     int i;
@@ -126,14 +126,21 @@ void diffusion(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_N
     for (k = 0; k < pylocalNb; k++) {
         int gid = pyGIDs[k];
         int p;
-
-        for (p = 0; p < MAX_NEIGHBOURS; p++) {
-            int ngbid = pyNgbs[gid][p];
-            if (ngbid < 0) {
-                break;
-            }
-
-            pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+        if (pyBord[gid]>0) {
+          for (p = 0; p < MAX_NEIGHBOURS; p++) {
+              int ngbid = pyNgbs[gid][p];
+              if (ngbid < 0) {
+                  break;
+              }
+              if (pyBord[ngbid]>0){
+                pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+              }
+              if (pyBord[ngbid]<1){
+                if (pyZ[ngbid] < pyZ[gid]){
+                  pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+                }
+              }
+          }
         }
     }
 }

@@ -160,6 +160,11 @@ class Model(object):
 
         assert hasattr(self, 'recGrid'), "DEM file has not been loaded. Configure one in your XML file or call the build_mesh function."
 
+        if tEnd > self.input.tEnd:
+            if self._rank == 0:
+                print 'Specified end time is greater than the one used in the XML input file and has been adjusted!'
+            tEnd = self.input.tEnd
+
         # Define non-flow related processes times
         if not self.simStarted:
             self.force.next_rain = self.force.T_rain[0, 0]

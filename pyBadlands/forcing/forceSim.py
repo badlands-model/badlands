@@ -98,9 +98,6 @@ class forceSim:
     rivQws : float
         Numpy array containing the water and sediment discharge for the rivers.
 
-    rivWth : float
-        Numpy array containing the width of the rivers.
-
     rivNb : int
         Number of rivers.
 
@@ -112,7 +109,7 @@ class forceSim:
                  orographic = None, rbgd = None, rmin = None, rmax = None, windx = None, windy = None,
                  tauc = None, tauf = None, nm = None, cw = None, hw = None, ortime = None, MapDisp = None,
                  TimeDisp = None, regX = None, regY = None, rivPos = None, rivTime = None, rivQws = None,
-                 rivWth = None, rivNb = 0, Tdisplay = 0.):
+                 rivNb = 0, Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
@@ -125,7 +122,6 @@ class forceSim:
         self.rivPos = rivPos
         self.rivTime = rivTime
         self.rivQws = rivQws
-        self.rivWth = rivWth
         self.rivQs = None
         self.rivQw = None
 
@@ -234,18 +230,12 @@ class forceSim:
             rivNb = len(active)
             if rivNb > 0:
                 riv_xy = self.rivPos[active,:]
-                radius = self.rivWth[active]
-                indices = self.tree.query_ball_point(riv_xy, radius)
+                distances, ids = self.tree.query(riv_xy, k=1)
                 for r in range(rivNb):
                     riv_qw = self.rivQws[active[r],0]
                     riv_qs = self.rivQws[active[r],1]
-                    if len(indices[r]) > 0:
-                        self.rivQw[indices[r]] += riv_qw / len(indices[r])
-                        self.rivQs[indices[r]] += riv_qs / len(indices[r])
-                    else:
-                        distances, ids = self.tree.query(riv_xy[r], k=1)
-                        self.rivQw[ids] += riv_qw
-                        self.rivQs[ids] += riv_qs
+                    self.rivQw[ids[r]] += riv_qw
+                    self.rivQs[ids[r]] += riv_qs
 
     def update_force_TIN(self, tXY):
         """

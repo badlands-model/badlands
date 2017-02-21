@@ -48,7 +48,7 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
         Numpy array containing the updated elevations on the edges.
     """
 
-    # Flat
+    # Flat/fixed/wall
     if btype == 0:
         missedPts = []
         for id in range(boundPts):
@@ -125,7 +125,7 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
                 lselect = edge_length[id,ids]
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
-
+        elevation[:boundPts] -= 0.5
 
     # Associate TIN edge point to the border for ero/dep updates
     parentID = numpy.zeros(boundPts,dtype=int)
@@ -178,6 +178,13 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
 
     btype
         Integer defining the type of boundary. Possible conditions are:
+<<<<<<< Updated upstream
+=======
+            1. wall
+            2. flat
+            3. slope: this is the default condition
+            3. fixed
+>>>>>>> Stashed changes
 
         1. wall
         2. flat: this is the default condition
@@ -191,16 +198,14 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
 
     newelev = elev
 
-    if btype == 'wall':
-        newelev[:boundPts] = 1.e7
-
-    elif btype == 'flat' or btype == 'slope' or btype == 'fix':
+    if btype == 'wall' or btype == 'flat' or btype == 'slope' or btype == 'fixed':
         newelev[:boundPts] = 1.e7
         thetype = 0
         if btype == 'slope':
             thetype = 1
-
         newelev, parentID = _boundary_elevation(elev, neighbours, edge_length, boundPts, thetype)
+        if btype == 'wall':
+            newelev[:boundPts] = 1.e7
     else:
         raise ValueError('Unknown boundary type ''%s''.' % btype)
 
@@ -241,7 +246,7 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
 
     return elev
 
-def assign_parameter_pit(neighbours, area, diffnb, boundPts, fillTH=1., epsilon=0.01):
+def assign_parameter_pit(neighbours, area, diffnb, prop, boundPts, fillTH=1., epsilon=0.01):
     """
     This function defines global variables used in the pit filling algorithm.
 
@@ -259,6 +264,9 @@ def assign_parameter_pit(neighbours, area, diffnb, boundPts, fillTH=1., epsilon=
     diffnb
         Marine diffusion distribution steps.
 
+    prop
+        Proportion of marine sediment deposited on downstream nodes.
+
     boundPts
         Number of nodes on the edges of the TIN surface.
 
@@ -271,7 +279,7 @@ def assign_parameter_pit(neighbours, area, diffnb, boundPts, fillTH=1., epsilon=
         pathways. Default is set to 0.01 metres.
     """
 
-    PDalgo.pdstack.pitparams(neighbours, area, diffnb, fillTH, epsilon, boundPts)
+    PDalgo.pdstack.pitparams(neighbours, area, diffnb, prop, fillTH, epsilon, boundPts)
 
 
 def pit_stack_PD(elev, allFill, sealevel):

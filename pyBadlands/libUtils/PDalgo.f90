@@ -164,11 +164,7 @@ contains
               seadep(id) = 0.
               exit sfd_loop
             endif
-            if(it==0)then
-              vol = max(0.,0.9*(sealevel-elev(id))*area(id))
-            else
-              vol = max(0.0,0.9*(elev(pid)-elev(id))*area(id))
-            endif
+            vol = max(0.,diffprop*(sealevel-elev(id))*area(id))
             if(it>max_it_cyc)then
               elev(id) = elev(id) + seadep(id)/area(id)
               seadep(id) = 0.
@@ -189,7 +185,7 @@ contains
               elev(id) = elev(id) + vol/area(id)
             endif
             if(seadep(id)>0.)then
-              minz = 1.e8 !elev(id)
+              minz = 1.e8
               nid = 0
               nup = 0
               ndown = 0
@@ -212,15 +208,19 @@ contains
                 if(seadep(id) > dh*area(id))then
                   elev(id) = elev(id) + dh
                   seadep(id) = seadep(id) - dh*area(id)
-                  seadep(nup) = seadep(id)
-                  pid = id
-                  id = nup
+                  pid = depIDs(k)+1
+                  nid = depIDs(k)+1
+                  seadep(nid) = seadep(nid)+seadep(id)
+                  seadep(id) = 0.
+                  id = nid
+                  it = 0
                   ! vol = (seadep(id) - dh*area(id))/ndown
                   ! do p = 1, ndown
                   !   elev(ngbh(p)) = elev(ngbh(p)) + vol/area(id)
                   ! enddo
                 else
                   elev(id) = elev(id) + seadep(id)/area(id)
+                  seadep(id) = 0.
                   exit sfd_loop
                 endif
               else
@@ -231,14 +231,25 @@ contains
                     seadep(id) = seadep(id) - dh*area(id)
                   else
                     elev(id) = elev(id) + seadep(id)/area(id)
+                    seadep(id) = 0.
                     exit sfd_loop
                   endif
+                  pid = depIDs(k)+1
+                  nid = depIDs(k)+1
+                  seadep(nid) = seadep(nid)+seadep(id)
+                  seadep(id) = 0.
+                  id = nid
+                  it = 0
+                else
+                  seadep(nid) = seadep(id)
+                  seadep(id) = 0.
+                  pid = id
+                  id = nid
                 endif
-                seadep(nid) = seadep(id)
-                pid = id
-                id = nid
+
               endif
             else
+              seadep(id) = 0.
               exit sfd_loop
             endif
         enddo sfd_loop
@@ -252,19 +263,21 @@ contains
 
   end subroutine marine_distribution
 
-  subroutine pitparams(pyNgbs,pyArea,pySlp,fillTH,epsilon,pybounds,pydnodes)
+  subroutine pitparams(pyNgbs,pyArea,pyDiff,pyProp,fillTH,epsilon,pybounds,pydnodes)
 
     integer :: pydnodes
     integer,intent(in) :: pybounds
     real(kind=8),intent(in) :: fillTH
     real(kind=8),intent(in) :: epsilon
-    integer,intent(in) :: pySlp
+    integer,intent(in) :: pyDiff
     integer,intent(in) :: pyNgbs(pydnodes,20)
+    real(kind=8),intent(in) :: pyProp
     real(kind=8),intent(in) :: pyArea(pydnodes)
-    
+
     dnodes = pydnodes
 
-    diffnbmax = pySlp
+    diffnbmax = pyDiff
+    diffprop = pyProp
     bds = pybounds
     block_size = pydnodes - bds
     eps = epsilon

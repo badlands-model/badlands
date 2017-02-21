@@ -10,7 +10,7 @@
              value will multiply the digital elevation model resolution
              accordingly.  -->
         <resfactor>2</resfactor>
-        <!-- Boundary type: flat, slope, fix or wall -->
+        <!-- Boundary type: flat, slope, fixed or wall -->
         <boundary>slope</boundary>
         <!-- Optional parameter (integer) used to force depression-less
              surface at the start of the simulation. The default value is 0
@@ -113,12 +113,12 @@
             <rposX>25000.</rposX>
             <!-- River Y position [m] -->
             <rposY>25000.</rposY>
-            <!-- River width [m] -->
-            <rwidth>500.</rwidth>
-            <!-- River water discharge [m3/a] -->
+            <!-- River mean annual discharge [m3/a] -->
             <rQw>5.e+08</rQw>
-            <!-- River sediment discharge [m3/a] -->
-            <rQs>7.e6</rQs>
+            <!-- River annual load [Mt/a] -->
+            <rQs>7.</rQs>
+            <!-- Average sediment density [kg/m3] -->
+            <rhoS>2750.</rhoS>
         </river>
     </rivers>
 
@@ -219,8 +219,11 @@
              sediments. -->
         <erodibility>1.e-6</erodibility>
         <!-- Number of steps used to distribute marine deposit.
-             Default value is 5 (integer). -->
+             Default value is 5 (integer). (optional)-->
         <diffnb>5</diffnb>
+        <!-- Proportion of marine sediment deposited on downstream nodes. It needs
+             to be set between ]0,1[. Default value is 0.9 (optional). -->
+        <diffprop>0.2</diffprop>
         <!-- Marine sedimentation gaussian filtering parameter. Default value is
              set to 0. (optional) -->
         <sigma>2.</sigma>
@@ -292,9 +295,9 @@
         <fnx>100</fnx>
         <!-- Number of points along the Y-axis - (optional)-->
         <fny>100</fny>
-        <!-- Mantle density [km/m3] -->
+        <!-- Mantle density [kg/m3] -->
         <dmantle>3300</dmantle>
-        <!-- Sediment density [km/m3] -->
+        <!-- Sediment density [kg/m3] -->
         <dsediment>2500</dsediment>
         <!-- Young's Modulus [Pa] -->
         <youngMod>65E9</youngMod>

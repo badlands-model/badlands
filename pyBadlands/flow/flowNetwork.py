@@ -96,10 +96,11 @@ class flowNetwork:
         self._rank = self._comm.Get_rank()
         self._size = self._comm.Get_size()
 
-    def compute_hillslope_diffusion(self, elev, neighbours, edges, distances, globalIDs):
+    def compute_hillslope_diffusion(self, elev, borders, neighbours, edges, distances, globalIDs):
         """
         Perform hillslope evolution based on diffusion processes.
 
+<<<<<<< Updated upstream
         Parameters
         ----------
         elev
@@ -116,8 +117,17 @@ class flowNetwork:
 
         globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
+=======
+        Parameters:
+            elev: Numpy arrays containing the elevation of the TIN nodes.
+            borders: Numpy arrays flagging boundary nodes on the TIN.
+            neighbours: Numpy integer-type array with the neighbourhood IDs.
+            edges: Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+            distances: Numpy real-type array with the distances between each connection in the TIN.
+            globalIDs: Numpy integer-type array containing for local nodes their global IDs.
+>>>>>>> Stashed changes
         """
-        diff_flux = sfd.diffusion(elev, neighbours, edges, distances, globalIDs)
+        diff_flux = sfd.diffusion(elev, borders, neighbours, edges, distances, globalIDs)
 
         # Send local diffusion flux globally
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
@@ -427,6 +437,11 @@ class flowNetwork:
         sedflux = numpy.zeros(len(elev))
         verbose = False
 
+
+        # print 'deded3ee',elev[0]
+        # df = pd.DataFrame({'X':self.xycoords[:,0],'Y':self.xycoords[:,1],'Z':elev[:]})
+        # df.to_csv('slope.csv',columns=['X', 'Y', 'Z'], sep=',', index=False)
+        #stop
         # Compute sediment flux using libUtils
         # Stream power law
         if self.spl:

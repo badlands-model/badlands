@@ -340,7 +340,7 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
         f.write('Dimensions="%d 1">%s:/discharge</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
 
-        f.write('         <Attribute Type="Scalar" Center="Node" Name="Cumdiff">\n')
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="EroDep">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/cumdiff</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')

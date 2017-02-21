@@ -149,24 +149,20 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
                                           input.slp_cr, input.diffsigma, FVmesh.neighbours, verbose)
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
-
-    # Update surface parameters
-    #sedchange[:len(flow.parentIDs)] = sedchange[flow.parentIDs]
     elevation += sedchange
     cumdiff += sedchange
 
     # Compute hillslope processes
     walltime = time.clock()
-    flow.compute_hillslope_diffusion(elevation, FVmesh.neighbours,
+    flow.compute_hillslope_diffusion(elevation, borders, FVmesh.neighbours,
                        FVmesh.vor_edges, FVmesh.edge_length,lGIDs)
     cdiff = hillslope.sedflux(flow.diff_flux, force.sealevel, elevation, FVmesh.control_volumes)
     diff_flux = np.zeros(len(cdiff))
     diff_flux[insideIDs] = cdiff[insideIDs]
     diff = diff_flux * timestep
-    #diff[:len(flow.parentIDs)] = diff[flow.parentIDs]
     elevation += diff
     if input.btype == 'slope':
-        elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]-1.
+        elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]-0.1
     elif input.btype == 'flat':
         elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]
     elif input.btype == 'wall':

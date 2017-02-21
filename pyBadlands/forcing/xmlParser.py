@@ -75,7 +75,6 @@ class xmlParser:
         self.riverTime = None
         self.riverPos = None
         self.riverQws = None
-        self.riverWidth = None
 
         self.rainNb = None
         self.rainVal = None
@@ -99,6 +98,7 @@ class xmlParser:
         self.SPLn = 1.
         self.SPLero = 0.
         self.diffnb = 5
+        self.diffprop = 0.9
         self.diffsigma = 0.
         self.spl = False
         self.Hillslope = False
@@ -159,7 +159,7 @@ class xmlParser:
             element = grid.find('boundary')
             if element is not None:
                 self.btype = element.text
-                if self.btype != 'slope' and self.btype != 'flat' and self.btype != 'wall' and self.btype != 'fix':
+                if self.btype != 'slope' and self.btype != 'flat' and self.btype != 'wall' and self.btype != 'fixed':
                     raise ValueError('Error in the definition of the grid structure: Boundary type is either: flat, slope or wall')
             else:
                 self.btype = 'slope'
@@ -443,7 +443,6 @@ class xmlParser:
             self.riverTime = numpy.empty((self.riverNb,2))
             self.riverPos = numpy.empty((self.riverNb,2))
             self.riverQws = numpy.empty((self.riverNb,2))
-            self.riverWidth = numpy.empty((self.riverNb))
             id = 0
             for riv in rivers.iter('river'):
                 if id >= self.riverNb:
@@ -473,23 +472,27 @@ class xmlParser:
                 else:
                     raise ValueError('River %d is missing Y position.'%id)
                 element = None
-                element = riv.find('rwidth')
-                if element is not None:
-                    self.riverWidth[id] = float(element.text)
-                else:
-                    raise ValueError('River %d is missing width.'%id)
-                element = None
                 element = riv.find('rQw')
                 if element is not None:
                     self.riverQws[id,0] = float(element.text)
                 else:
-                    raise ValueError('River %d is missing water discharge.'%id)
+                    raise ValueError('River %d is missing mean annual discharge.'%id)
                 element = None
                 element = riv.find('rQs')
                 if element is not None:
-                    self.riverQws[id,1] = float(element.text)
+                    # Convert from Mt/a to kg/a
+                    qs = float(element.text)*1.e9
                 else:
-                    raise ValueError('River %d is missing sediment discharge.'%id)
+                    raise ValueError('River %d is missing river annual load.'%id)
+                element = None
+                element = riv.find('rhoS')
+                if element is not None:
+                    rhoS = float(element.text)
+                else:
+                    rhoS = 2650.
+                # Convert from kg/a to m3/a
+                self.riverQws[id,1] = qs/rhoS
+
                 id += 1
         else:
             self.riverNb = 0
@@ -831,6 +834,14 @@ class xmlParser:
                 self.diffnb = int(element.text)
             else:
                 self.diffnb = 5
+            element = None
+            element = spl.find('diffprop')
+            if element is not None:
+                self.diffprop = float(element.text)
+                if self.diffprop <= 0 or self.diffprop >= 1:
+                    raise ValueError('Proportion of marine sediment deposited on downstream nodes needs to be range between ]0,1[')
+            else:
+                self.diffprop = 0.9
             element = None
             element = spl.find('sigma')
             if element is not None:

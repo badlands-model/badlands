@@ -37,7 +37,7 @@ interface
     integer intent(out) :: pyRcv(pyglobalNb)
   end subroutine directions_base
 
-  subroutine diffusion(pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, pyDiff, pylocalNb, pyglobalNb)
+  subroutine diffusion(pyZ, pyBord, pyNgbs, pyEdge, pyDist, pyGIDs, pyDiff, pylocalNb, pyglobalNb)
     intent(c) diffusion                  ! directions is a C function
     intent(c)                            ! all foo arguments are
                                          ! considered as C based
@@ -45,6 +45,7 @@ interface
     integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
     integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
     integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
     integer intent(in) :: pyNgbs(pyglobalNb, 20)
     double precision intent(in) :: pyZ(pyglobalNb)
     double precision intent(in) :: pyEdge(pyglobalNb, 20)

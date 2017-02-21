@@ -46,8 +46,7 @@ def construct_mesh(input, filename, verbose=False):
                 input.windy, input.tauc, input.tauf, input.nm,
                 input.cw, input.hw, input.ortime, input.tectFile,
                 input.tectTime, recGrid.regX, recGrid.regY, input.riverPos,
-                input.riverTime, input.riverQws, input.riverWidth, input.riverNb,
-                input.tDisplay)
+                input.riverTime, input.riverQws, input.riverNb, input.tDisplay)
 
     if input.disp3d:
         force.time3d = input.time3d
@@ -187,7 +186,7 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     inIDs = np.where(FVmesh.partIDs[recGrid.boundsPt:] == rank)[0]
     inIDs += recGrid.boundsPt
     elevationTIN.assign_parameter_pit(FVmesh.neighbours, FVmesh.control_volumes, input.diffnb,
-                                      recGrid.boundsPt, input.fillmax)
+                                      input.diffprop, recGrid.boundsPt, input.fillmax)
 
     return FVmesh, tMesh, lGIDs, inIDs, inGIDs, totPts
 
@@ -247,7 +246,7 @@ def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
 
     # Define pit filling algorithm
     elevationTIN.assign_parameter_pit(FVmesh.neighbours, FVmesh.control_volumes, input.diffnb,
-                                      recGrid.boundsPt, input.fillmax)
+                                      input.diffprop, recGrid.boundsPt, input.fillmax)
 
     if rank == 0 and verbose:
         print " - define paramters on TIN grid ", time.clock() - walltime

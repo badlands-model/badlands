@@ -21,7 +21,7 @@
         <!-- Display interval [a] -->
         <display>20000.</display>
     </time>
-    
+
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
@@ -29,7 +29,7 @@
         <!-- Sea-level curve - (optional) -->
         <!--curve>data/sealvl.csv</curve-->
     </sea>
-    
+
     <!-- Precipitation structure -->
     <precipitation>
         <!-- Number of precipitation events -->
@@ -44,7 +44,7 @@
             <rval>1.</rval>
         </rain>
     </precipitation>
-    
+
     <!-- Stream power law parameters:
          The stream power law is a simplified form of the usual expression of
          sediment transport by water flow, in which the transport rate is assumed
@@ -92,9 +92,9 @@
         <fnx>250</fnx>
         <!-- Number of points along the Y-axis - (optional)-->
         <fny>100</fny>
-        <!-- Mantle density [km/m3] -->
+        <!-- Mantle density [kg/m3] -->
         <dmantle>3300</dmantle>
-        <!-- Sediment density [km/m3] -->
+        <!-- Sediment density [kg/m3] -->
         <dsediment>2500</dsediment>
         <!-- Young's Modulus [Pa] -->
         <youngMod>65E9</youngMod>
@@ -107,7 +107,7 @@
              Te value [m]. You will need to ensure that the grid dimensions match the number of
              points given for the flexural grid resolution - (optional) -->
         <elasticGrid>data/TeGrid.csv</elasticGrid>
-        
+
         <!-- Finite difference boundary conditions:
               + 0Displacement0Slope: 0-displacement-0-slope boundary condition
               + 0Moment0Shear: "Broken plate" boundary condition: second and
@@ -130,7 +130,7 @@
         <boundary_N>Mirror</boundary_N>
     </flexure>
     ?>
-    
+
     <!-- Output folder path -->
     <outfolder>output</outfolder>
 

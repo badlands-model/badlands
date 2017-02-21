@@ -31,7 +31,7 @@ module pdclass
     real(kind=8),allocatable, dimension(:) :: area
 
     integer :: bds, diffnbmax
-    real(kind=8) :: eps, fill_TH
+    real(kind=8) :: eps, fill_TH, diffprop
 
     ! Sediment distribution parameters
     integer, parameter :: max_it_cyc = 500000
