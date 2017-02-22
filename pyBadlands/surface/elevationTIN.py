@@ -178,17 +178,10 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
 
     btype
         Integer defining the type of boundary. Possible conditions are:
-<<<<<<< Updated upstream
-=======
-            1. wall
-            2. flat
-            3. slope: this is the default condition
-            3. fixed
->>>>>>> Stashed changes
-
         1. wall
-        2. flat: this is the default condition
-        3. slope
+        2. flat
+        3. slope: this is the default condition
+        4. fixed
 
     Returns
     -------
