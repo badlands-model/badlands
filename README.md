@@ -23,6 +23,8 @@ If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](http
 The latest pyBadlands version is the one that’s in our Github [repository](https://github.com/badlands-model/pyBadlands). Get it using this shell command, which requires Git:
 * `git clone https://github.com/badlands-model/pyBadlands.git`
 
+**API documentation** is available from [http://pybadlands.readthedocs.io](http://pybadlands.readthedocs.io/en/master/)
+
 ## The specs...
 
 The model is based on the following characteristics:
