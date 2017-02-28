@@ -427,11 +427,6 @@ class flowNetwork:
         sedflux = numpy.zeros(len(elev))
         verbose = False
 
-
-        # print 'deded3ee',elev[0]
-        # df = pd.DataFrame({'X':self.xycoords[:,0],'Y':self.xycoords[:,1],'Z':elev[:]})
-        # df.to_csv('slope.csv',columns=['X', 'Y', 'Z'], sep=',', index=False)
-        #stop
         # Compute sediment flux using libUtils
         # Stream power law
         if self.spl:
@@ -447,7 +442,6 @@ class flowNetwork:
                      self.erodibility,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
-
             if self.depo == 0:
                 volChange = cero
             else:

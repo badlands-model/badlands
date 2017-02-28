@@ -185,7 +185,7 @@ contains
               elev(id) = elev(id) + vol/area(id)
             endif
             if(seadep(id)>0.)then
-              minz = 1.e8
+              minz = elev(id)
               nid = 0
               nup = 0
               ndown = 0
