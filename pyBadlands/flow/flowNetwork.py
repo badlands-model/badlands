@@ -560,8 +560,11 @@ class flowNetwork:
                     # Distribute marine sediments based on angle of repose
                     seadep = PDalgo.pdstack.marine_distribution(elev, seavol, sealevel, borders, seaIDs)
                     if sigma>0.:
-                        smthdep = self.gaussian_diffusion(seadep, sigma)
-                        deposition += smthdep
+                        smthdep = self.gaussian_diffusion(elev+seadep, sigma)
+                        iddd = numpy.where(seadep>0)[0]
+                        dh = smthdep[iddd]-elev[iddd]
+                        dh[dh<0.] = 0.
+                        deposition[iddd] += dh
                     else:
                         deposition += seadep
                     if rank==0 and verbose:
