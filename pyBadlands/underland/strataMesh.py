@@ -72,7 +72,7 @@ class strataMesh():
 
         rfolder
             Restart folder.
-        
+
         rstep
             Restart step.
 

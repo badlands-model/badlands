@@ -27,8 +27,6 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD
 
-    flow.Flow_time = time.clock()
-
     # Update sea-level
     walltime = time.clock()
     force.getSea(tNow)
@@ -109,6 +107,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     rank = mpi.COMM_WORLD.rank
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD
+    flow_time = time.clock()
 
     # Find border/inside nodes
     ids = np.arange(len(FVmesh.control_volumes))
@@ -120,6 +119,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     insideIDs = np.intersect1d(tmp1,ids[tmp2])
     borders = np.zeros(len(FVmesh.control_volumes),dtype=int)
     borders[insideIDs] = 1
+    outsideIDs = np.where(borders==0)[0]
 
     # Compute CFL condition
     walltime = time.clock()
@@ -156,30 +156,37 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     # Compute marine sediment diffusion
     if hillslope.CDriver > 0.:
         walltime = time.clock()
-        dt = timestep
+        diffstep = timestep
         it = 0
-        depIDs = np.zeros(len(elevation),dtype=int)
-        while dt > 0:
-            if it==0:
-                tmpIDs = np.where(np.logical_and(sedchange!=0.,elevation<force.sealevel))[0]
-            else:
-                tmpIDs = np.where(np.logical_and(diffmarine_flux!=0.,elevation<force.sealevel))[0]
-            depIDs[tmpIDs] = 1
-            flow.compute_marine_diffusion(elevation, borders, depIDs, FVmesh.neighbours,
+        # Find marine sediment to be diffused
+        diffsed = np.zeros(len(elevation))
+        seaIDs = np.zeros(len(elevation),dtype=int)
+        tmp = np.where(np.logical_and(sedchange>0.,elevation<force.sealevel))[0]
+        diffsed[tmp] = sedchange[tmp]
+        # Perform river related sediment diffusion
+        while diffstep > 0. and it < 100:
+            # Only diffuse sediment pile which are above 1 m thick
+            tmpIDs = np.where(diffsed>1.)[0]
+            seaIDs[tmpIDs] = 1
+            # Compute marine fluxes
+            flow.compute_marine_diffusion(elevation, borders, seaIDs, FVmesh.neighbours,
                            FVmesh.vor_edges, FVmesh.edge_length,lGIDs)
-            cdiffmarine = hillslope.sedfluxmarine(flow.diff_flux, force.sealevel, elevation, FVmesh.control_volumes)
-            diffmarine_flux = np.zeros(len(cdiffmarine))
-            diffmarine_flux[insideIDs] = cdiffmarine[insideIDs]
-            if hillslope.CFLms<dt:
-                dt -= hillslope.CFLms
-                stepT = hillslope.CFLms
-            else:
-                stepT = dt
-                dt = 0.
-            diffmarine = diffmarine_flux * stepT
-            elevation += diffmarine
-            cumdiff += diffmarine
-            depIDs[tmpIDs] = 0
+            diffmarine = hillslope.sedfluxmarine(flow.diff_flux, force.sealevel, elevation,
+                                                 FVmesh.control_volumes)
+            diffmarine[outsideIDs] = 0.
+            # Define maximum time step
+            maxstep = min(hillslope.CFLms,diffstep)
+            # Check for excessive erosion thicknesses
+            limitIDs = np.where(np.logical_and(-diffmarine*maxstep>diffsed,diffmarine<0.))[0]
+            if len(limitIDs) > 0:
+                mindt = -diffsed[limitIDs]/diffmarine[limitIDs]
+                maxstep = max(mindt.min(),input.minDT)
+            diffstep -= maxstep
+            # Update elevation, erosion/deposition and remaining river sediment to diffuse
+            elevation += diffmarine*maxstep
+            cumdiff += diffmarine*maxstep
+            diffsed += diffmarine*maxstep
+            seaIDs[tmpIDs] = 0
             it += 1
         if rank == 0 and verbose:
             print " -   Get river sediment marine fluxes ", time.clock() - walltime
@@ -217,6 +224,6 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     tNow += timestep
 
     if rank == 0 and verbose:
-        print " - Flow computation ", time.clock() - flow.Flow_time
+        print " - Flow computation ", time.clock() - flow_time
 
     return tNow,elevation,cumdiff
