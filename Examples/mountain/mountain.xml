@@ -158,9 +158,12 @@
         <caerial>8.e-1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>1.</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>0.</criver>
     </creep>
 
     <!-- Output folder path -->
     <outfolder>output</outfolder>
-    
+
 </badlands>

@@ -23,9 +23,9 @@
         <!-- Display interval [a] -->
         <display>5000.</display>
     </time>
-    
+
     <sea>
-      <position>-1000.</position>  
+      <position>-1000.</position>
     </sea>
 
     <!-- Precipitation structure -->
@@ -39,7 +39,7 @@
             <!-- Rain end time [a] -->
             <rend>200000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
-            <rval>1.</rval> 
+            <rval>1.</rval>
         </rain>
     </precipitation>
 
@@ -74,9 +74,12 @@
         <caerial>2.5e-2</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>5.e-2</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>0.</criver>
     </creep>
-    
+
     <!-- Output folder path -->
     <outfolder>output</outfolder>
-    
+
 </badlands>

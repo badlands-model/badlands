@@ -62,12 +62,12 @@
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
         <erodibility>2.5e-6</erodibility>
-        <!-- Maximal marine sedimentation depositional slope used to transport
-             sediment in the marine realm. Default value is 1 in [m/m] (optional) -->
-        <marslp>0.1</marslp>
-        <!-- Marine sedimentation gaussian filtering parameter. Default value is
-             set to 0. (optional) -->
-        <sigma>3</sigma>
+        <!-- Number of steps used to distribute marine deposit.
+             Default value is 5 (integer). -->
+        <diffnb>10</diffnb>
+        <!-- Proportion of marine sediment deposited on downstream nodes. It needs
+             to be set between ]0,1[. Default value is 0.9 (optional). -->
+        <diffprop>0.05</diffprop>
     </sp_law>
 
     <!-- Linear slope diffusion parameters:
@@ -77,7 +77,10 @@
         <!-- Surface diffusion coefficient [m2/a] -->
         <caerial>8.e-1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
-        <cmarine>1.</cmarine>
+        <cmarine>5.e-1</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>10.</criver>
     </creep>
 
     <!-- Output folder path -->

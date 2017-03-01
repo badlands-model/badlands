@@ -76,6 +76,7 @@ class Model(object):
         self.hillslope = diffLinear()
         self.hillslope.CDaerial = self.input.CDa
         self.hillslope.CDmarine = self.input.CDm
+        self.hillslope.CDriver = self.input.CDr
 
         # Define flow parameters
         self.flow = flowNetwork()

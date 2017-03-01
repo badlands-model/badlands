@@ -224,9 +224,6 @@
         <!-- Proportion of marine sediment deposited on downstream nodes. It needs
              to be set between ]0,1[. Default value is 0.9 (optional). -->
         <diffprop>0.2</diffprop>
-        <!-- Marine sedimentation gaussian filtering parameter. Default value is
-             set to 0. (optional) -->
-        <sigma>2.</sigma>
     </sp_law>
 
     <!-- Erodibility structure
@@ -276,6 +273,9 @@
         <caerial>0.001</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>0.005</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>10.</criver>
     </creep>
 
     <!-- Flexural isostasy parameters:

@@ -144,3 +144,40 @@ void diffusion(double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS], double 
         }
     }
 }
+
+void diffusionmarine(double pyZ[], int pyBord[], int pyDep[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
+    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double pyDiff[], int pylocalNb, int pyglobalNb)
+{
+    int i;
+
+    for (i = 0; i < pyglobalNb; i++) {
+        pyDiff[i] = 0.;
+    }
+
+    int k;
+    for (k = 0; k < pylocalNb; k++) {
+        int gid = pyGIDs[k];
+        int p;
+        if (pyBord[gid]>0.) {
+          for (p = 0; p < MAX_NEIGHBOURS; p++) {
+              int ngbid = pyNgbs[gid][p];
+              if (ngbid < 0) {
+                  break;
+              }
+              if (pyBord[ngbid]>0){
+                if(pyDep[gid] > 0 && pyZ[gid] > pyZ[ngbid]) {
+                  pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+                }
+                if(pyDep[ngbid] > 0 && pyZ[gid] < pyZ[ngbid]) {
+                  pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+                }
+              }
+              if (pyBord[ngbid]<1){
+                if (pyZ[ngbid] < pyZ[gid] && pyDep[gid] > 0){
+                  pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+                }
+              }
+          }
+        }
+    }
+}

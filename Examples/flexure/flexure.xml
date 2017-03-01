@@ -72,6 +72,9 @@
         <caerial>1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>2</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>10.</criver>
     </creep>
 
     <!-- Flexural isostasy parameters:
@@ -92,9 +95,9 @@
         <fnx>250</fnx>
         <!-- Number of points along the Y-axis - (optional)-->
         <fny>100</fny>
-        <!-- Mantle density [kg/m3] -->
+        <!-- Mantle density [km/m3] -->
         <dmantle>3300</dmantle>
-        <!-- Sediment density [kg/m3] -->
+        <!-- Sediment density [km/m3] -->
         <dsediment>2500</dsediment>
         <!-- Young's Modulus [Pa] -->
         <youngMod>65E9</youngMod>

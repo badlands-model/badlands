@@ -125,6 +125,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     walltime = time.clock()
     if input.Hillslope:
         hillslope.dt_stability(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
+        hillslope.dt_stability_ms(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
     else:
         hillslope.CFL = tEnd-tNow
     flow.dt_stability(fillH, inGIDs)
@@ -146,11 +147,42 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     tmp = force.rivQs[ids]
     timestep, sedchange = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, borders, domain,
                                           CFLtime, force.rivQs, force.sealevel, cumdiff, input.perc_dep,
-                                          input.slp_cr, input.diffsigma, FVmesh.neighbours, verbose)
+                                          input.slp_cr, FVmesh.neighbours, verbose)
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
     elevation += sedchange
     cumdiff += sedchange
+
+    # Compute marine sediment diffusion
+    if hillslope.CDriver > 0.:
+        walltime = time.clock()
+        dt = timestep
+        it = 0
+        depIDs = np.zeros(len(elevation),dtype=int)
+        while dt > 0:
+            if it==0:
+                tmpIDs = np.where(np.logical_and(sedchange!=0.,elevation<force.sealevel))[0]
+            else:
+                tmpIDs = np.where(np.logical_and(diffmarine_flux!=0.,elevation<force.sealevel))[0]
+            depIDs[tmpIDs] = 1
+            flow.compute_marine_diffusion(elevation, borders, depIDs, FVmesh.neighbours,
+                           FVmesh.vor_edges, FVmesh.edge_length,lGIDs)
+            cdiffmarine = hillslope.sedfluxmarine(flow.diff_flux, force.sealevel, elevation, FVmesh.control_volumes)
+            diffmarine_flux = np.zeros(len(cdiffmarine))
+            diffmarine_flux[insideIDs] = cdiffmarine[insideIDs]
+            if hillslope.CFLms<dt:
+                dt -= hillslope.CFLms
+                stepT = hillslope.CFLms
+            else:
+                stepT = dt
+                dt = 0.
+            diffmarine = diffmarine_flux * stepT
+            elevation += diffmarine
+            cumdiff += diffmarine
+            depIDs[tmpIDs] = 0
+            it += 1
+        if rank == 0 and verbose:
+            print " -   Get river sediment marine fluxes ", time.clock() - walltime
 
     # Compute hillslope processes
     walltime = time.clock()
@@ -161,6 +193,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     diff_flux[insideIDs] = cdiff[insideIDs]
     diff = diff_flux * timestep
     elevation += diff
+
     if input.btype == 'slope':
         elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]-0.1
     elif input.btype == 'flat':

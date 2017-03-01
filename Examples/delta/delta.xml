@@ -10,6 +10,8 @@
              value will multiply the digital elevation model resolution
              accordingly.  -->
         <resfactor>5</resfactor>
+        <!-- Boundary type: flat, slope, fix or wall -->
+        <boundary>flat</boundary>
     </grid>
 
     <!-- Simulation time structure -->
@@ -29,7 +31,7 @@
         <!-- Stratal layer interval [a] -->
         <laytime>2500.</laytime>
     </strata>
-    
+
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
@@ -70,6 +72,12 @@
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
         <erodibility>1.e-5</erodibility>
+        <!-- Number of steps used to distribute marine deposit.
+             Default value is 5 (integer). -->
+        <diffnb>5</diffnb>
+        <!-- Proportion of marine sediment deposited on downstream nodes. It needs
+             to be set between ]0,1[. Default value is 0.9 (optional). -->
+        <diffprop>0.3</diffprop>
     </sp_law>
 
     <!-- Linear slope diffusion parameters:
@@ -80,6 +88,9 @@
         <caerial>3.e-1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>5.e-1</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>5.</criver>
     </creep>
 
     <!-- Output folder path -->

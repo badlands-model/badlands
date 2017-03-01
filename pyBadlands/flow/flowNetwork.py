@@ -105,6 +105,9 @@ class flowNetwork:
         elev
             Numpy arrays containing the elevation of the TIN nodes.
 
+        borders
+            Numpy arrays flagging the boundary nodes.
+
         neighbours
             Numpy integer-type array with the neighbourhood IDs.
 
@@ -118,6 +121,39 @@ class flowNetwork:
             Numpy integer-type array containing for local nodes their global IDs.
         """
         diff_flux = sfd.diffusion(elev, borders, neighbours, edges, distances, globalIDs)
+
+        # Send local diffusion flux globally
+        self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
+        self.diff_flux = diff_flux
+
+    def compute_marine_diffusion(self, elev, borders, dep, neighbours, edges, distances, globalIDs):
+        """
+        Perform river transported marine sediments diffusion.
+
+        Parameters
+        ----------
+        elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        borders
+            Numpy arrays flagging the boundary nodes.
+
+        dep
+            Numpy arrays flagging the deposited nodes.
+
+        neighbours
+            Numpy integer-type array with the neighbourhood IDs.
+
+        edges
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+
+        distances
+            Numpy real-type array with the distances between each connection in the TIN.
+
+        globalIDs
+            Numpy integer-type array containing for local nodes their global IDs.
+        """
+        diff_flux = sfd.diffusionmarine(elev, borders, dep, neighbours, edges, distances, globalIDs)
 
         # Send local diffusion flux globally
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
@@ -376,7 +412,7 @@ class flowNetwork:
             self.allDrain = -numpy.ones(len(pitID))
 
     def compute_sedflux(self, Acell, elev, fillH, borders, domain, dt, rivqs, sealevel,
-        cumdiff, perc_dep, slp_cr, sigma, ngbh, verbose=False):
+        cumdiff, perc_dep, slp_cr, ngbh, verbose=False):
         """
         Calculates the sediment flux at each node.
 
@@ -414,9 +450,6 @@ class flowNetwork:
 
         perc_dep
             Maximum percentage of deposition at any given time interval.
-
-        sigma
-            Marine sedimentation gaussian filter parameter.
         """
 
         # Initialise MPI communications
@@ -559,21 +592,11 @@ class flowNetwork:
                     seavol[seaIDs] = depo[seaIDs]
                     # Distribute marine sediments based on angle of repose
                     seadep = PDalgo.pdstack.marine_distribution(elev, seavol, sealevel, borders, seaIDs)
-                    if sigma>0.:
-                        smthdep = self.gaussian_diffusion(elev+seadep, sigma)
-                        iddd = numpy.where(seadep>0)[0]
-                        dh = smthdep[iddd]-elev[iddd]
-                        dh[dh<0.] = 0.
-                        deposition[iddd] += dh
-                    else:
-                        deposition += seadep
+                    deposition += seadep
                     if rank==0 and verbose:
                         print "   - Compute marine deposition ", time.clock() - time1
                         time1 = time.clock()
                     depo[seaIDs] = 0.
-                    if rank==0 and verbose:
-                        print "   - Smooth marine deposition ", time.clock() - time1
-                        time1 = time.clock()
 
                 # Is there some remaining deposits?
                 tmp = numpy.where(depo>0)[0]

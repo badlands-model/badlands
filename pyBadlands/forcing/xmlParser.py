@@ -99,12 +99,12 @@ class xmlParser:
         self.SPLero = 0.
         self.diffnb = 5
         self.diffprop = 0.9
-        self.diffsigma = 0.
         self.spl = False
         self.Hillslope = False
 
         self.CDa = 0.
         self.CDm = 0.
+        self.CDr = 0.
         self.makeUniqueOutputDir = makeUniqueOutputDir
 
         self.outDir = None
@@ -842,19 +842,12 @@ class xmlParser:
                     raise ValueError('Proportion of marine sediment deposited on downstream nodes needs to be range between ]0,1[')
             else:
                 self.diffprop = 0.9
-            element = None
-            element = spl.find('sigma')
-            if element is not None:
-                self.diffsigma = float(element.text)
-            else:
-                self.diffsigma = 0.
         else:
             self.depo = 0
             self.SPLm = 1.
             self.SPLn = 1.
             self.SPLero = 0.
             self.diffnb = 5
-            self.diffsigma = 0.
 
         # Extract linear and nonlinear slope diffusion structure parameters
         creep = None
@@ -872,10 +865,17 @@ class xmlParser:
                 self.CDm = float(element.text)
             else:
                 self.CDm = 0.
+            element = None
+            element = creep.find('criver')
+            if element is not None:
+                self.CDr = float(element.text)
+            else:
+                self.CDr = 0.
             self.Hillslope = True
         else:
             self.CDa = 0.
             self.CDm = 0.
+            self.CDr = 0.
 
         # Loading variable erodibility layers
         erostruct = None
