@@ -50,6 +50,8 @@ class FVmethod:
         self.partIDs = None
         self.maxNgbh = None
         self.localIDs = None
+        self.outPts = None
+        self.outCells = None
 
     def _FV_utils(self, lGIDs, verbose=False):
         """

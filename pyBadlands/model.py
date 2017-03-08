@@ -6,7 +6,7 @@ from scipy.spatial import cKDTree
 from pyBadlands import (diffLinear, flowNetwork, buildMesh,
                         checkPoints, buildFlux, xmlParser)
 
-# profiling support
+# Profiling support
 import cProfile
 import os
 import pstats
@@ -21,7 +21,7 @@ class Model(object):
         Constructor.
         """
 
-        # simulation state
+        # Simulation state
         self.tNow = 0.
         self.outputStep = 0
         self.disp = None
@@ -45,14 +45,14 @@ class Model(object):
             When True, output additional debug information.
         """
 
-        # only the first node should create a unique output dir
+        # Only the first node should create a unique output dir
         self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=(self._rank == 0))
         self.tNow = self.input.tStart
 
-        # sync the chosen output dir to all nodes
+        # Sync the chosen output dir to all nodes
         self.input.outDir = self._comm.bcast(self.input.outDir, root=0)
 
-        # seed the random number generator consistently on all nodes
+        # Seed the random number generator consistently on all nodes
         seed = None
         if self._rank == 0:
             # limit to max uint32

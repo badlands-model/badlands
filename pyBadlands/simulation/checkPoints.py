@@ -40,18 +40,20 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
     visYlim[1] = recGrid.rectY.max()
 
     # Done when TIN has been built/rebuilt
-    outPts, outCells = visualiseTIN.output_cellsIDs(lGIDs, inIDs, visXlim, visYlim,
-                                        FVmesh.node_coords[:, :2], tMesh.cells)
+    if FVmesh.outPts is None and FVmesh.outCells is None:
+        FVmesh.outPts, FVmesh.outCells = visualiseTIN.output_cellsIDs(lGIDs, inIDs,
+                                            visXlim, visYlim, FVmesh.node_coords[:, :2],
+                                            tMesh.cells)
     tcells = np.zeros(size)
-    tcells[rank] = len(outCells)
+    tcells[rank] = len(FVmesh.outCells)
     comm.Allreduce(mpi.IN_PLACE, tcells, op=mpi.MAX)
     tnodes = np.zeros(size)
     tnodes[rank] = len(lGIDs)
     comm.Allreduce(mpi.IN_PLACE, tnodes, op=mpi.MAX)
 
     # Done for every visualisation step
-    flowIDs, polylines = visualiseFlow.output_Polylines(outPts, flow.receivers[outPts],
-                visXlim, visYlim, FVmesh.node_coords[:, :2])
+    flowIDs, polylines = visualiseFlow.output_Polylines(FVmesh.outPts, flow.receivers[FVmesh.outPts],
+                                                        visXlim, visYlim, FVmesh.node_coords[:, :2])
     fnodes = np.zeros(size)
     fnodes[rank] = len(flowIDs)
     comm.Allreduce(mpi.IN_PLACE, fnodes, op=mpi.MAX)
@@ -71,11 +73,13 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
     if input.flexure:
         visualiseTIN.write_hdf5_flexure(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
                                     elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
-                                    cumflex[lGIDs], outCells, rank, input.oroRain, eroOn, flow.erodibility[lGIDs])
+                                    cumflex[lGIDs], FVmesh.outCells, rank, input.oroRain, eroOn,
+                                    flow.erodibility[lGIDs])
     else:
         visualiseTIN.write_hdf5(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
                                 elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
-                                outCells, rank, input.oroRain, eroOn, flow.erodibility[lGIDs])
+                                FVmesh.outCells, rank, input.oroRain, eroOn,
+                                flow.erodibility[lGIDs])
 
     visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2],
                              elevation[flowIDs], visdis[flowIDs], flow.chi[flowIDs],
