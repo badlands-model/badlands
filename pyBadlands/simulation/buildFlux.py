@@ -98,7 +98,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
 
     return fillH, elevation
 
-def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, applyDisp, \
+def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, lGIDs, applyDisp, \
                   mapero, cumdiff, fillH, disp, inGIDs, elevation, tNow, tEnd, verbose=False):
     """
     Compute sediment fluxes.
@@ -145,7 +145,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, lGIDs, 
     walltime = time.clock()
     ids = np.where(force.rivQs>0)
     tmp = force.rivQs[ids]
-    timestep, sedchange = flow.compute_sedflux(FVmesh.control_volumes, elevation, fillH, borders, domain,
+    timestep, sedchange = flow.compute_sedflux(FVmesh.control_volumes, elevation, rain, fillH, borders, domain,
                                           CFLtime, force.rivQs, force.sealevel, cumdiff, input.perc_dep,
                                           input.slp_cr, FVmesh.neighbours, verbose)
     if rank == 0 and verbose:

@@ -79,7 +79,8 @@ class Model(object):
         self.hillslope.CDriver = self.input.CDr
 
         # Define flow parameters
-        self.flow = flowNetwork()
+        self.flow = flowNetwork(self.force, self.input.precipfac, self.input.rhoS)
+
         if self.input.erolays is None:
             self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
         else:
@@ -334,7 +335,7 @@ class Model(object):
 
             # Compute sediment transport up to tStop
             self.tNow, self.elevation, self.cumdiff = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, self.FVmesh,
-                              self.tMesh, self.flow, self.force, self.lGIDs, self.applyDisp, self.mapero, self.cumdiff, \
+                              self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.mapero, self.cumdiff, \
                               self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time

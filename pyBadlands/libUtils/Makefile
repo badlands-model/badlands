@@ -26,6 +26,7 @@ PD_FMOD = PDclass
 PD_LMOD = PDalgo
 
 # Flow parameters computation
+FLOW_FMOD = FLOWclass
 FLOW_LMOD = FLOWalgo
 
 # Fast loop computation
@@ -43,7 +44,7 @@ FV_LMOD = FVframe
 OR_FMOD = ORclass
 OR_LMOD = ORmodel
 
-all: ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
+all: ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_FMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
 
 	@echo ""
 	@echo ""
@@ -68,8 +69,11 @@ ${PD_FMOD}.so: ${PD_FMOD}.f90
 ${PD_LMOD}.so: ${PD_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${PD_FMOD} -m ${PD_LMOD} $<
 
+${FLOW_FMOD}.so: ${FLOW_FMOD}.f90
+		${F90} ${FFLAGS} -o lib${FLOW_FMOD}.so $<
+
 ${FLOW_LMOD}.so: ${FLOW_LMOD}.f90
-	${F2PY} ${F2PY_FLAGS} -c -m ${FLOW_LMOD} $<
+	${F2PY} ${F2PY_FLAGS} -c -L${LIBDIR} -I${INCDIR} -l${FLOW_FMOD}  -m ${FLOW_LMOD} $<
 
 ${LOOP_LMOD}.so: ${LOOP_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -m ${LOOP_LMOD} $<

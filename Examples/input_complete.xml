@@ -212,7 +212,7 @@
              (m/n) is considered to be close to 0.5 -->
         <m>0.5</m>
         <n>1.0</n>
-        <!-- The erodibility coefficient is scale-dependent and its value depend
+        <!-- The erodibility coefficient is scale-dependent and its value depends
              on lithology and mean precipitation rate, channel width, flood
              frequency, channel hydraulics. In case where the erodibility
              structure is turned on, this coefficient is applied to the reworked
@@ -225,6 +225,33 @@
              to be set between ]0,1[. Default value is 0.9 (optional). -->
         <diffprop>0.2</diffprop>
     </sp_law>
+
+    <!-- Erodibility function structure  (optional)
+         It is possible to modify the erodibility coefficient to explicitly incorporate:
+          + the effect of local mean annual precipitation rate, and
+          + the effect of sediment supply,
+          + where the dependency of bedload transport is related to the upstream slope.
+         An example of how to define these functions is provided in the erodibilityFct notebook
+         in pyBadlands Companion. -->
+    <erofunction>
+        <!-- Erodibility dependence to the precipitation is defined with an exponent.
+           Default value is set to 0. See Murphy et al. (2016), Nature, 532. -->
+        <precipexpo>0.</precipexpo>
+        <!-- Average sediment density. Default value is 2500 kg/m3.
+           Make sure to define the same values in the rivers structure for rhoS. -->
+        <rhoS>2500.</rhoS>
+        <!-- Erodibility dependence to the bedload sediment supply is defined in a file.
+           The file can be created with the erodibilityFct notebook in pyBadlands Companion,
+           it consists of 2 columns: first column is the sediment supply [kg/s] and the second
+           is the erodibility factor (values are between [0,1])
+           See Sklar & Dietrich (2004), Water Resour. Res., 40. -->
+        <sedsupply>data/sedsupply.csv</sedsupply>
+        <!-- Contributing proportion of bedload contributing to erosion. Again this is defined in
+           a file that can be created with the erodibilityFct notebook in pyBadlands Companion.
+           it consists of 2 columns: first column is the upstream slope [m/m] and the second
+           is the percentage of sediment eroded and transported as bedload. -->
+        <bedslope>data/bedslope.csv</bedslope>
+    </erofunction>
 
     <!-- Erodibility structure
          This option allows you to specify different erodibility values either on the surface

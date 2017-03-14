@@ -102,6 +102,12 @@ class xmlParser:
         self.spl = False
         self.Hillslope = False
 
+        self.erof = False
+        self.precipfac = 0.
+        self.rhoS = 2500.
+        self.sedsupply = None
+        self.bedslope = None
+
         self.CDa = 0.
         self.CDm = 0.
         self.CDr = 0.
@@ -848,6 +854,40 @@ class xmlParser:
             self.SPLn = 1.
             self.SPLero = 0.
             self.diffnb = 5
+
+        # Extract erodibility functions structure parameters
+        erof = None
+        erof = root.find('erofunction')
+        if erof is not None:
+            self.erof = True
+            element = None
+            element = erof.find('precipexpo')
+            if element is not None:
+                self.precipfac = float(element.text)
+            else:
+                self.precipfac = 0.
+            element = None
+            element = erof.find('rhoS')
+            if element is not None:
+                self.rhoS = float(element.text)
+            else:
+                self.rhoS = 2500.
+            element = None
+            element = erof.find('sedsupply')
+            if element is not None:
+                self.sedsupply = element.text
+                if not os.path.isfile(self.sedsupply):
+                    raise ValueError('File for erodibility dependence to sediment supply is missing or the given path is incorrect.')
+            else:
+                self.sedsupply = None
+            element = None
+            element = erof.find('bedslope')
+            if element is not None:
+                self.bedslope = element.text
+                if not os.path.isfile(self.bedslope):
+                    raise ValueError('File for bedload dependence to slope is missing or the given path is incorrect.')
+            else:
+                self.bedslope = None
 
         # Extract linear and nonlinear slope diffusion structure parameters
         creep = None

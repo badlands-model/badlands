@@ -15,6 +15,7 @@ from .surface import FVmethod
 from .surface import raster2TIN
 from .underland import eroMesh
 from .underland import strataMesh
+from .underland import stratiWedge
 from .flow import visualiseFlow
 from .hillslope import diffLinear
 from .surface import elevationTIN

@@ -15,7 +15,7 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN,
-                        eroMesh, strataMesh, isoFlex, forceSim)
+                        eroMesh, strataMesh, stratiWedge, isoFlex, forceSim)
 
 def construct_mesh(input, filename, verbose=False):
     """
@@ -46,7 +46,8 @@ def construct_mesh(input, filename, verbose=False):
                 input.windy, input.tauc, input.tauf, input.nm,
                 input.cw, input.hw, input.ortime, input.tectFile,
                 input.tectTime, recGrid.regX, recGrid.regY, input.riverPos,
-                input.riverTime, input.riverQws, input.riverNb, input.tDisplay)
+                input.riverTime, input.riverQws, input.riverNb, input.erof,
+                input.sedsupply, input.bedslope, input.rhoS, input.tDisplay)
 
     if input.disp3d:
         force.time3d = input.time3d

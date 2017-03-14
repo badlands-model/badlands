@@ -101,6 +101,18 @@ class forceSim:
     rivNb : int
         Number of rivers.
 
+    erof : boolean
+        Numpy array containing the active time for the rivers.
+
+    sedsupply : string
+        Path to the erodibility factor versus sediment supply file (if any).
+
+    bedslope : string
+        Path to the bedload versus slope function file (if any).
+
+    rhoS : float
+        Sediment density kg/m3.
+
     Tdisplay : float
         Display interval (in years).
     """
@@ -109,7 +121,7 @@ class forceSim:
                  orographic = None, rbgd = None, rmin = None, rmax = None, windx = None, windy = None,
                  tauc = None, tauf = None, nm = None, cw = None, hw = None, ortime = None, MapDisp = None,
                  TimeDisp = None, regX = None, regY = None, rivPos = None, rivTime = None, rivQws = None,
-                 rivNb = 0, Tdisplay = 0.):
+                 rivNb = 0, erof = False, sedsupply = None, bedslope = None, rhoS = 2500., Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
@@ -154,6 +166,14 @@ class forceSim:
         self.seaval = None
         self.seaFunc = None
 
+        self.erofct = erof
+        self.fsedsupply = sedsupply
+        self.fbedslope = bedslope
+        self.sedsupply = None
+        self.sedsupval = None
+        self.bedslope = None
+        self.bedloadprop = None
+
         self.tXY = None
         self.dispX = None
         self.dispY = None
@@ -169,6 +189,12 @@ class forceSim:
         if self.seafile != None:
             self._build_Sea_function()
 
+        if self.fsedsupply != None:
+            self._build_SedSupply_function(rhoS)
+
+        if self.fbedslope != None:
+            self._build_BedSlope_function()
+
     def _build_Sea_function(self):
         """
         Using Pandas library to read the sea level file and define sea level interpolation
@@ -183,6 +209,35 @@ class forceSim:
         self.seatime = seadata.values[:,0]
         self.seaval = seadata.values[:,1]
         self.seaFunc = interpolate.interp1d(self.seatime, self.seaval, kind='linear')
+
+    def _build_SedSupply_function(self, rhoS):
+        """
+        Using Pandas library to read the sediment supply file and define the interpolation
+        function based on Scipy 1D linear function.
+        """
+
+        # Read sediment supply file
+        sedsup = pandas.read_csv(self.fsedsupply, sep=r'\s+', engine='c',
+                               header=None, na_filter=False,
+                               dtype=numpy.float, low_memory=False)
+
+        # Conversion from kg/s to m3/yr
+        self.sedsupply = sedsup.values[:,0]*3.154e7/rhoS
+        self.sedsupval = sedsup.values[:,1]
+
+    def _build_BedSlope_function(self):
+        """
+        Using Pandas library to read the bedload versus slope file and define bedload proportion interpolation
+        function based on Scipy 1D linear function.
+        """
+
+        # Read bedload versus slope file
+        beddata = pandas.read_csv(self.fbedslope, sep=r'\s+', engine='c',
+                               header=None, na_filter=False,
+                               dtype=numpy.float, low_memory=False)
+
+        self.bedslope = beddata.values[:,0]
+        self.bedloadprop = beddata.values[:,1]
 
     def getSea(self, time):
         """
@@ -202,6 +257,8 @@ class forceSim:
             if time > self.seatime.max():
                 time = self.seatime.max()
             self.sealevel = self.seaFunc(time)
+
+        return
 
     def getRivers(self, time):
         """

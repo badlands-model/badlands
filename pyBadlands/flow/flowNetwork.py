@@ -37,7 +37,7 @@ class flowNetwork:
     algorithm.
     """
 
-    def __init__(self):
+    def __init__(self, force, precipfac, rhoS):
         """
         Initialization.
         """
@@ -92,6 +92,14 @@ class flowNetwork:
         self.indices = None
         self.onIDs = None
 
+        self.precipfac = precipfac
+        self.rhoS = rhoS
+        self.bedload = None
+        self.sedload = None
+
+        if force.erofct :
+            FLOWalgo.flowcompute.eroparams(force.sedsupply,force.sedsupval,
+                                           force.bedslope,force.bedloadprop)
         self._comm = mpi.COMM_WORLD
         self._rank = self._comm.Get_rank()
         self._size = self._comm.Get_size()
@@ -411,7 +419,7 @@ class flowNetwork:
             self.pitDrain = -numpy.ones(len(pitID))
             self.allDrain = -numpy.ones(len(pitID))
 
-    def compute_sedflux(self, Acell, elev, fillH, borders, domain, dt, rivqs, sealevel,
+    def compute_sedflux(self, Acell, elev, rain, fillH, borders, domain, dt, rivqs, sealevel,
         cumdiff, perc_dep, slp_cr, ngbh, verbose=False):
         """
         Calculates the sediment flux at each node.
@@ -423,6 +431,9 @@ class flowNetwork:
 
         elev
             Numpy arrays containing the elevation of the TIN nodes.
+
+        rain
+            Numpy float-type array containing the precipitation rate for each nodes (in m/a).
 
         fillH
             Numpy array containing the lake elevations.
@@ -469,10 +480,16 @@ class flowNetwork:
 
             # Find border/inside nodes
             insideIDs = numpy.where(borders>0)[0]
+            if self.precipfac>0.:
+                eroCoeff = self.erodibility *numpy.power(rain,self.precipfac)
+            else:
+                eroCoeff = self.erodibility
 
-            cdepo, cero = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
-                     self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
-                     self.erodibility,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
+            cdepo, cero, sedload, bedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
+                     self.pitVolume, self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
+                     eroCoeff,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
+            print 'here',sedload.max(),bedload.max()
+            exit
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
             if self.depo == 0:
@@ -507,9 +524,9 @@ class flowNetwork:
                 print "   - Compute depressions connectivity ", time.clock() - time1
                 time1 = time.clock()
             if newdt < dt:
-                cdepo, cero = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
+                cdepo, cero, sedload, bedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
                     self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
-                    self.erodibility,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
+                    eroCoeff,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
                 comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
                 comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
                 volChange = cdepo+cero
@@ -525,6 +542,12 @@ class flowNetwork:
                     if len(overfilled) > 0:
                         print 'WARNING: overfilling persists after time-step limitation.',len(overfilled)
                     #assert len(overfilled) == 0, 'WARNING: overfilling persists after time-step limitation.'
+
+            # Update river sediment load in kg/s
+            comm.Allreduce(mpi.IN_PLACE,bedload,op=mpi.MAX)
+            comm.Allreduce(mpi.IN_PLACE,sedload,op=mpi.MAX)
+            self.sedload = sedload*self.rhoS/(newdt*3.154e7)
+            self.bedload = bedload*self.rhoS/(newdt*3.154e7)
 
             # Compute erosion
             ero = numpy.zeros(len(cero))

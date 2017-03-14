@@ -10,9 +10,76 @@
 ! This module implements flow parameters computation.
 module flowcompute
 
+  use flowclass
+
   implicit none
 
 contains
+
+  subroutine eroparams(pysedsup,pysedsupval,pybedslp,pybedprop,pysedNb,pyslpNb)
+
+    integer :: pysedNb
+    integer :: pyslpNb
+    real(kind=8),dimension(pysedNb),intent(in) :: pysedsup
+    real(kind=8),dimension(pysedNb),intent(in) :: pysedsupval
+    real(kind=8),dimension(pyslpNb),intent(in) :: pybedslp
+    real(kind=8),dimension(pyslpNb),intent(in) :: pybedprop
+    real(kind=8) :: u
+    erofct = .true.
+    sedNb = pysedNb
+    slpNb = pyslpNb
+
+    if(allocated(sedsup)) deallocate(sedsup)
+    allocate(sedsup(sedNb))
+    sedsup = pysedsup
+    if(allocated(sedsupval)) deallocate(sedsupval)
+    allocate(sedsupval(sedNb))
+    sedsupval = pysedsupval
+
+    if(allocated(bedslp)) deallocate(bedslp)
+    allocate(bedslp(slpNb))
+    bedslp = pybedslp
+    if(allocated(bedprop)) deallocate(bedprop)
+    allocate(bedprop(slpNb))
+    bedprop = pybedprop
+
+    ! call spline(sedsup, sedsupval, b1, c1, d1, sedNb)
+    ! if(allocated(sedb)) deallocate(sedb)
+    ! if(allocated(sedc)) deallocate(sedc)
+    ! if(allocated(sedd)) deallocate(sedd)
+    ! allocate(sedb(sedNb),sedc(sedNb),sedd(sedNb))
+    ! sedb = b1
+    ! sedc = c1
+    ! sedd = d1
+    print*,'sedsup',sedsup
+    print*,'sedsupval',sedsupval
+    u = 609.24
+    print*,'sup 609.24 ',ispline(u, sedsup, sedsupval, sedNb) !sedb, sedc, sedd, sedNb)
+    u = 4301.2
+    print*,'sup 4301.2 ',ispline(u, sedsup, sedsupval, sedNb) !sedb, sedc, sedd, sedNb)
+    u = 6075.48
+    print*,'sup 6075.48 ',ispline(u, sedsup, sedsupval, sedNb) !sedb, sedc, sedd, sedNb)
+
+    ! call spline(bedslp, bedprop, b2, c2, d2, slpNb)
+    ! if(allocated(bedb)) deallocate(bedb)
+    ! if(allocated(bedc)) deallocate(bedc)
+    ! if(allocated(bedd)) deallocate(bedd)
+    ! allocate(bedb(slpNb),bedc(slpNb),bedd(slpNb))
+    ! bedb = b2
+    ! bedc = c2
+    ! bedd = d2
+    !print*,'bedslp',bedslp
+    !print*,'bedprop',bedprop
+    u = 0.081
+    print*,'bed 0.081',ispline(u, bedslp, bedprop, slpNb) !bedb, bedc, bedd, slpNb)
+    u = 0.33
+    print*,'bed 0.33',ispline(u, bedslp, bedprop,  slpNb) !bedb, bedc, bedd, slpNb)
+    u = 0.745
+    print*,'bed 0.745',ispline(u, bedslp, bedprop,  slpNb) !bedb, bedc, bedd, slpNb)
+
+    return
+
+  end subroutine eroparams
 
   subroutine discharge(pyStack, pyRcv, pyDischarge, pyDis, pylNodesNb, pygNodesNb)
 
@@ -286,7 +353,7 @@ contains
 
   subroutine streampower(pyStack, pyRcv, pitID, pitVol, pitDrain, pyXY, pyArea, pyMaxH, &
       pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, spl_m, spl_n, perc_dep, &
-      slp_cr, sea, dt, borders, pyDepo, pyEro, pylNodesNb, pygNodesNb)
+      slp_cr, sea, dt, borders, pyDepo, pyEro, sedFluxes, bedFluxes, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
@@ -314,15 +381,19 @@ contains
 
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyDepo
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyEro
+      real(kind=8),dimension(pygNodesNb),intent(out) :: bedFluxes
+      real(kind=8),dimension(pygNodesNb),intent(out) :: sedFluxes
 
       integer :: n, donor, recvr, nID, tmpID
-      real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep
-      real(kind=8) :: dist, slp, slpdh, updh, tmpdist
-      real(kind=8),dimension(pygNodesNb) :: sedFluxes, upZ, updist
+      real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep, Qb
+      real(kind=8) :: dist, slp, slpdh, updh, tmpdist, fac, upperslp, bedprop
+      real(kind=8),dimension(pygNodesNb) :: upZ, updist
+      !real(kind=8),dimension(pygNodesNb) :: sedFluxes, upZ, updist, bedFluxes
 
       pyDepo = 0.
       pyEro = 0.
       sedFluxes = pyRiv * dt
+      bedFluxes = 0.
       upZ = 1.e6
       updist = 0.
 
@@ -356,7 +427,19 @@ contains
 
             ! Compute the stream power law expressed in m/y
             if(dist > 0. .and. slpdh == 0.)then
-              SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (slp)**spl_n
+
+              ! Erodibility coefficient variation with bedload sediment supply
+              if(erofct)then
+                ! Compute upper slope
+                if(updist(donor)>0.)then
+                  upperslp = (upZ(donor) - pyElev(donor))/updist(donor)
+                endif
+                call erodibility_factor(bedFluxes(donor), upperslp, fac, bedprop)
+              else
+                fac = 1.
+                bedprop = 1.
+              endif
+              SPL = -Cero(donor) * fac * (pyDischarge(donor))**spl_m * (slp)**spl_n
             endif
           endif
         endif
@@ -372,6 +455,7 @@ contains
         maxh = 0.95*maxh
 
         Qs = 0.
+        Qb = 0.
         erodep = 0.
         pitDep = 0.
         ! Erosion case
@@ -379,12 +463,14 @@ contains
           ! Sediment volume [m3]
           erodep = SPL * dt * pyArea(donor)
           Qs = -erodep + sedFluxes(donor)
+          Qb = -erodep*bedprop + bedFluxes(donor)
 
         ! Deposition case
         elseif( SPL == 0. .and. pyArea(donor) > 0.)then
           ! Fill depression
           if(waterH > 0. .and. pyfillH(donor) > sea)then
             Qs = 0.
+            Qb = 0.
             erodep = 0.
             pitDep = sedFluxes(donor)
           ! Marine deposit
@@ -392,28 +478,34 @@ contains
             ! Add all sediment to the node
             erodep = sedFluxes(donor)
             Qs = 0.
+            Qb = 0.
           ! Alluvial plain deposit
           elseif(maxh > 0. .and. waterH == 0. .and. donor /= recvr .and. pyElev(donor) > sea)then
             if(sedFluxes(donor)/pyArea(donor) < maxh)then
               erodep = sedFluxes(donor)
               Qs = 0.
+              Qb = 0.
             else
               erodep = maxh*pyArea(donor)
               Qs = sedFluxes(donor) - erodep
+              Qb = max(0.,bedFluxes(donor) - erodep)
             endif
           ! Base-level (sink)
           elseif(donor == recvr .and. pyArea(donor) > 0.)then
             erodep = sedFluxes(donor)
             Qs = 0.
+            Qb = 0.
           else
             erodep = 0.
             Qs = sedFluxes(donor)
+            Qb = bedFluxes(donor)
           endif
         endif
 
         ! Update sediment volume in receiver node
         if(pitDep==0.)then
           sedFluxes(recvr) = sedFluxes(recvr) + Qs
+          bedFluxes(recvr) = bedFluxes(recvr) + Qb
           if(erodep<0.)then
             pyEro(donor) = pyEro(donor) + erodep
           else
@@ -433,6 +525,7 @@ contains
                 tmpdist = 0.
               else
                 sedFluxes(recvr) = sedFluxes(recvr) + tmpdist
+
                 tmpdist = 0.
               endif
               nID = recvr
