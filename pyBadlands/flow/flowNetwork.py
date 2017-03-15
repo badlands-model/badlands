@@ -94,7 +94,6 @@ class flowNetwork:
 
         self.precipfac = precipfac
         self.rhoS = rhoS
-        self.bedload = None
         self.sedload = None
 
         if force.erofct :
@@ -485,7 +484,7 @@ class flowNetwork:
             else:
                 eroCoeff = self.erodibility
 
-            cdepo, cero, sedload, bedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
+            cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume, self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
                      eroCoeff,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
@@ -522,7 +521,7 @@ class flowNetwork:
                 print "   - Compute depressions connectivity ", time.clock() - time1
                 time1 = time.clock()
             if newdt < dt:
-                cdepo, cero, sedload, bedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
+                cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
                     self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
                     eroCoeff,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
                 comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
@@ -542,10 +541,8 @@ class flowNetwork:
                     #assert len(overfilled) == 0, 'WARNING: overfilling persists after time-step limitation.'
 
             # Update river sediment load in kg/s
-            comm.Allreduce(mpi.IN_PLACE,bedload,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,sedload,op=mpi.MAX)
             self.sedload = sedload*self.rhoS/(newdt*3.154e7)
-            self.bedload = bedload*self.rhoS/(newdt*3.154e7)
 
             # Compute erosion
             ero = numpy.zeros(len(cero))

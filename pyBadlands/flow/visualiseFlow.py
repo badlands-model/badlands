@@ -88,7 +88,7 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
 
     return flowIDs, line[lineIDs,:2]
 
-def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, bedload,
+def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi,
                sedload, basin, connect, rank):
     """
     This function writes for each processor the HDF5 file containing flow network information.
@@ -115,9 +115,6 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, bedload,
 
     chi
         Numpy float-type array containing the chi values of the local TIN.
-
-    bedload
-        Numpy float-type array containing the bedload values in kg/s.
 
     sedload
         Numpy float-type array containing the sedload values in kg/s.
@@ -148,12 +145,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi, bedload,
 
         f.create_dataset('chi',shape=(len(chi), 1), dtype='float32', compression='gzip')
         f["chi"][:,0] = chi
-        if step > 0:
-            f.create_dataset('bedload',shape=(len(bedload), 1), dtype='float32', compression='gzip')
-            f["bedload"][:,0] = bedload
 
-            f.create_dataset('sedload',shape=(len(sedload), 1), dtype='float32', compression='gzip')
-            f["sedload"][:,0] = sedload
+        f.create_dataset('sedload',shape=(len(sedload), 1), dtype='float32', compression='gzip')
+        f["sedload"][:,0] = sedload
 
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge
@@ -265,16 +259,10 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('Dimensions="%d 1">%s:/chi</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
 
-        if step > 0:
-            f.write('         <Attribute Type="Scalar" Center="Node" Name="sedload [kg/s]">\n')
-            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
-            f.write('Dimensions="%d 1">%s:/sedload</DataItem>\n'%(nodes[p],pfile))
-            f.write('         </Attribute>\n')
-
-            f.write('         <Attribute Type="Scalar" Center="Node" Name="bedload [kg/s]">\n')
-            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
-            f.write('Dimensions="%d 1">%s:/bedload</DataItem>\n'%(nodes[p],pfile))
-            f.write('         </Attribute>\n')
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="sedload [kg/s]">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/sedload</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
 
         f.write('      </Grid>\n')
 

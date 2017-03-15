@@ -32,10 +32,8 @@ contains
       if(erofct)then
         ! Interpolate bedload percentage based on upstream slope
         sedsupFactor = linear(sedsupply, sedsup, sedsupval, sedNb)
-        !print*,'sedsup',sedsupply,sedsupFactor
         ! Interpolate erodibility factor from sediment supply
         bedperc = linear(upslope, bedslp, bedprop, slpNb)
-        !print*,'upslope',upslope,bedperc
       else
         sedsupFactor = 1.
         bedperc = 1.

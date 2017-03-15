@@ -319,7 +319,7 @@ contains
 
   subroutine streampower(pyStack, pyRcv, pitID, pitVol, pitDrain, pyXY, pyArea, pyMaxH, &
       pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, spl_m, spl_n, perc_dep, &
-      slp_cr, sea, dt, borders, pyDepo, pyEro, sedFluxes, bedFluxes, pylNodesNb, pygNodesNb)
+      slp_cr, sea, dt, borders, pyDepo, pyEro, sedFluxes, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
@@ -347,14 +347,12 @@ contains
 
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyDepo
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyEro
-      real(kind=8),dimension(pygNodesNb),intent(out) :: bedFluxes
       real(kind=8),dimension(pygNodesNb),intent(out) :: sedFluxes
 
       integer :: n, donor, recvr, nID, tmpID
-      real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep, Qb
+      real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep, Qb, sedsp
       real(kind=8) :: dist, slp, slpdh, updh, tmpdist, fac, upperslp, bedperc
-      real(kind=8),dimension(pygNodesNb) :: upZ, updist
-      !real(kind=8),dimension(pygNodesNb) :: sedFluxes, upZ, updist, bedFluxes
+      real(kind=8),dimension(pygNodesNb) :: upZ, updist, bedFluxes
 
       pyDepo = 0.
       pyEro = 0.
@@ -400,7 +398,12 @@ contains
                 if(updist(donor)>0.)then
                   upperslp = (upZ(donor) - pyElev(donor))/updist(donor)
                 endif
-                call erodibility_factor(bedFluxes(donor), upperslp, fac, bedperc)
+                sedsp = bedFluxes(donor)
+                call erodibility_factor(sedsp, upperslp, fac, bedperc)
+                if(bedperc>1) bedperc = 1.
+                if(bedperc<0.) bedperc = 0.
+                if(fac<0) fac = 0.
+                if(fac>1.) fac = 1.
               else
                 fac = 1.
                 bedperc = 1.
@@ -526,7 +529,7 @@ contains
         if(upZ(recvr)==pyElev(donor)) updist(recvr) = dist
 
       enddo
-      
+
       return
 
   end subroutine streampower

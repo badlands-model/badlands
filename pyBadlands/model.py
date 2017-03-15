@@ -140,7 +140,6 @@ class Model(object):
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
         self.flow.xgrid = None
         self.flow.sedload = None
-        self.flow.bedload = None
 
     def run_to_time(self, tEnd, profile=False, verbose=False):
         """

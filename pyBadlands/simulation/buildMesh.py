@@ -15,7 +15,7 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN,
-                        eroMesh, strataMesh, stratiWedge, isoFlex, forceSim)
+                        eroMesh, strataMesh, isoFlex, forceSim)
 
 def construct_mesh(input, filename, verbose=False):
     """

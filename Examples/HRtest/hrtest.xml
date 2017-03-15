@@ -9,7 +9,7 @@
              The default value is set to 1. Increasing the factor
              value will multiply the digital elevation model resolution
              accordingly.  -->
-        <resfactor>10</resfactor>
+        <resfactor>1</resfactor>
     </grid>
 
     <!-- Simulation time structure -->
@@ -17,17 +17,17 @@
         <!-- Simulation start time [a] -->
         <start>0.</start>
         <!-- Simulation end time [a] -->
-        <end>1000.</end>
+        <end>10000.</end>
         <!-- Minim time step [a] -->
         <mindt>1.</mindt>
         <!-- Display interval [a] -->
-        <display>20.</display>
+        <display>100.</display>
     </time>
 
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
-        <position>-38000.</position>
+        <position>-3800.</position>
     </sea>
 
     <!-- Precipitation structure -->
@@ -39,7 +39,7 @@
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>5000.</rend>
+            <rend>10000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
             <rval>1.</rval>
         </rain>
@@ -69,6 +69,12 @@
               on lithology and mean precipitation rate, channel width, flood
               frequency, channel hydraulics. -->
         <erodibility>2.5e-6</erodibility>
+        <!-- Number of steps used to distribute marine deposit.
+             Default value is 5 (integer). -->
+        <diffnb>5</diffnb>
+        <!-- Proportion of marine sediment deposited on downstream nodes. It needs
+             to be set between ]0,1[. Default value is 0.9 (optional). -->
+        <diffprop>0.1</diffprop>
     </sp_law>
 
     <!-- Linear slope diffusion parameters:
@@ -79,6 +85,9 @@
         <caerial>8.e-1</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>1.</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>5.</criver>
     </creep>
 
     <!-- Output folder path -->
