@@ -371,7 +371,10 @@ class strataMesh():
         with numpy.errstate(divide='ignore'):
             weights = 1.0 / distances**2
 
-        load_diff = cumdiff - self.oldload
+        if self.oldload is not None:
+            load_diff = cumdiff - self.oldload
+        else:
+            load_diff = cumdiff
         if len(elev[indices].shape) == 3:
             elev_vals = elev[indices][:,:,0]
             cum_vals = load_diff[indices][:,:,0]
