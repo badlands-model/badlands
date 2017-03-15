@@ -81,14 +81,15 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
                                 FVmesh.outCells, rank, input.oroRain, eroOn,
                                 flow.erodibility[lGIDs])
 
-    if step > 0:
+    if flow.bedload is not None:
         visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
                                  visdis[flowIDs], flow.chi[flowIDs], flow.bedload[flowIDs],
                                  flow.sedload[flowIDs], flow.basinID[flowIDs], polylines, rank)
     else:
+        zeros = np.zeros(len(flowIDs),dtype=float)
         visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
-                                 visdis[flowIDs], flow.chi[flowIDs], None,
-                                 None, flow.basinID[flowIDs], polylines, rank)
+                                 visdis[flowIDs], flow.chi[flowIDs], np.zeros(len(flowIDs),dtype=float),
+                                 zeros, flow.basinID[flowIDs], polylines, rank)
 
     # Combine HDF5 files and write time series
     if rank == 0:

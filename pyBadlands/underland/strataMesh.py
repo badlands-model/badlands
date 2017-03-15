@@ -87,7 +87,7 @@ class strataMesh():
 
         self.ids = None
         self.ptsNb = None
-        self.oldload = 0.
+        self.oldload = None
         self.tree = None
         self.folder = folder
         self.h5file = h5file+'.region%s.time'%regionID

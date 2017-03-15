@@ -139,6 +139,8 @@ class Model(object):
 
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
         self.flow.xgrid = None
+        self.flow.sedload = None
+        self.flow.bedload = None
 
     def run_to_time(self, tEnd, profile=False, verbose=False):
         """
@@ -250,6 +252,8 @@ class Model(object):
                         fstrat = 0
                         sload = None
                         if self.input.udw == 1 and self.tNow == self.input.tStart and self.strata:
+                            self.strata[0].oldload = np.zeros(len(self.elevation), dtype=float)
+                        if self.strata[0].oldload is None and self.strata:
                             self.strata[0].oldload = np.zeros(len(self.elevation), dtype=float)
                         if self.input.laytime > 0 and self.strata:
                             sload = self.strata[0].oldload

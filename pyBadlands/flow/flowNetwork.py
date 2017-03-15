@@ -488,8 +488,6 @@ class flowNetwork:
             cdepo, cero, sedload, bedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume, self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
                      eroCoeff,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
-            print 'here',sedload.max(),bedload.max()
-            exit
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
             if self.depo == 0:

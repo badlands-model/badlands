@@ -24,7 +24,7 @@ contains
     real(kind=8),dimension(pysedNb),intent(in) :: pysedsupval
     real(kind=8),dimension(pyslpNb),intent(in) :: pybedslp
     real(kind=8),dimension(pyslpNb),intent(in) :: pybedprop
-    real(kind=8) :: u
+
     erofct = .true.
     sedNb = pysedNb
     slpNb = pyslpNb
@@ -42,40 +42,6 @@ contains
     if(allocated(bedprop)) deallocate(bedprop)
     allocate(bedprop(slpNb))
     bedprop = pybedprop
-
-    ! call spline(sedsup, sedsupval, b1, c1, d1, sedNb)
-    ! if(allocated(sedb)) deallocate(sedb)
-    ! if(allocated(sedc)) deallocate(sedc)
-    ! if(allocated(sedd)) deallocate(sedd)
-    ! allocate(sedb(sedNb),sedc(sedNb),sedd(sedNb))
-    ! sedb = b1
-    ! sedc = c1
-    ! sedd = d1
-    print*,'sedsup',sedsup
-    print*,'sedsupval',sedsupval
-    u = 609.24
-    print*,'sup 609.24 ',ispline(u, sedsup, sedsupval, sedNb) !sedb, sedc, sedd, sedNb)
-    u = 4301.2
-    print*,'sup 4301.2 ',ispline(u, sedsup, sedsupval, sedNb) !sedb, sedc, sedd, sedNb)
-    u = 6075.48
-    print*,'sup 6075.48 ',ispline(u, sedsup, sedsupval, sedNb) !sedb, sedc, sedd, sedNb)
-
-    ! call spline(bedslp, bedprop, b2, c2, d2, slpNb)
-    ! if(allocated(bedb)) deallocate(bedb)
-    ! if(allocated(bedc)) deallocate(bedc)
-    ! if(allocated(bedd)) deallocate(bedd)
-    ! allocate(bedb(slpNb),bedc(slpNb),bedd(slpNb))
-    ! bedb = b2
-    ! bedc = c2
-    ! bedd = d2
-    !print*,'bedslp',bedslp
-    !print*,'bedprop',bedprop
-    u = 0.081
-    print*,'bed 0.081',ispline(u, bedslp, bedprop, slpNb) !bedb, bedc, bedd, slpNb)
-    u = 0.33
-    print*,'bed 0.33',ispline(u, bedslp, bedprop,  slpNb) !bedb, bedc, bedd, slpNb)
-    u = 0.745
-    print*,'bed 0.745',ispline(u, bedslp, bedprop,  slpNb) !bedb, bedc, bedd, slpNb)
 
     return
 
@@ -386,7 +352,7 @@ contains
 
       integer :: n, donor, recvr, nID, tmpID
       real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep, Qb
-      real(kind=8) :: dist, slp, slpdh, updh, tmpdist, fac, upperslp, bedprop
+      real(kind=8) :: dist, slp, slpdh, updh, tmpdist, fac, upperslp, bedperc
       real(kind=8),dimension(pygNodesNb) :: upZ, updist
       !real(kind=8),dimension(pygNodesNb) :: sedFluxes, upZ, updist, bedFluxes
 
@@ -434,10 +400,10 @@ contains
                 if(updist(donor)>0.)then
                   upperslp = (upZ(donor) - pyElev(donor))/updist(donor)
                 endif
-                call erodibility_factor(bedFluxes(donor), upperslp, fac, bedprop)
+                call erodibility_factor(bedFluxes(donor), upperslp, fac, bedperc)
               else
                 fac = 1.
-                bedprop = 1.
+                bedperc = 1.
               endif
               SPL = -Cero(donor) * fac * (pyDischarge(donor))**spl_m * (slp)**spl_n
             endif
@@ -463,7 +429,7 @@ contains
           ! Sediment volume [m3]
           erodep = SPL * dt * pyArea(donor)
           Qs = -erodep + sedFluxes(donor)
-          Qb = -erodep*bedprop + bedFluxes(donor)
+          Qb = -erodep*bedperc + bedFluxes(donor)
 
         ! Deposition case
         elseif( SPL == 0. .and. pyArea(donor) > 0.)then
@@ -525,7 +491,6 @@ contains
                 tmpdist = 0.
               else
                 sedFluxes(recvr) = sedFluxes(recvr) + tmpdist
-
                 tmpdist = 0.
               endif
               nID = recvr
@@ -561,7 +526,7 @@ contains
         if(upZ(recvr)==pyElev(donor)) updist(recvr) = dist
 
       enddo
-
+      
       return
 
   end subroutine streampower
