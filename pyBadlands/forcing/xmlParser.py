@@ -115,6 +115,7 @@ class xmlParser:
 
         self.outDir = None
         self.sh5file = 'h5/sed'
+        self.strath5file = 'h5/stratal.time'
 
         self.th5file = 'h5/tin.time'
         self.txmffile = 'xmf/tin.time'
@@ -140,6 +141,11 @@ class xmlParser:
         self.eroVal = None
         self.thickMap = None
         self.thickVal = None
+
+        self.rockNb = 0
+        self.rockCk = None
+        self.initlayers = 0
+        self.layersData = None
 
         self._get_XmL_Data()
 
@@ -917,6 +923,52 @@ class xmlParser:
             self.CDm = 0.
             self.CDr = 0.
 
+        # Loading erodibility layers
+        erost = None
+        erost = root.find('erocoeffs')
+        if erost is not None:
+            element = None
+            element = erost.find('rocktype')
+            if element is not None:
+                self.rockNb = int(element.text)
+            else:
+                self.rockNb = 0
+            id = 0
+            self.rockCk = numpy.zeros(self.rockNb)
+            for rcktyp in erost.iter('rockero'):
+                if id >= self.rockNb:
+                    raise ValueError('The number of rock erodibilities values does not match the number of defined rock types.')
+                element = None
+                element = rcktyp.find('erorock')
+                if element is not None:
+                    self.rockCk[id] = float(element.text)
+                else:
+                    self.rockCk[id] = None
+                id += 1
+            element = None
+            element = erost.find('erolayers')
+            if element is not None:
+                self.initlayers = int(element.text)
+            else:
+                self.initlayers = 0
+            id = 0
+            self.layersData = numpy.empty(self.initlayers,dtype=object)
+            for rcklay in erost.iter('erolay'):
+                if id >= self.initlayers:
+                    raise ValueError('The number of erodibility layer maps does not match the number of defined layers.')
+                element = None
+                element = rcklay.find('laymap')
+                if element is not None:
+                    self.layersData[id] = element.text
+                else:
+                    self.layersData[id] = None
+                id += 1
+        else:
+            self.rockNb = 0
+            self.rockCk = None
+            self.initlayers = 0
+            self.layersData = None
+
         # Loading variable erodibility layers
         erostruct = None
         erostruct = root.find('erocoeff')
@@ -928,9 +980,7 @@ class xmlParser:
                 if self.erolays == 0:
                     tmpNb = 1
                     self.eroMap = numpy.empty(1,dtype=object)
-                    self.eroVal = numpy.empty(1,dtype=object)
-                    self.thickMap = numpy.empty(1,dtype=object)
-                    self.thickVal = numpy.empty(1,dtype=object)
+                    self.eroVal = numpy.zeros(1,dtype=object)
                 else:
                     tmpNb = self.erolays
                     self.eroMap = numpy.empty(self.erolays,dtype=object)

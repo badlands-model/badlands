@@ -46,19 +46,6 @@
         <stratdx>500.</stratdx>
         <!-- Stratal layer interval [a] -->
         <laytime>2500.</laytime>
-        <!-- Number of stratigraphic regions (optional) -->
-        <region>1</region>
-        <!-- Region bounding box (optional)-->
-        <domain>
-            <!-- Lower left corner X coordinate -->
-            <llcx>87000</llcx>
-            <!-- Lower left corner Y coordinate -->
-            <llcy>34000</llcy>
-            <!-- Upper right corner X coordinate -->
-            <urcx>132000</urcx>
-            <!-- Upper right corner Y coordinate -->
-            <urcy>169000</urcy>
-        </domain>
     </strata>
 
     <!-- Sea-level structure -->
@@ -256,41 +243,51 @@
     <!-- Erodibility structure
          This option allows you to specify different erodibility values either on the surface
          or within a number of initial stratigraphic layers. -->
-    <erocoeff>
+    <erocoeffs>
+        <!-- Number of rock types to track. -->
+        <rocktype>4</rocktype>
+        <!-- Definition of erodibility values for each rock types -->
+        <rockero>
+            <!-- Erodibility coefficient for rock type 1 -->
+            <erorock>5.e-6</erorock>
+        </rockero>
+        <rockero>
+            <!-- Erodibility coefficient for rock type 2 -->
+            <erorock>8.e-9</erorock>
+        </rockero>
+        <rockero>
+            <!-- Erodibility coefficient for rock type 3 -->
+            <erorock>2.e-6</erorock>
+        </rockero>
+        <rockero>
+            <!-- Erodibility coefficient for rock type 4 -->
+            <erorock>4.e-6</erorock>
+        </rockero>
+
         <!-- Number of erosion layers. -->
         <erolayers>4</erolayers>
-        <!-- The layering is defined from top to bottom, with:
-            - either a constant erodibility value for the entire layer or with an erodibility map
-            - either a constant thickness for the entire layer or with a thickness map -->
+        <!-- The layering is defined from top to bottom, with a file containing the
+             following properties for each points of the regular grid (DEM):
+              - 1st column the thickness of the considered layer
+              - 2nd column the rock type ID (an integer) -->
         <!-- Constant erodibility and layer thickness -->
         <erolay>
             <!-- Uniform erodibility value for the considered layer. -->
-            <erocst>3.e-6</erocst>
-            <!-- Uniform thickness value for the considered layer [m]. -->
-            <thcst>10</thcst>
+            <laymap>data/thlaytop.csv</laymap>
         </erolay>
-        <!-- Constant erodibility and variable layer thickness map -->
         <erolay>
             <!-- Uniform erodibility value for the considered layer. -->
-            <erocst>3.e-6</erocst>
-            <!-- Variable thicknesses for the considered layer [m]. -->
-            <thmap>data/thlay2.csv</thmap>
+            <laymap>data/thlay2.csv</laymap>
         </erolay>
-        <!-- Variable erodibilities and constant layer thickness -->
         <erolay>
-            <!-- Variable erodibilities for the considered layer. -->
-            <eromap>data/erolay3.csv</eromap>
-            <!-- Uniform thickness value for the considered layer [m]. -->
-            <thcst>30</thcst>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlay3.csv</laymap>
         </erolay>
-        <!-- Variable erodibilities and thicknesses -->
         <erolay>
-            <!-- Variable erodibilities for the considered layer. -->
-            <eromap>data/erolay4.csv</eromap>
-            <!-- Variable thicknesses for the considered layer [m]. -->
-            <thmap>data/thlay4.csv</thmap>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlay4.csv</laymap>
         </erolay>
-    </erocoeff>
+    </erocoeffs>
 
     <!-- Hillslope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport

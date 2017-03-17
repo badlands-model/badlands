@@ -109,6 +109,7 @@ class eroMesh():
             # Define inside area kdtree
             inTree = cKDTree(xyTIN[bPts:ePts+bPts,:])
             dist, inID = inTree.query(xyTIN[:bPts,:],k=1)
+            inID += bPts
 
             # Loop through the underlying layers
             for l in range(1,self.layNb):

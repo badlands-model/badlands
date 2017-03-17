@@ -15,7 +15,7 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN,
-                        eroMesh, strataMesh, isoFlex, forceSim)
+                        eroMesh, strataMesh, isoFlex, stratiWedge, forceSim)
 
 def construct_mesh(input, filename, verbose=False):
     """
@@ -123,9 +123,23 @@ def construct_mesh(input, filename, verbose=False):
         flex, tinFlex, cumflex = _init_flexure(FVmesh, input, recGrid, force, elevation,
                                                 cumdiff, cumflex, totPts, rank, verbose)
 
+    # Stratigraphic TIN initialisation
+    if input.rockNb > 0:
+        layNb = int((input.tEnd - input.tStart)/input.laytime)+2
+        bPts = recGrid.boundsPt
+        ePts = recGrid.edgesPt
+        if input.restart:
+            straTIN = stratiWedge.stratiWedge(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
+                            ePts, input.layersData, input.outDir, input.strath5file, input.rockNb,
+                            recGrid.regX, recGrid.regY, cumdiff, input.rfolder, input.rstep)
+        else:
+            straTIN = stratiWedge.stratiWedge(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
+                                    ePts, input.layersData, input.outDir, input.strath5file, input.rockNb,
+                                    recGrid.regX, recGrid.regY)
+
     return recGrid, FVmesh, force, tMesh, lGIDs, fixIDs, \
         inIDs, parentIDs, inGIDs, totPts, elevation, cumdiff, \
-        cumflex, strata, mapero, tinFlex, flex
+        cumflex, strata, mapero, tinFlex, flex, straTIN
 
 def reconstruct_mesh(recGrid, input, verbose=False):
     """

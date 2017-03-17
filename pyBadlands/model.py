@@ -68,8 +68,8 @@ class Model(object):
     def build_mesh(self, filename, verbose):
         # Construct Badlands mesh and grid to run simulation
         self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, parentIDs, \
-            self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumflex, self.strata, \
-            self.mapero, self.tinFlex, self.flex = buildMesh.construct_mesh(self.input, filename, verbose)
+            self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumflex, self.strata, self.mapero, \
+            self.tinFlex, self.flex, self.straTIN = buildMesh.construct_mesh(self.input, filename, verbose)
 
         # Define hillslope parameters
         self.rain = np.zeros(self.totPts, dtype=float)
@@ -318,6 +318,10 @@ class Model(object):
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
                 last_output = time.clock()
+
+
+                self.straTIN.write_hdf5_stratigraphy(0,0)
+                exit
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
