@@ -131,11 +131,12 @@ def construct_mesh(input, filename, verbose=False):
         if input.restart:
             straTIN = stratiWedge.stratiWedge(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
                             ePts, input.layersData, input.outDir, input.strath5file, input.rockNb,
-                            recGrid.regX, recGrid.regY, cumdiff, input.rfolder, input.rstep)
+                            recGrid.regX, recGrid.regY, elevation, cumdiff, input.rfolder,
+                            input.rstep)
         else:
             straTIN = stratiWedge.stratiWedge(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
                                     ePts, input.layersData, input.outDir, input.strath5file, input.rockNb,
-                                    recGrid.regX, recGrid.regY)
+                                    recGrid.regX, recGrid.regY, elevation)
 
     return recGrid, FVmesh, force, tMesh, lGIDs, fixIDs, \
         inIDs, parentIDs, inGIDs, totPts, elevation, cumdiff, \

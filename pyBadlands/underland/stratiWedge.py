@@ -35,7 +35,7 @@ class stratiWedge():
     """
 
     def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, folder, h5file, rockNb,
-                 regX, regY, cumdiff=0, rfolder=None, rstep=0):
+                 regX, regY, elev, cumdiff=0, rfolder=None, rstep=0):
         """
         Constructor.
 
@@ -47,13 +47,13 @@ class stratiWedge():
         xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
 
-        bPts : integer
+        bPts
             Boundary points for the TIN.
 
-        ePts : integer
+        ePts
             Boundary points for the regular grid.
 
-        thickMap : file array
+        thickMap
             Filename containing initial layer parameters
 
         folder
@@ -68,11 +68,14 @@ class stratiWedge():
         cumdiff
             Numpy array containing cumulative erosion/deposition from previous simulation.
 
-        regX : float
+        regX
             Numpy array containing the X-coordinates of the regular input grid.
 
-        regY : float
+        regY
             Numpy array containing the Y-coordinates of the regular input grid.
+
+        elev
+            Numpy arrays containing the elevation of the TIN nodes.
 
         rfolder
             Restart folder.
@@ -144,6 +147,7 @@ class stratiWedge():
                 inID += bPts
 
                 # Data is stored from top predefined layer to bottom.
+                self.paleoDepth[:,eroLay] = elev
                 for l in range(1,eroLay):
                     thMap = pandas.read_csv(str(thickMap[l-1]), sep=r'\s+', engine='c',
                                        header=None, na_filter=False, dtype=numpy.float, low_memory=False)
@@ -160,16 +164,24 @@ class stratiWedge():
                     for r in range(rockNb):
                         ids = numpy.where(numpy.logical_and(rockType==r,tmpTH>0.))
                         self.depoThick[ids,eroLay-l,r] = tmpTH[ids]
+                        self.paleoDepth[ids,eroLay-l] = self.paleoDepth[ids,eroLay-l+1]-tmpTH[ids]
                         if eroLay-l==1:
                             self.depoThick[ids,0,r] = 1.e6
+                            self.paleoDepth[ids,0] = self.paleoDepth[ids,1]-1.e6
                         # Add an infinite rock layer with the same characteristics as the deepest one
                         self.depoThick[:bPts,eroLay-l,r] = self.depoThick[inID,eroLay-l,r]
+                        if r == 0:
+                            self.paleoDepth[:bPts,eroLay-l] = self.paleoDepth[:bPts,eroLay-l+1]-self.depoThick[:bPts,eroLay-l,r]
+                        else:
+                            self.paleoDepth[:bPts,eroLay-l] -= self.depoThick[:bPts,eroLay-l,r]
                         if eroLay-l==1:
                             ids = numpy.where(self.depoThick[:bPts,eroLay-l,r]>0)[0]
                             self.depoThick[ids,0,r] = 1.e6
+                            self.paleoDepth[ids,0] = self.paleoDepth[ids,1]-1.e6
             else:
                 # Add an infinite rock layer with the same characteristics as the deepest one
                 self.depoThick[:,0,0] = 1.e6
+                self.paleoDepth[:,0] = elev
 
     def write_hdf5_stratigraphy(self, outstep, rank):
         """
