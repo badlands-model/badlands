@@ -199,6 +199,8 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     diff_flux = np.zeros(len(cdiff))
     diff_flux[insideIDs] = cdiff[insideIDs]
     diff = diff_flux * timestep
+    if input.btype == 'outlet':
+        diff[insideIDs[0]] = 0.
     elevation += diff
 
     if input.btype == 'slope':
@@ -207,7 +209,12 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]
     elif input.btype == 'wall':
         elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]+100.
-
+    elif input.btype == 'outlet':
+        elevation[1:len(flow.parentIDs)] = elevation[flow.parentIDs[1:]]+100.
+    elif input.btype == 'wall1':
+        elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]-0.1
+        elevation[:recGrid.nx+1] = elevation[flow.parentIDs[:recGrid.nx+1]]+100.
+        
     cumdiff += diff
 
     if rank == 0 and verbose:
