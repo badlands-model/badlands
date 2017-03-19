@@ -171,7 +171,8 @@ class xmlParser:
             element = grid.find('boundary')
             if element is not None:
                 self.btype = element.text
-                if self.btype != 'slope' and self.btype != 'flat' and self.btype != 'wall' and self.btype != 'fixed':
+                if self.btype != 'slope' and self.btype != 'flat' and self.btype != 'wall' \
+                   and self.btype != 'fixed' and self.btype != 'outlet' and self.btype != 'wall1':
                     raise ValueError('Error in the definition of the grid structure: Boundary type is either: flat, slope or wall')
             else:
                 self.btype = 'slope'

@@ -137,7 +137,9 @@ def construct_mesh(input, filename, verbose=False):
             straTIN = stratiWedge.stratiWedge(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
                                     ePts, input.layersData, input.outDir, input.strath5file, input.rockNb,
                                     recGrid.regX, recGrid.regY, elevation)
-
+    else:
+        straTIN = None
+        
     return recGrid, FVmesh, force, tMesh, lGIDs, fixIDs, \
         inIDs, parentIDs, inGIDs, totPts, elevation, cumdiff, \
         cumflex, strata, mapero, tinFlex, flex, straTIN
