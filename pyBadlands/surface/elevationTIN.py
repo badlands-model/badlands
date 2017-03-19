@@ -182,6 +182,7 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
         2. flat
         3. slope: this is the default condition
         4. fixed
+        5. outlet
 
     Returns
     -------
@@ -191,14 +192,16 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
 
     newelev = elev
 
-    if btype == 'wall' or btype == 'flat' or btype == 'slope' or btype == 'fixed':
+    if btype == 'wall' or btype == 'flat' or btype == 'slope' or btype == 'fixed' or btype == 'outlet' or btype == 'wall1':
         newelev[:boundPts] = 1.e7
         thetype = 0
-        if btype == 'slope':
+        if btype == 'slope' or btype == 'outlet' or btype == 'wall1':
             thetype = 1
         newelev, parentID = _boundary_elevation(elev, neighbours, edge_length, boundPts, thetype)
         if btype == 'wall':
             newelev[:boundPts] = 1.e7
+        if btype == 'outlet':
+            newelev[1:boundPts] = 1.e7
     else:
         raise ValueError('Unknown boundary type ''%s''.' % btype)
 
