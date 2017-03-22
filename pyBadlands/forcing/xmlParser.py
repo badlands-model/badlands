@@ -57,9 +57,6 @@ class xmlParser:
 
         self.stratdx = 0.
         self.laytime = 0.
-        self.region = 0
-        self.llcXY = None
-        self.urcXY = None
 
         self.seapos = 0.
         self.seafile = None
@@ -286,31 +283,6 @@ class xmlParser:
                  self.laytime = self.tDisplay
             if self.tDisplay % self.laytime != 0:
                 raise ValueError('Error in the XmL file: stratal layer interval needs to be an exact multiple of the display interval!')
-
-            element = None
-            element = strat.find('region')
-            if element is not None:
-                self.region = int(element.text)
-                self.llcXY = numpy.empty((self.region,2))
-                self.urcXY = numpy.empty((self.region,2))
-            element = None
-            id = 0
-            for dom in strat.iter('domain'):
-                element = None
-                element = dom.find('llcx')
-                self.llcXY[id,0] = float(element.text)
-                element = None
-                element = dom.find('llcy')
-                self.llcXY[id,1] = float(element.text)
-                element = None
-                element = dom.find('urcx')
-                self.urcXY[id,0] = float(element.text)
-                element = None
-                element = dom.find('urcy')
-                self.urcXY[id,1] = float(element.text)
-                id += 1
-            if id != self.region:
-                raise ValueError('Number of region %d does not match with the number of declared region parameters %d.' %(self.region,id))
 
         # Extract sea-level structure information
         sea = None
