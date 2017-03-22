@@ -40,7 +40,7 @@ class strataMesh():
     """
 
     def __init__(self, sdx, bbX, bbY, layNb, xyTIN, folder, h5file,
-                 cumdiff=0, rfolder=None, rstep=0, regionID=0):
+                 cumdiff=0, rfolder=None, rstep=0):
         """
         Constructor.
 
@@ -75,9 +75,6 @@ class strataMesh():
 
         rstep
             Restart step.
-
-        regionID
-            Stratal domain ID.
         """
 
         # Initialise MPI communications
@@ -90,7 +87,7 @@ class strataMesh():
         self.oldload = None
         self.tree = None
         self.folder = folder
-        self.h5file = h5file+'.region%s.time'%regionID
+        self.h5file = h5file+'.time'
         self.step = 0
         self.upper = None
         self.lower = None
@@ -113,7 +110,7 @@ class strataMesh():
         if rstep > 0:
             if os.path.exists(rfolder):
                 folder = rfolder+'/h5/'
-                fileCPU = 'sed.region%s.time%s.p*.hdf5'%(regionID,rstep)
+                fileCPU = 'sed.time%s.p*.hdf5'%(rstep)
                 restartncpus = len(glob.glob1(folder,fileCPU))
                 if restartncpus == 0:
                     raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
@@ -123,7 +120,7 @@ class strataMesh():
             if restartncpus != size:
                 raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
 
-            df = h5py.File('%s/h5/sed.region%s.time%s.p%s.hdf5'%(rfolder, regionID, rstep, rank), 'r')
+            df = h5py.File('%s/h5/sed.time%s.p%s.hdf5'%(rfolder, rstep, rank), 'r')
             layDepth = numpy.array((df['/layDepth']))
             layElev = numpy.array((df['/layElev']))
             layThick = numpy.array((df['/layThick']))

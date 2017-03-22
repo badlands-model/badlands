@@ -268,31 +268,18 @@ def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, rank, verbose=False):
 
         walltime = time.clock()
         sdx = input.stratdx
-        if input.region == 0:
-            if sdx == 0:
-                sdx = recGrid.rectX[1] - recGrid.rectX[0]
-            bbX = [recGrid.rectX.min(),recGrid.rectX.max()]
-            bbY = [recGrid.rectY.min(),recGrid.rectY.max()]
-            layNb = int((input.tEnd - input.tStart)/input.laytime)+2
-            strata = [None]
-            if input.restart:
-                strata[0] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
-                                    input.outDir, input.sh5file, cumdiff, input.rfolder, input.rstep)
-            else:
-                strata[0] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
-                                    input.outDir, input.sh5file)
+        if sdx == 0:
+            sdx = recGrid.rectX[1] - recGrid.rectX[0]
+        bbX = [recGrid.rectX.min(),recGrid.rectX.max()]
+        bbY = [recGrid.rectY.min(),recGrid.rectY.max()]
+        layNb = int((input.tEnd - input.tStart)/input.laytime)+2
+        strata = None
+        if input.restart:
+            strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
+                                input.outDir, input.sh5file, cumdiff, input.rfolder, input.rstep)
         else:
-            strata = [None]*input.region
-            layNb = int((input.tEnd - input.tStart)/input.laytime)+2
-            for rid in range(input.region):
-                bbX = [input.llcXY[rid,0],input.urcXY[rid,0]]
-                bbY = [input.llcXY[rid,1],input.urcXY[rid,1]]
-                if input.restart:
-                    strata[rid] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
-                                    input.outDir, input.sh5file, cumdiff, input.rfolder, input.rstep, rid)
-                else:
-                    strata[rid] = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
-                                    input.outDir, input.sh5file, rid)
+            strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
+                                input.outDir, input.sh5file)
         if rank == 0 and verbose:
             print " - create stratigraphic regions ", time.clock() - walltime
 
