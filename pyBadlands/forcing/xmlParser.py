@@ -120,7 +120,7 @@ class xmlParser:
         self.fh5file = 'h5/flow.time'
         self.fxmffile = 'xmf/flow.time'
         self.fxdmffile = 'flow.series.xdmf'
-
+        
         self.flexure = False
         self.ftime = None
         self.fnx = None
@@ -840,13 +840,7 @@ class xmlParser:
             else:
                 self.precipfac = 0.
             element = None
-            element = erof.find('rhoS')
-            if element is not None:
-                self.rhoS = float(element.text)
-            else:
-                self.rhoS = 2500.
-            element = None
-            element = erof.find('sedsupply')
+            element = erof.find('sedratio')
             if element is not None:
                 self.sedsupply = element.text
                 if not os.path.isfile(self.sedsupply):
