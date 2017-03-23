@@ -11,7 +11,7 @@
              accordingly.  -->
         <resfactor>1</resfactor>
     </grid>
-    
+
     <!-- Simulation time structure -->
     <time>
         <!-- Simulation start time [a] -->
@@ -29,7 +29,7 @@
         <!-- Stratal layer interval [a] -->
         <laytime>2500.</laytime>
     </strata>
-    
+
     <!-- Sea-level structure -->
     <sea>
         <!-- Relative sea-level position [m] -->
@@ -96,7 +96,7 @@
             <dfile>data/dp4.csv</dfile>
         </disp>
     </tectonic>
-    
+
     <!-- Precipitation structure -->
     <precipitation>
         <!-- Number of precipitation events -->
@@ -106,12 +106,12 @@
             <!-- Rain start time [a] -->
             <rstart>0.</rstart>
             <!-- Rain end time [a] -->
-            <rend>200000.</rend>
+            <rend>250000.</rend>
             <!-- Precipitation value [m/a] - (optional) -->
             <rval>1.</rval>
         </rain>
     </precipitation>
-    
+
     <!-- Stream power law parameters:
          The stream power law is a simplified form of the usual expression of
          sediment transport by water flow, in which the transport rate is assumed
@@ -134,7 +134,7 @@
               frequency, channel hydraulics. -->
         <erodibility>5.e-6</erodibility>
     </sp_law>
-    
+
     <!-- Linear slope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport
          law which states that transport rate depends linearly on topographic gradient. -->

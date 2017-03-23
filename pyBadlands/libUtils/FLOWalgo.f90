@@ -398,8 +398,13 @@ contains
                 if(updist(donor)>0.)then
                   upperslp = (upZ(donor) - pyElev(donor))/updist(donor)
                 endif
-                sedsp = bedFluxes(donor)
-                call erodibility_factor(sedsp, upperslp, fac, bedperc)
+                if(pyDischarge(donor)>0)then
+                  sedsp = bedFluxes(donor)/pyDischarge(donor)
+                  call erodibility_factor(sedsp, upperslp, fac, bedperc)
+                else
+                  fac = 0.
+                  bedperc = 1.
+                endif
                 if(bedperc>1) bedperc = 1.
                 if(bedperc<0.) bedperc = 0.
                 if(fac<0) fac = 0.

@@ -110,9 +110,6 @@ class forceSim:
     bedslope : string
         Path to the bedload versus slope function file (if any).
 
-    rhoS : float
-        Sediment density kg/m3.
-
     Tdisplay : float
         Display interval (in years).
     """
@@ -121,7 +118,7 @@ class forceSim:
                  orographic = None, rbgd = None, rmin = None, rmax = None, windx = None, windy = None,
                  tauc = None, tauf = None, nm = None, cw = None, hw = None, ortime = None, MapDisp = None,
                  TimeDisp = None, regX = None, regY = None, rivPos = None, rivTime = None, rivQws = None,
-                 rivNb = 0, erof = False, sedsupply = None, bedslope = None, rhoS = 2500., Tdisplay = 0.):
+                 rivNb = 0, erof = False, sedsupply = None, bedslope = None, Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
@@ -190,7 +187,7 @@ class forceSim:
             self._build_Sea_function()
 
         if self.fsedsupply != None:
-            self._build_SedSupply_function(rhoS)
+            self._build_SedSupply_function()
 
         if self.fbedslope != None:
             self._build_BedSlope_function()
@@ -210,7 +207,7 @@ class forceSim:
         self.seaval = seadata.values[:,1]
         self.seaFunc = interpolate.interp1d(self.seatime, self.seaval, kind='linear')
 
-    def _build_SedSupply_function(self, rhoS):
+    def _build_SedSupply_function(self):
         """
         Using Pandas library to read the sediment supply file and define the interpolation
         function based on Scipy 1D linear function.
@@ -222,7 +219,7 @@ class forceSim:
                                dtype=numpy.float, low_memory=False)
 
         # Conversion from kg/s to m3/yr
-        self.sedsupply = sedsup.values[:,0]*3.154e7/rhoS
+        self.sedsupply = sedsup.values[:,0]
         self.sedsupval = sedsup.values[:,1]
 
     def _build_BedSlope_function(self):
