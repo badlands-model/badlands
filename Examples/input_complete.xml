@@ -1,3 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<badlands xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!-- Regular grid structure -->
+    <grid>
+        <!-- Digital elevation model file path -->
+        <demfile>data/regularMR.csv</demfile>
+        <!-- Optional parameter (integer) used to decrease TIN resolution.
+             The default value is set to 1. Increasing the factor
+             value will multiply the digital elevation model resolution
+             accordingly.  -->
+        <resfactor>2</resfactor>
+        <!-- Boundary type: flat, slope, fixed or wall -->
+        <boundary>slope</boundary>
+        <!-- Optional parameter (integer) used to force depression-less
+             surface at the start of the simulation. The default value is 0
+             to turn the option off, put it to 1 to enable it. -->
+        <nopit>0</nopit>
+    </grid>
+
+    <!-- Simulation time structure -->
+    <time>
+        <!-- Restart structure -->
+        <restart>
+          <!-- Model output folder name to restart the simulation from -->
+          <rfolder>output_01</rfolder>
+          <!-- Model output file step number to restart the model from -->
+          <rstep>3</rstep>
+        </restart>
+        <!-- Simulation start time [a] -->
+        <start>0.</start>
+        <!-- Simulation end time [a] -->
+        <end>100000.</end>
+        <!-- Minimum time step [a]. Default is 1. -->
+        <mindt>1.</mindt>
+        <!-- Maximum time step [a] (optional).
+             Set to display interval is not provided. -->
+        <maxdt>1000.</maxdt>
+        <!-- Display interval [a] -->
+        <display>5000.</display>
+    </time>
+
+    <!-- Simulation stratigraphic structure -->
+    <strata>
+        <!-- Stratal grid resolution [m] -->
+        <stratdx>500.</stratdx>
+        <!-- Stratal layer interval [a] -->
+        <laytime>2500.</laytime>
+        <!-- Number of stratigraphic regions (optional) -->
+        <region>1</region>
+        <!-- Region bounding box (optional)-->
+        <domain>
+            <!-- Lower left corner X coordinate -->
+            <llcx>87000</llcx>
+            <!-- Lower left corner Y coordinate -->
+            <llcy>34000</llcy>
+            <!-- Upper right corner X coordinate -->
+            <urcx>132000</urcx>
+            <!-- Upper right corner Y coordinate -->
+            <urcy>169000</urcy>
+        </domain>
+    </strata>
+
+    <!-- Sea-level structure -->
+    <sea>
+        <!-- Relative sea-level position [m] -->
+        <position>-100.</position>
+        <!-- Sea-level curve - (optional) -->
+        <!--curve>data/sealvl.csv</curve-->
+    </sea>
+
+    <!-- Tectonic structure -->
+    <tectonic>
+        <!-- Is 3D displacements on ? (1:on - 0:off). Default is 0.-->
+        <disp3d>0</disp3d>
+        <!-- Only relevant when 3D displacements is on.
+             Closest distance [m] between nodes before
+             merging happens. This is optional if not given
+             the merging distance is set to half the resolution
+             of the digital elevation input file. -->
+        <merge3d>200.</merge3d>
+        <!-- Only relevant when 3D displacements is required.
+             This is useful if the horizontal displacements provided
+             in each maps are larger than the TIN resolution. In this
+             case, it is recommended to split each displacement periods
+             in evenly spaced intervals of given time duration [a]. -->
+        <time3d>5000.</time3d>
+        <!-- Number of tectonic events -->
+        <events>1</events>
+        <!-- Displacement definition -->
+        <disp>
+            <!-- Displacement start time [a] -->
+            <dstart>5.</dstart>
+            <!-- Displacement end time [a] -->
+            <dend>10.0</dend>
+            <!-- Displacement map [m] -->
+            <dfile>data/disp1D.csv</dfile>
+        </disp>
+    </tectonic>
+
+    <!-- Rivers structure - This structure is not fully tested and
+         should be use with caution. -->
+    <rivers>
+        <!-- Number of rivers events -->
+        <riverNb>1</riverNb>
+        <!-- River definition -->
+        <river>
+            <!-- River start time [a] -->
+            <rstart>100000.</rstart>
+            <!-- River end time [a] -->
+            <rend>200000.</rend>
+            <!-- River X position [m] -->
+            <rposX>25000.</rposX>
+            <!-- River Y position [m] -->
+            <rposY>25000.</rposY>
+            <!-- River mean annual discharge [m3/a] -->
+            <rQw>5.e+08</rQw>
+            <!-- River annual load [Mt/a] -->
+            <rQs>7.</rQs>
+            <!-- Average sediment density [kg/m3] -->
+            <rhoS>2750.</rhoS>
+        </river>
+    </rivers>
+
+    <!-- Precipitation structure
+         The following methods can be used:
+            - an uniform precipitation value for the entire region [m/a]
+            - a map containing precipitation values for each nodes of the regular grid
+            - an orographic precipitation computed using Smith & Barstad theory (2004)
+    -->
+    <precipitation>
+        <!-- Number of precipitation events -->
+        <climates>3</climates>
+        <!-- Uniform precipitation definition -->
+        <rain>
+            <!-- Rain start time [a] -->
+            <rstart>0.</rstart>
+            <!-- Rain end time [a] -->
+            <rend>100000.</rend>
+            <!-- Precipitation value [m/a] -->
+            <rval>1.</rval>
+        </rain>
+        <!-- Precipitation map definition -->
+        <rain>
+            <!-- Rain start time [a] -->
+            <rstart>100000.</rstart>
+            <!-- Rain end time [a] -->
+            <rend>200000.</rend>
+            <!-- Precipitation map [m/a] -->
+            <map>data/rainLR.csv</map>
+        </rain>
+        <!-- Orographic precipitation model definition -->
+        <rain>
+            <!-- Rain start time [a] -->
+            <rstart>100000.</rstart>
+            <!-- Rain end time [a] -->
+            <rend>200000.</rend>
+            <!-- Rain computation time step [a] -->
+            <ortime>5000.</ortime>
+            <!-- Background precipitation value [m/a] -->
+            <rbgd>1.</rbgd>
+            <!-- Minimal precipitation value [m/a] -->
+            <rmin>0.2</rmin>
+            <!-- Maximal precipitation value [m/a] -->
+            <rmax>4.</rmax>
+            <!-- Wind velocity along X (W-E) direction [m/s] -->
+            <windx>-3.</windx>
+            <!-- Wind velocity along Y (S-N) direction [m/s] -->
+            <windy>2.</windy>
+            <!-- Time conversion from cloud water to hydrometeors
+                 range from 200 to 2000 [s]. Optional default is set
+                 to 1000 s -->
+            <tauc>1000.</tauc>
+            <!-- Time for hydrometeor fallout range from 200 to 2000 [s].
+                 Optional default is set to 1000 s -->
+            <tauf>1000.</tauf>
+            <!-- Moist stability frequency range from 0 to 0.01 [/s].
+                 Optional default is set to 0.005 /s -->
+            <nm>0.005</nm>
+            <!-- Uplift sensitivity factor range from 0.001 to 0.02 [kg/m3].
+                 Optional default is set to 0.005 kg/m3 -->
+            <cw>0.005</cw>
+            <!-- Depth of the moist layer range from 1000 to 5000 [m].
+                 Optional default is set to 3000 m -->
+            <hw>3000.</hw>
+        </rain>
+    </precipitation>
+
+    <!-- Stream power law parameters:
+         The stream power law is a simplified form of the usual expression of
+         sediment transport by water flow, in which the transport rate is assumed
+         to be equal to the local carrying capacity, which is itself a function of
+         boundary shear stress. -->
+    <sp_law>
+        <!-- Make the distinction between purely erosive models (0) and erosion /
+            deposition ones (1). Default value is 1. -->
+        <dep>1</dep>
+        <!-- Critical slope used to force aerial deposition for alluvial plain,
+             in [m/m] (optional). -->
+        <slp_cr>0.001</slp_cr>
+        <!-- Maximum percentage of deposition at any given time interval from rivers
+             sedimentary load in alluvial plain. Value ranges between [0,1] (optional). -->
+        <perc_dep>0.5</perc_dep>
+        <!-- Maximum lake water filling thickness. This parameter is used
+             to defined maximum water level in depression area.
+             Default value is set to 200 m. -->
+        <fillmax>50.</fillmax>
+        <!-- Values of m and n indicate how the incision rate scales
+             with bed shear stress for constant value of sediment flux
+             and sediment transport capacity.
+             Generally, m and n are both positive, and their ratio
+             (m/n) is considered to be close to 0.5 -->
+        <m>0.5</m>
+        <n>1.0</n>
+        <!-- The erodibility coefficient is scale-dependent and its value depends
+             on lithology and mean precipitation rate, channel width, flood
+             frequency, channel hydraulics. In case where the erodibility
+             structure is turned on, this coefficient is applied to the reworked
+             sediments. -->
+        <erodibility>1.e-6</erodibility>
+        <!-- Number of steps used to distribute marine deposit.
+             Default value is 5 (integer). (optional)-->
+        <diffnb>5</diffnb>
+        <!-- Proportion of marine sediment deposited on downstream nodes. It needs
+             to be set between ]0,1[. Default value is 0.9 (optional). -->
+        <diffprop>0.2</diffprop>
+    </sp_law>
 
     <!-- Erodibility function structure  (optional)
          It is possible to modify the erodibility coefficient to explicitly incorporate:
@@ -22,3 +249,114 @@
            is the percentage of sediment eroded and transported as bedload. -->
         <bedslope>data/bedslope.csv</bedslope>
     </erofunction>
+
+    <!-- Erodibility structure
+         This option allows you to specify different erodibility values either on the surface
+         or within a number of initial stratigraphic layers. -->
+    <erocoeff>
+        <!-- Number of erosion layers. -->
+        <erolayers>4</erolayers>
+        <!-- The layering is defined from top to bottom, with:
+            - either a constant erodibility value for the entire layer or with an erodibility map
+            - either a constant thickness for the entire layer or with a thickness map -->
+        <!-- Constant erodibility and layer thickness -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>10</thcst>
+        </erolay>
+        <!-- Constant erodibility and variable layer thickness map -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay2.csv</thmap>
+        </erolay>
+        <!-- Variable erodibilities and constant layer thickness -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay3.csv</eromap>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>30</thcst>
+        </erolay>
+        <!-- Variable erodibilities and thicknesses -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay4.csv</eromap>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay4.csv</thmap>
+        </erolay>
+    </erocoeff>
+
+    <!-- Hillslope diffusion parameters:
+         Parameterisation of the sediment transport includes the simple creep transport
+         law which states that transport rate depends linearly on topographic gradient. -->
+    <creep>
+        <!-- Surface diffusion coefficient [m2/a] -->
+        <caerial>0.001</caerial>
+        <!-- Marine diffusion coefficient [m2/a] -->
+        <cmarine>0.005</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>10.</criver>
+    </creep>
+
+    <!-- Flexural isostasy parameters:
+         Parameterisation of the flexural isostasy using the gFlex model from Wickert 2015.
+         The current wrapper limits the functionnality of the gFlex algorithm and only uses
+         the direct solver of the 2D finite difference method with the van Wees and Cloetingh
+         plate solution. -->
+    <flexure>
+        <!-- Time step used to compute the isostatic flexure. -->
+        <ftime>10000.0</ftime>
+        <!-- Definition of the flexural grid:
+             It is possible to setup a flexural grid at a resolution higher than the one used
+             for the TIN to increase computational speed. In this case you need to define the
+             discretization along X and Y axis. By default the same resolution as the one given
+             for the DEM file is used and the following 2 parameters are not required. -->
+        <!-- Number of points along the X-axis - (optional)-->
+        <fnx>100</fnx>
+        <!-- Number of points along the Y-axis - (optional)-->
+        <fny>100</fny>
+        <!-- Mantle density [kg/m3] -->
+        <dmantle>3300</dmantle>
+        <!-- Sediment density [kg/m3] -->
+        <dsediment>2500</dsediment>
+        <!-- Young's Modulus [Pa] -->
+        <youngMod>65E9</youngMod>
+        <!-- The lithospheric elastic thickness (Te) can be expressed as a scalar if you assume
+             a uniform thickness for the model area in this case the value is given in the next
+             parameter [m] - (optional) -->
+        <elasticH>35000.</elasticH>
+        <!-- In case where the lithospheric elastic thickness (Te) varies on the simulated region
+             you might want to use a grid defining for each points on the flexural grid the estimate
+             Te value [m]. You will need to ensure that the grid dimensions match the number of
+             points given for the flexural grid resolution - (optional) -->
+        <elasticGrid>data/elasticthickness.csv</elasticGrid>
+        <!-- Finite difference boundary conditions:
+              + 0Displacement0Slope: 0-displacement-0-slope boundary condition
+              + 0Moment0Shear: "Broken plate" boundary condition: second and
+                        third derivatives of vertical displacement are 0. This
+                        is like the end of a diving board.
+              + 0Slope0Shear: First and third derivatives of vertical displacement
+                        are zero. While this does not lend itsellf so easily to
+                        physical meaning, it is helpful to aid in efforts to make
+                        boundary condition effects disappear (i.e. to emulate the
+                        NoOutsideLoads cases)
+              + Mirror: Load and elastic thickness structures reflected at boundary.
+              + Periodic: "Wrap-around" boundary condition: must be applied to both
+                        North and South and/or both East and West. This causes, for
+                        example, the edge of the eastern and western limits of the domain
+                        to act like they are next to each other in an infinite loop.
+             The boundary are defined for each edges W, E, S and N. -->
+        <boundary_W>0Displacement0Slope</boundary_W>
+        <boundary_E>0Displacement0Slope</boundary_E>
+        <boundary_S>0Displacement0Slope</boundary_S>
+        <boundary_N>0Displacement0Slope</boundary_N>
+    </flexure>
+
+    <!-- Output folder path -->
+    <outfolder>out</outfolder>
+
+</badlands>
