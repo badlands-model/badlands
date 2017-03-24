@@ -79,7 +79,7 @@ class Model(object):
         self.hillslope.CDriver = self.input.CDr
 
         # Define flow parameters
-        self.flow = flowNetwork(self.force, self.input.precipfac, self.input.rhoS)
+        self.flow = flowNetwork(self.force, self.input.precipfac)
 
         if self.input.erolays is None:
             self.flow.erodibility = np.full(self.totPts, self.input.SPLero)

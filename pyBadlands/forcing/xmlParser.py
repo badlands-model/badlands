@@ -101,7 +101,6 @@ class xmlParser:
 
         self.erof = False
         self.precipfac = 0.
-        self.rhoS = 2500.
         self.sedsupply = None
         self.bedslope = None
 

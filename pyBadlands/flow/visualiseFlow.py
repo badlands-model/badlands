@@ -150,7 +150,7 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi,
         f["sedload"][:,0] = sedload
 
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
-        f["discharge"][:,0] = discharge
+        f["discharge"][:,0] = discharge/3.154e7
 
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """
@@ -249,7 +249,7 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('Dimensions="%d 1">%s:/basin</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
 
-        f.write('         <Attribute Type="Scalar" Center="Node" Name="Discharge [m3/a]">\n')
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="Discharge [m3/s]">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/discharge</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
@@ -259,7 +259,7 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('Dimensions="%d 1">%s:/chi</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
 
-        f.write('         <Attribute Type="Scalar" Center="Node" Name="sedload [kg/s]">\n')
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="sedload [m3/s]">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/sedload</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')

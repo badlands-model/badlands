@@ -37,7 +37,7 @@ class flowNetwork:
     algorithm.
     """
 
-    def __init__(self, force, precipfac, rhoS):
+    def __init__(self, force, precipfac):
         """
         Initialization.
         """
@@ -93,7 +93,6 @@ class flowNetwork:
         self.onIDs = None
 
         self.precipfac = precipfac
-        self.rhoS = rhoS
         self.sedload = None
 
         if force.erofct :
@@ -542,7 +541,7 @@ class flowNetwork:
 
             # Update river sediment load in kg/s
             comm.Allreduce(mpi.IN_PLACE,sedload,op=mpi.MAX)
-            self.sedload = sedload*self.rhoS/(newdt*3.154e7)
+            self.sedload = sedload/(newdt*3.154e7)
 
             # Compute erosion
             ero = numpy.zeros(len(cero))

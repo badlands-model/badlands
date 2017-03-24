@@ -409,6 +409,7 @@ contains
                 if(bedperc<0.) bedperc = 0.
                 if(fac<0) fac = 0.
                 if(fac>1.) fac = 1.
+                !print*,'erofunction'
               else
                 fac = 1.
                 bedperc = 1.
@@ -447,28 +448,33 @@ contains
             Qb = 0.
             erodep = 0.
             pitDep = sedFluxes(donor)
+            !print*,'filldepression'
           ! Marine deposit
           elseif(pyElev(donor) <= sea)then
             ! Add all sediment to the node
             erodep = sedFluxes(donor)
             Qs = 0.
             Qb = 0.
+            !print*,'marinedepo'
           ! Alluvial plain deposit
           elseif(maxh > 0. .and. waterH == 0. .and. donor /= recvr .and. pyElev(donor) > sea)then
             if(sedFluxes(donor)/pyArea(donor) < maxh)then
               erodep = sedFluxes(donor)
               Qs = 0.
               Qb = 0.
+              !print*,'allplain1'
             else
               erodep = maxh*pyArea(donor)
               Qs = sedFluxes(donor) - erodep
               Qb = max(0.,bedFluxes(donor) - erodep)
+              print*,'allplain2'
             endif
           ! Base-level (sink)
           elseif(donor == recvr .and. pyArea(donor) > 0.)then
             erodep = sedFluxes(donor)
             Qs = 0.
             Qb = 0.
+            !print*,'baselevel'
           else
             erodep = 0.
             Qs = sedFluxes(donor)
