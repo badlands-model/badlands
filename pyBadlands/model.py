@@ -79,14 +79,12 @@ class Model(object):
         self.hillslope.CDriver = self.input.CDr
 
         # Define flow parameters
-        self.flow = flowNetwork(self.force, self.input.precipfac)
+        self.flow = flowNetwork(self.input)
 
         if self.input.erolays is None:
             self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
         else:
             self.flow.erodibility = self.mapero.erodibility
-        self.flow.m = self.input.SPLm
-        self.flow.n = self.input.SPLn
         self.flow.mindt = self.input.minDT
         self.flow.xycoords = self.FVmesh.node_coords[:,:2]
         self.flow.spl = self.input.spl

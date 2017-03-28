@@ -10,38 +10,38 @@
 ! This module implements flow parameters computation.
 module flowcompute
 
-  use flowclass
-
   implicit none
+
+  integer :: incisiontype
+  real(kind=8) :: spl_n
+  real(kind=8) :: spl_m
+  real(kind=8) :: sed_mt
+  real(kind=8) :: sed_nt
+  real(kind=8) :: sed_kt
+  real(kind=8) :: width_kw
+  real(kind=8) :: width_b
 
 contains
 
-  subroutine eroparams(pysedsup,pysedsupval,pybedslp,pybedprop,pysedNb,pyslpNb)
+  subroutine eroparams(typefct, m, n, mt, nt, kt, kw, b)
 
-    integer :: pysedNb
-    integer :: pyslpNb
-    real(kind=8),dimension(pysedNb),intent(in) :: pysedsup
-    real(kind=8),dimension(pysedNb),intent(in) :: pysedsupval
-    real(kind=8),dimension(pyslpNb),intent(in) :: pybedslp
-    real(kind=8),dimension(pyslpNb),intent(in) :: pybedprop
+    integer :: typefct
+    real(kind=8),intent(in) :: m
+    real(kind=8),intent(in) :: n
+    real(kind=8),intent(in) :: mt
+    real(kind=8),intent(in) :: nt
+    real(kind=8),intent(in) :: kt
+    real(kind=8),intent(in) :: kw
+    real(kind=8),intent(in) :: b
 
-    erofct = .true.
-    sedNb = pysedNb
-    slpNb = pyslpNb
-
-    if(allocated(sedsup)) deallocate(sedsup)
-    allocate(sedsup(sedNb))
-    sedsup = pysedsup
-    if(allocated(sedsupval)) deallocate(sedsupval)
-    allocate(sedsupval(sedNb))
-    sedsupval = pysedsupval
-
-    if(allocated(bedslp)) deallocate(bedslp)
-    allocate(bedslp(slpNb))
-    bedslp = pybedslp
-    if(allocated(bedprop)) deallocate(bedprop)
-    allocate(bedprop(slpNb))
-    bedprop = pybedprop
+    incisiontype = typefct
+    spl_m = m
+    spl_n = n
+    sed_mt = mt
+    sed_nt = nt
+    sed_kt = kt
+    width_kw = kw
+    width_b = b
 
     return
 
@@ -73,13 +73,11 @@ contains
 
   end subroutine discharge
 
-  subroutine parameters(pyStack, pyRcv, pyDischarge, pyXY, &
-      spl_part, pyBid0, pyChi, pyBasinID, pylNodesNb, pygNodesNb)
+  subroutine parameters(pyStack, pyRcv, pyDischarge, pyXY, pyBid0, pyChi, pyBasinID, pylNodesNb, pygNodesNb)
 
       integer :: pygNodesNb
       integer :: pylNodesNb
       integer,intent(in) :: pyBid0
-      real(kind=8),intent(in) :: spl_part
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
@@ -89,8 +87,13 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyChi
 
       integer :: n, donor, recvr, bID
-      real(kind=8) :: disch1, disch2, dist
+      real(kind=8) :: disch1, disch2, dist, slp2
 
+      if(spl_n > 0)then
+        slp2 = spl_m / spl_n
+      else
+        slp2 = 1.
+      endif
       pyChi = 0.
       pyBasinID = -1
       bID = pyBid0
@@ -104,8 +107,12 @@ contains
         if( donor /= recvr .and. disch1 > 0. .and. disch2 > 0.)then
             dist = sqrt( (pyXY(donor,1) - pyXY(recvr,1))**2.0 + &
                 (pyXY(donor,2) - pyXY(recvr,2))**2.0 )
-            pyChi(donor) = pyChi(recvr) + 0.5*((1./disch2)**spl_part + &
-                (1./(disch1))**spl_part) * dist
+            if(spl_n > 0)then
+              pyChi(donor) = pyChi(recvr) + 0.5*((1./disch2)**slp2 + &
+                (1./(disch1))**slp2) * dist
+            else
+              pyChi(donor) = 0.
+            endif
         endif
       enddo
 
@@ -283,12 +290,10 @@ contains
   end subroutine basindrainageall
 
   subroutine flowcfl(pyIDs, pyRcv, pyXY, pyElev, pyDischarge, Cero, &
-      spl_m, spl_n, cfl_dt, pylNodesNb, pygNodesNb)
+      cfl_dt, pylNodesNb, pygNodesNb)
 
       integer :: pygNodesNb
       integer :: pylNodesNb
-      real(kind=8),intent(in) :: spl_m
-      real(kind=8),intent(in) :: spl_n
       integer,dimension(pylNodesNb),intent(in) :: pyIDs
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
       real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
@@ -318,15 +323,13 @@ contains
   end subroutine flowcfl
 
   subroutine streampower(pyStack, pyRcv, pitID, pitVol, pitDrain, pyXY, pyArea, pyMaxH, &
-      pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, spl_m, spl_n, perc_dep, &
-      slp_cr, sea, dt, borders, pyDepo, pyEro, sedFluxes, pylNodesNb, pygNodesNb)
+      pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, perc_dep, slp_cr, sea, dt, &
+      borders, pyDepo, pyEro, sedFluxes, pylNodesNb, pygNodesNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
       real(kind=8),intent(in) :: dt
       real(kind=8),intent(in) :: sea
-      real(kind=8),intent(in) :: spl_n
-      real(kind=8),intent(in) :: spl_m
       real(kind=8),intent(in) :: perc_dep
       real(kind=8),intent(in) :: slp_cr
       integer,dimension(pylNodesNb),intent(in) :: pyStack
@@ -350,14 +353,13 @@ contains
       real(kind=8),dimension(pygNodesNb),intent(out) :: sedFluxes
 
       integer :: n, donor, recvr, nID, tmpID
-      real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep, Qb, sedsp
-      real(kind=8) :: dist, slp, slpdh, updh, tmpdist, fac, upperslp, bedperc
-      real(kind=8),dimension(pygNodesNb) :: upZ, updist, bedFluxes
+      real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep, fct, Qt
+      real(kind=8) :: dist, slp, slpdh, updh, tmpdist, width, frac
+      real(kind=8),dimension(pygNodesNb) :: upZ, updist
 
       pyDepo = 0.
       pyEro = 0.
       sedFluxes = pyRiv * dt
-      bedFluxes = 0.
       upZ = 1.e6
       updist = 0.
 
@@ -387,34 +389,78 @@ contains
                 slpdh = perc_dep * updh
                 slpdh = min(slpdh,pyMaxD(donor))
               endif
+            elseif(incisiontype > 0 .and. dist > 0. .and. updist(donor) > 0.)then
+              slpdh = upZ(donor) - pyElev(donor)
             endif
 
             ! Compute the stream power law expressed in m/y
-            if(dist > 0. .and. slpdh == 0.)then
+            if(dist > 0.)then
 
-              ! Erodibility coefficient variation with bedload sediment supply
-              if(erofct)then
-                ! Compute upper slope
-                if(updist(donor)>0.)then
-                  upperslp = (upZ(donor) - pyElev(donor))/updist(donor)
-                endif
-                if(pyDischarge(donor)>0)then
-                  sedsp = bedFluxes(donor)/pyDischarge(donor)
-                  call erodibility_factor(sedsp, upperslp, fac, bedperc)
+              ! Incision rule types
+              ! Detachment limited
+              if(incisiontype==0 .and. slpdh == 0.)then
+                SPL = -Cero(donor) * (pyDischarge(donor))**spl_m * (slp)**spl_n
+              ! Generalised undercapacity model (linear sedflux dependency)
+              elseif(incisiontype==1)then
+                Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
+                if(Qt>0.)then
+                  fct = 1. - sedFluxes(donor)/Qt
+                  if(fct<0.) fct = 0.
+                  if(fct>1.) fct = 1.
                 else
-                  fac = 0.
-                  bedperc = 1.
+                  fct = 0.
                 endif
-                if(bedperc>1) bedperc = 1.
-                if(bedperc<0.) bedperc = 0.
-                if(fac<0) fac = 0.
-                if(fac>1.) fac = 1.
-                !print*,'erofunction'
-              else
-                fac = 1.
-                bedperc = 1.
+                SPL = -Cero(donor) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+              ! Almost parabolic sedflux dependency
+              elseif(incisiontype==2)then
+                Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
+                if(Qt>0.)then
+                  frac = sedFluxes(donor)/Qt
+                  if(frac<0.1)then
+                    fct = 2.6*frac + 0.1
+                  else
+                    fct = 1. - 4*(frac-0.5)**2.
+                  endif
+                  if(fct<0.) fct = 0.
+                  if(fct>1.) fct = 1.
+                else
+                  fct = 0.
+                endif
+                SPL = -Cero(donor) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+              ! Almost parabolic sedflux dependency
+              elseif(incisiontype==3)then
+                Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
+                if(Qt>0.)then
+                  frac = sedFluxes(donor)/Qt
+                  if(frac<0.35)then
+                    fct = exp(-(frac - 0.35)**2/(0.22)**2)
+                  else
+                    fct = exp(-(frac - 0.35)**2/(0.6)**2)
+                  endif
+                  if(fct<0.) fct = 0.
+                  if(fct>1.) fct = 1.
+                else
+                  fct = 0.
+                endif
+                SPL = -Cero(donor) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+              ! Saltation abrasion incision model
+              elseif(incisiontype==4)then
+                Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
+                if(Qt>0.)then
+                  fct = 1. - sedFluxes(donor)/Qt
+                  if(fct<0.) fct = 0.
+                  if(fct>1.) fct = 1.
+                else
+                  fct = 0.
+                endif
+                ! Channel width
+                width = width_kw * (pyDischarge(donor))**width_b
+                if(width>0)then
+                  SPL = -Cero(donor) * sedFluxes(donor)/width * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                else
+                  SPL = 0.
+                endif
               endif
-              SPL = -Cero(donor) * fac * (pyDischarge(donor))**spl_m * (slp)**spl_n
             endif
           endif
         endif
@@ -426,11 +472,12 @@ contains
           maxh = sea - pyElev(donor)
         elseif(slpdh > 0. .and. slp_cr > 0.)then
           maxh = slpdh
+        elseif(slpdh > 0. .and. incisiontype > 0)then
+          maxh = slpdh
         endif
         maxh = 0.95*maxh
 
         Qs = 0.
-        Qb = 0.
         erodep = 0.
         pitDep = 0.
         ! Erosion case
@@ -438,54 +485,41 @@ contains
           ! Sediment volume [m3]
           erodep = SPL * dt * pyArea(donor)
           Qs = -erodep + sedFluxes(donor)
-          Qb = -erodep*bedperc + bedFluxes(donor)
 
         ! Deposition case
-        elseif( SPL == 0. .and. pyArea(donor) > 0.)then
+        elseif( SPL >= 0. .and. pyArea(donor) > 0.)then
           ! Fill depression
           if(waterH > 0. .and. pyfillH(donor) > sea)then
             Qs = 0.
-            Qb = 0.
             erodep = 0.
             pitDep = sedFluxes(donor)
-            !print*,'filldepression'
           ! Marine deposit
           elseif(pyElev(donor) <= sea)then
             ! Add all sediment to the node
             erodep = sedFluxes(donor)
             Qs = 0.
-            Qb = 0.
-            !print*,'marinedepo'
           ! Alluvial plain deposit
           elseif(maxh > 0. .and. waterH == 0. .and. donor /= recvr .and. pyElev(donor) > sea)then
             if(sedFluxes(donor)/pyArea(donor) < maxh)then
               erodep = sedFluxes(donor)
               Qs = 0.
-              Qb = 0.
-              !print*,'allplain1'
             else
               erodep = maxh*pyArea(donor)
               Qs = sedFluxes(donor) - erodep
-              Qb = max(0.,bedFluxes(donor) - erodep)
-              print*,'allplain2'
             endif
           ! Base-level (sink)
           elseif(donor == recvr .and. pyArea(donor) > 0.)then
             erodep = sedFluxes(donor)
             Qs = 0.
-            Qb = 0.
-            !print*,'baselevel'
           else
             erodep = 0.
             Qs = sedFluxes(donor)
-            Qb = bedFluxes(donor)
           endif
         endif
 
         ! Update sediment volume in receiver node
         if(pitDep==0.)then
           sedFluxes(recvr) = sedFluxes(recvr) + Qs
-          bedFluxes(recvr) = bedFluxes(recvr) + Qb
           if(erodep<0.)then
             pyEro(donor) = pyEro(donor) + erodep
           else

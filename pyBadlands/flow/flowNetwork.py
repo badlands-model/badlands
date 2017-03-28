@@ -37,7 +37,7 @@ class flowNetwork:
     algorithm.
     """
 
-    def __init__(self, force, precipfac):
+    def __init__(self, input):
         """
         Initialization.
         """
@@ -61,8 +61,6 @@ class flowNetwork:
         self.maxdonors = 0
         self.CFL = None
         self.erodibility = None
-        self.m = None
-        self.n = None
         self.mindt = None
         self.spl = False
         self.depo = 0
@@ -92,12 +90,19 @@ class flowNetwork:
         self.indices = None
         self.onIDs = None
 
-        self.precipfac = precipfac
+        self.mp = input.mp
+        self.mt = input.mt
+        self.nt = input.nt
+        self.kt = input.kt
+        self.kw = input.kw
+        self.b = input.b
         self.sedload = None
+        # self.m = input.SPLm
+        # self.n = input.SPLn
 
-        if force.erofct :
-            FLOWalgo.flowcompute.eroparams(force.sedsupply,force.sedsupval,
-                                           force.bedslope,force.bedloadprop)
+        FLOWalgo.flowcompute.eroparams(input.incisiontype,input.SPLm,input.SPLn,input.mt,
+                                       input.nt,input.kt,input.kw,input.b)
+
         self._comm = mpi.COMM_WORLD
         self._rank = self._comm.Get_rank()
         self._size = self._comm.Get_size()
@@ -352,9 +357,8 @@ class flowNetwork:
             cumbase[i+1] = len(numpy.array_split(self.base, size)[i])+cumbase[i]+1
 
         # Compute discharge using libUtils
-        splexp = self.m / self.n
         chi, basinID = FLOWalgo.flowcompute.parameters(self.localstack,self.receivers,
-                                               self.discharge,self.xycoords,splexp,cumbase[rank])
+                                               self.discharge,self.xycoords,cumbase[rank])
         comm.Allreduce(mpi.IN_PLACE,chi,op=mpi.MAX)
         comm.Allreduce(mpi.IN_PLACE,basinID,op=mpi.MAX)
 
@@ -478,14 +482,17 @@ class flowNetwork:
 
             # Find border/inside nodes
             insideIDs = numpy.where(borders>0)[0]
-            if self.precipfac>0.:
-                eroCoeff = self.erodibility *numpy.power(rain,self.precipfac)
+            if self.mp>0.:
+                eroCoeff = self.erodibility *numpy.power(rain,self.mp)
             else:
                 eroCoeff = self.erodibility
 
             cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume, self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
-                     eroCoeff,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
+                     eroCoeff,perc_dep,slp_cr,sealevel,newdt,borders)
+            print 'ero',cero.max(),cero.max()
+            print 'depo',cdepo.max(),cdepo.max()
+            stop
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
             if self.depo == 0:
@@ -522,7 +529,7 @@ class flowNetwork:
             if newdt < dt:
                 cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID,self.pitVolume, \
                     self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
-                    eroCoeff,self.m,self.n,perc_dep,slp_cr,sealevel,newdt,borders)
+                    eroCoeff,perc_dep,slp_cr,sealevel,newdt,borders)
                 comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
                 comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
                 volChange = cdepo+cero
@@ -722,7 +729,7 @@ class flowNetwork:
 
         # Compute the local value for time stability
         dt = FLOWalgo.flowcompute.flowcfl(locIDs,self.receivers,self.xycoords,elev, \
-                                      self.discharge,self.erodibility,self.m,self.n)
+                                      self.discharge,self.erodibility)
 
         # Global mimimum value for diffusion stability
         CFL = numpy.zeros(1)

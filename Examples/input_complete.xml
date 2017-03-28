@@ -213,29 +213,33 @@
         <diffprop>0.2</diffprop>
     </sp_law>
 
-    <!-- Erodibility function structure  (optional)
-         It is possible to modify the erodibility coefficient to explicitly incorporate:
-          + the effect of local mean annual precipitation rate, and
-          + the effect of bedload sediment vs water discharge,
-          + where the dependency of bedload transport is related to the upstream slope.
-         An example of how to define these functions is provided in the erodibilityFct notebook
-         in pyBadlands Companion. -->
-    <erofunction>
+    <!-- Flux-dependent function structure  (optional)
+         It is possible to modify the general detachment limited law to simulate channel
+         evolution governed by sediment flux–dependent bedrock incision rules.
+    -->
+    <sedfluxfunction>
+        <!-- Incision model type is defined with an integer between 0 and 4:
+              + 0 - detachment limited (default) does not required to set additional parameters.
+              + 1 - generalised undercapacity model (linear sedflux dependency) [cover effect]
+              + 2 - parabolic sedflux dependency [tool & cover effect]
+              + 3 - Turowski sedflux dependency [tool & cover effect]
+              + 4 - saltation abrasion incision model
+             See Hobley et al. (2011), JGR, 116 for more information.
+        -->
+        <modeltype>0</modeltype>
+        <!-- Volumetric sediment transport capacity formulation is built with a stream power law
+             and requires the definition of 2 exponents for water discharge (mt) and slope (nt). -->
+        <mt>1.5</mt>
+        <nt>1.</nt>
+        <!-- Transportability of channel sediment (erodibility coefficient) -->
+        <kt>2.e-6</kt>
+        <!-- Power law relation between channel width and discharge -->
+        <kw>1</kw>
+        <b>0.5</b>
         <!-- Erodibility dependence to the precipitation is defined with an exponent.
            Default value is set to 0. See Murphy et al. (2016), Nature, 532. -->
-        <precipexpo>0.</precipexpo>
-        <!-- Erodibility dependence to the bedload sediment supply is defined in a file.
-           The file can be created with the erodibilityFct notebook in pyBadlands Companion,
-           it consists of 2 columns: first column is the ratio of bedload versus water fluxes and
-           the second is the erodibility factor (all values are between [0,1])
-           See Sklar & Dietrich (2004), Water Resour. Res., 40. -->
-        <sedratio>data/sedsupply.csv</sedratio>
-        <!-- Contributing proportion of bedload contributing to erosion. Again this is defined in
-           a file that can be created with the erodibilityFct notebook in pyBadlands Companion.
-           it consists of 2 columns: first column is the upstream slope [m/m] and the second
-           is the percentage of sediment eroded and transported as bedload. -->
-        <bedslope>data/bedslope.csv</bedslope>
-    </erofunction>
+        <mp>0.</mp>
+    </sedfluxfunction>
 
     <!-- Erodibility structure
          This option allows you to specify different erodibility values either on the surface

@@ -97,13 +97,16 @@ class xmlParser:
         self.diffnb = 5
         self.diffprop = 0.9
         self.spl = False
+
+        self.incisiontype = 0
+        self.mp = 0.
+        self.mt = 0.
+        self.nt = 0.
+        self.kt = 0.
+        self.kw = 0.
+        self.b = 0.
+
         self.Hillslope = False
-
-        self.erof = False
-        self.precipfac = 0.
-        self.sedsupply = None
-        self.bedslope = None
-
         self.CDa = 0.
         self.CDm = 0.
         self.CDr = 0.
@@ -833,33 +836,52 @@ class xmlParser:
             self.SPLero = 0.
             self.diffnb = 5
 
-        # Extract erodibility functions structure parameters
+        # Extract flux-dependent function structure parameters
         erof = None
-        erof = root.find('erofunction')
+        erof = root.find('sedfluxfunction')
         if erof is not None:
-            self.erof = True
             element = None
-            element = erof.find('precipexpo')
+            element = erof.find('modeltype')
             if element is not None:
-                self.precipfac = float(element.text)
+                self.incisiontype = int(element.text)
             else:
-                self.precipfac = 0.
+                self.incisiontype = 0
             element = None
-            element = erof.find('sedratio')
+            element = erof.find('mt')
             if element is not None:
-                self.sedsupply = element.text
-                if not os.path.isfile(self.sedsupply):
-                    raise ValueError('File for erodibility dependence to sediment supply is missing or the given path is incorrect.')
+                self.mt = element.text
             else:
-                self.sedsupply = None
+                self.mt = 0
             element = None
-            element = erof.find('bedslope')
+            element = erof.find('nt')
             if element is not None:
-                self.bedslope = element.text
-                if not os.path.isfile(self.bedslope):
-                    raise ValueError('File for bedload dependence to slope is missing or the given path is incorrect.')
+                self.nt = element.text
             else:
-                self.bedslope = None
+                self.nt = 0
+            element = None
+            element = erof.find('kt')
+            if element is not None:
+                self.kt = element.text
+            else:
+                self.kt = 0
+            element = None
+            element = erof.find('kw')
+            if element is not None:
+                self.kw = element.text
+            else:
+                self.kw = 0
+            element = None
+            element = erof.find('b')
+            if element is not None:
+                self.b = element.text
+            else:
+                self.b = 0
+            element = None
+            element = erof.find('mp')
+            if element is not None:
+                self.mp = float(element.text)
+            else:
+                self.mp = 0
 
         # Extract linear and nonlinear slope diffusion structure parameters
         creep = None
