@@ -422,7 +422,7 @@ class flowNetwork:
             self.allDrain = -numpy.ones(len(pitID))
 
     def compute_sedflux(self, Acell, elev, rain, fillH, borders, domain, dt, rivqs, sealevel,
-        cumdiff, perc_dep, slp_cr, ngbh, verbose=False):
+        perc_dep, slp_cr, ngbh, verbose=False):
         """
         Calculates the sediment flux at each node.
 
@@ -454,9 +454,6 @@ class flowNetwork:
 
         sealevel
             Real value giving the sea-level height at considered time step.
-
-        cumdiff
-            Numpy array containing the cumulative deposit thicknesses.
 
         slp_cr
             Critical slope used to force aerial deposition for alluvial plain.
@@ -490,9 +487,6 @@ class flowNetwork:
             cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume, self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH,elev,rivqs, \
                      eroCoeff,perc_dep,slp_cr,sealevel,newdt,borders)
-            print 'ero',cero.max(),cero.max()
-            print 'depo',cdepo.max(),cdepo.max()
-            stop
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
             if self.depo == 0:

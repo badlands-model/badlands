@@ -550,7 +550,7 @@ class forceSim:
         else:
             return update
 
-    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, tflex=None, scum=None,
+    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, hcum, tflex=None, scum=None,
                                       Te=None, Ke=None, flexure=0, strat=0, ero=0):
         """
         Apply horizontal displacements and check if any points need to be merged.
@@ -574,6 +574,9 @@ class forceSim:
 
         scum : float
             Numpy array with erosion/deposition used for stratal mesh.
+
+        hcum : float
+            Numpy array with erosion/deposition for hillslope used for stratal mesh.
 
         Te : float
             Numpy array with thickness used for erosional mesh.
@@ -600,6 +603,9 @@ class forceSim:
 
         newcum
             Numpy array containing the updated erosion/deposition values for the new TIN.
+
+        newhcum
+            Numpy array containing the updated erosion/deposition values for hillslope in the new TIN.
 
         newcumf
             Numpy array containing the updated cumulative flexural values for the new TIN.
@@ -639,6 +645,7 @@ class forceSim:
             self.tXY = numpy.delete(self.tXY, tID, 0)
             elev = numpy.delete(telev, tID, 0)
             cum = numpy.delete(tcum, tID, 0)
+            hum = numpy.delete(hcum, tID, 0)
             if flexure == 1:
                 cumf = numpy.delete(tflex, tID, 0)
             if strat == 1:
@@ -654,6 +661,7 @@ class forceSim:
             self.tXY = tXY
             elev = telev
             cum = tcum
+            hum = hcum
             if flexure == 1:
                 cumf = tflex
             if strat == 1:
@@ -683,6 +691,7 @@ class forceSim:
             if len(elev[indices].shape) == 3:
                 z_vals = elev[indices][:,:,0]
                 cum_vals = cum[indices][:,:,0]
+                hum_vals = hum[indices][:,:,0]
                 if flexure == 1:
                     cumf_vals = cumf[indices][:,:,0]
                 if strat == 1:
@@ -690,12 +699,14 @@ class forceSim:
             else:
                 z_vals = elev[indices]
                 cum_vals = cum[indices]
+                hum_vals = hum[indices]
                 if flexure == 1:
                     cumf_vals = cumf[indices]
                 if strat == 1:
                     scum_vals = stcum[indices]
             z_avg = numpy.average(z_vals, weights=weights,axis=1)
             cum_avg = numpy.average(cum_vals, weights=weights,axis=1)
+            hum_avg = numpy.average(hum_vals, weights=weights,axis=1)
             if flexure == 1:
                 cumf_avg = numpy.average(cumf_vals, weights=weights,axis=1)
             if strat == 1:
@@ -716,6 +727,7 @@ class forceSim:
             newXY = numpy.delete(self.tXY, mergedIDs, 0)
             newelev = numpy.delete(elev, mergedIDs, 0)
             newcum = numpy.delete(cum, mergedIDs, 0)
+            newhcum = numpy.delete(hum, mergedIDs, 0)
             if flexure == 1:
                 newcumf = numpy.delete(cumf, mergedIDs, 0)
             if strat == 1:
@@ -730,6 +742,7 @@ class forceSim:
             newXY = numpy.concatenate((newXY, mXY), axis=0)
             newelev = numpy.concatenate((newelev, z_avg), axis=0)
             newcum = numpy.concatenate((newcum, cum_avg), axis=0)
+            newhcum = numpy.concatenate((newhcum, hum_avg), axis=0)
             if flexure == 1:
                 newcumf = numpy.concatenate((newcumf, cumf_avg), axis=0)
             if strat == 1:
@@ -744,6 +757,7 @@ class forceSim:
             newXY = self.tXY
             newelev = elev
             newcum = cum
+            newhcum = hum
             if flexure == 1:
                 newcumf = cumf
             if strat == 1:
@@ -763,6 +777,7 @@ class forceSim:
             if len(elev[ids].shape) == 3:
                 zvals = elev[ids][:,:,0]
                 cumvals = cum[ids][:,:,0]
+                humvals = hum[ids][:,:,0]
                 if flexure == 1:
                     cumfvals = cumf[ids][:,:,0]
                 if strat == 1:
@@ -770,6 +785,7 @@ class forceSim:
             else:
                 zvals = elev[ids]
                 cumvals = cum[ids]
+                humvals = hum[ids]
                 if flexure == 1:
                     cumfvals = cumf[ids]
                 if strat == 1:
@@ -786,6 +802,7 @@ class forceSim:
                         Kevals[:,k] = mKe[ids,k]
             zavg = numpy.average(zvals, weights=weights,axis=1)
             cumavg = numpy.average(cumvals, weights=weights,axis=1)
+            humavg = numpy.average(humvals, weights=weights,axis=1)
             if flexure == 1:
                 cumfavg = numpy.average(cumfvals, weights=weights,axis=1)
             if strat == 1:
@@ -798,6 +815,7 @@ class forceSim:
                     Keavg[:,k] = Kevals[indices[0],k]
             newelev = numpy.concatenate((newelev, zavg), axis=0)
             newcum = numpy.concatenate((newcum, cumavg), axis=0)
+            newhcum = numpy.concatenate((newhcum, humavg), axis=0)
             if flexure == 1:
                 newcumf = numpy.concatenate((newcumf, cumfavg), axis=0)
             if strat == 1:
@@ -819,4 +837,4 @@ class forceSim:
             newKe = None
             newTe = None
 
-        return newTIN, newelev, newcum, newcumf, newscum, newKe, newTe
+        return newTIN, newelev, newcum, newhcum, newcumf, newscum, newKe, newTe

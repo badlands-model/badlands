@@ -68,7 +68,7 @@ class Model(object):
     def build_mesh(self, filename, verbose):
         # Construct Badlands mesh and grid to run simulation
         self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, parentIDs, \
-            self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumflex, self.strata, self.mapero, \
+            self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumhill, self.cumflex, self.strata, self.mapero, \
             self.tinFlex, self.flex, self.straTIN = buildMesh.construct_mesh(self.input, filename, verbose)
 
         # Define hillslope parameters
@@ -253,8 +253,8 @@ class Model(object):
                             vKe = self.mapero.Ke
                             vTh = self.mapero.thickness
                         # Apply horizontal displacements
-                        self.recGrid.tinMesh, self.elevation, self.cumdiff, fcum, scum, Ke, Th = self.force.apply_XY_dispacements(
-                            self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, tflex=flexiso, scum=sload, Te=vTh,
+                        self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumhill, fcum, scum, Ke, Th = self.force.apply_XY_dispacements(
+                            self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumhill, tflex=flexiso, scum=sload, Te=vTh,
                             Ke=vKe, flexure=fflex, strat=fstrat, ero=fero)
                         # Update relevant parameters in deformed TIN
                         if fflex == 1:
@@ -295,8 +295,8 @@ class Model(object):
                     outStrata = 1
                 checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow,
                                             self.FVmesh, self.tMesh, self.force, self.flow, self.rain,
-                                            self.elevation, self.fillH, self.cumdiff, self.outputStep,
-                                            self.mapero, self.cumflex)
+                                            self.elevation, self.fillH, self.cumdiff, self.cumhill,
+                                            self.outputStep, self.mapero, self.cumflex)
                 # Update next display time
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
@@ -318,9 +318,9 @@ class Model(object):
                         tEnd, self.force.next_disp, self.force.next_rain])
 
             # Compute sediment transport up to tStop
-            self.tNow, self.elevation, self.cumdiff = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, self.FVmesh,
-                              self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.mapero, self.cumdiff, \
-                              self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
+            self.tNow, self.elevation, self.cumdiff, self.cumhill = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
+                              self.FVmesh, self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.mapero,  \
+                              self.cumdiff, self.cumhill, self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time
         if self._rank == 0:
@@ -347,8 +347,8 @@ class Model(object):
         if self.input.udw == 0 or self.tNow == self.input.tEnd or self.tNow == self.force.next_display:
             checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
                                 self.FVmesh, self.tMesh, self.force, self.flow, self.rain, \
-                                self.elevation, self.fillH, self.cumdiff, self.outputStep, self.mapero, \
-                                self.cumflex)
+                                self.elevation, self.fillH, self.cumdiff, self.cumhill, self.outputStep, \
+                                self.mapero, self.cumflex)
             self.force.next_display += self.input.tDisplay
             self.outputStep += 1
 
