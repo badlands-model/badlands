@@ -106,10 +106,10 @@ class forceSim:
     """
 
     def __init__(self, seafile = None, sea0 = 0., MapRain = None, TimeRain = None, ValRain = None,
-                 orographic = None, rbgd = None, rmin = None, rmax = None, windx = None, windy = None,
-                 tauc = None, tauf = None, nm = None, cw = None, hw = None, ortime = None, MapDisp = None,
-                 TimeDisp = None, regX = None, regY = None, rivPos = None, rivTime = None, rivQws = None,
-                 rivNb = 0, Tdisplay = 0.):
+                 orographic = None, orographiclin = None, rbgd = None, rmin = None, rmax = None, rzmax = None,
+                 windx = None, windy = None, tauc = None, tauf = None, nm = None, cw = None, hw = None,
+                 ortime = None, MapDisp = None, TimeDisp = None, regX = None, regY = None, rivPos = None,
+                 rivTime = None, rivQws = None, rivNb = 0, Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
@@ -129,9 +129,11 @@ class forceSim:
         self.rainVal = ValRain
         self.T_rain = TimeRain
         self.orographic = orographic
+        self.orographiclin = orographiclin
         self.rbgd = rbgd
         self.rmin = rmin
         self.rmax = rmax
+        self.rzmax = rzmax
         self.windx = windx
         self.windy = windy
         self.tauc = tauc
@@ -275,13 +277,20 @@ class forceSim:
 
         events = numpy.where( (self.T_rain[:,1] - time) <= 0)[0]
         event = len(events)
-
         if not (time >= self.T_rain[event,0]) and not (time < self.T_rain[event,1]):
             raise ValueError('Problem finding the rain map to load!')
 
         if self.orographic[event]:
-            tinRain = self.build_OrographicRain_map(event, elev, inIDs)
-            self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
+            if self.rzmax[event] <= 0:
+                tinRain = self.build_OrographicRain_map(event, elev, inIDs)
+                self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
+            else:
+                tinRain = numpy.zeros(len(self.tXY[inIDs,0]), dtype=float)
+                rainslope = (self.rmax[event]-self.rmin[event])/self.rzmax[event]
+                tinRain = rainslope*elev[inIDs]+self.rmin[event]
+                tinRain[tinRain<0.] = 0.
+                tinRain[tinRain>self.rmax[event]] = self.rmax[event]
+                self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
         elif self.Map_rain[event] == None:
             tinRain = numpy.zeros(len(self.tXY[inIDs,0]), dtype=float)
             tinRain = self.rainVal[event]
@@ -298,7 +307,7 @@ class forceSim:
 
     def build_OrographicRain_map(self, event, elev, inIDs):
         """
-        Build rain map using SMith & Barstad (2004) model for a given period and perform interpolation from regular grid to
+        Build rain map using Smith & Barstad (2004) model for a given period and perform interpolation from regular grid to
         unstructured TIN one.
 
         Parameters

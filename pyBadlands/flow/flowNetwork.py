@@ -101,7 +101,7 @@ class flowNetwork:
         # self.n = input.SPLn
 
         FLOWalgo.flowcompute.eroparams(input.incisiontype,input.SPLm,input.SPLn,input.mt,
-                                       input.nt,input.kt,input.kw,input.b)
+                                       input.nt,input.kt,input.kw,input.b,input.bedslptype)
 
         self._comm = mpi.COMM_WORLD
         self._rank = self._comm.Get_rank()

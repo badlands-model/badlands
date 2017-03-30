@@ -78,10 +78,13 @@ class xmlParser:
         self.rainTime = None
         self.oroRain = False
         self.orographic = None
+        self.orographiclin = None
+        self.rzmax = None
         self.ortime = None
         self.rbgd = None
         self.rmin = None
         self.rmax = None
+        self.rzmax = None
         self.windx = None
         self.windy = None
         self.tauc = 1000.
@@ -105,6 +108,7 @@ class xmlParser:
         self.kt = 0.
         self.kw = 0.
         self.b = 0.
+        self.bedslptype = 0
 
         self.Hillslope = False
         self.CDa = 0.
@@ -497,11 +501,13 @@ class xmlParser:
             tmpVal = numpy.empty(tmpNb)
             tmpMap = numpy.empty(tmpNb,dtype=object)
             tmpOro = numpy.empty(tmpNb,dtype=bool)
+            tmpOroLin = numpy.empty(tmpNb,dtype=bool)
             tmpTime = numpy.empty((tmpNb,2))
             tmpoTime = numpy.empty(tmpNb)
             tmprbgd = numpy.empty(tmpNb)
             tmprmin = numpy.empty(tmpNb)
             tmprmax = numpy.empty(tmpNb)
+            tmprzmax = numpy.empty(tmpNb)
             tmpwdx = numpy.empty(tmpNb)
             tmpwdy = numpy.empty(tmpNb)
             tmptauc = numpy.empty(tmpNb)
@@ -572,6 +578,15 @@ class xmlParser:
                 else:
                     tmprmax[id] = 0.
                 element = None
+                element = clim.find('rzmax')
+                if element is not None:
+                    tmprzmax[id] = float(element.text)
+                    tmpOroLin[id] = True
+                    self.oroRain = True
+                else:
+                    tmprzmax[id] = 0.
+                    tmpOroLin[id] = False
+                element = None
                 element = clim.find('windx')
                 if element is not None:
                     tmpwdx[id] = float(element.text)
@@ -630,10 +645,12 @@ class xmlParser:
             self.rainMap = numpy.empty(self.rainNb,dtype=object)
             self.rainTime = numpy.empty((self.rainNb,2))
             self.orographic = numpy.empty(self.rainNb,dtype=bool)
+            self.orographiclin = numpy.empty(self.rainNb,dtype=bool)
             self.ortime = numpy.empty(self.rainNb)
             self.rbgd = numpy.empty(self.rainNb)
             self.rmin = numpy.empty(self.rainNb)
             self.rmax = numpy.empty(self.rainNb)
+            self.rzmax = numpy.empty(self.rainNb)
             self.windx = numpy.empty(self.rainNb)
             self.windy = numpy.empty(self.rainNb)
             self.tauc = numpy.empty(self.rainNb)
@@ -646,10 +663,12 @@ class xmlParser:
             if tmpTime[id,0] > self.tStart:
                 self.rainMap[id] = None
                 self.orographic[id] = False
+                self.orographiclin[id] = False
                 self.rainVal[id] = 0.
                 self.rbgd[id] = 0.
                 self.rmin[id] = 0.
                 self.rmax[id] = 0.
+                self.rzmax[id] = 0.
                 self.windx[id] = 0.
                 self.windy[id] = 0.
                 self.tauc[id] = 1000.
@@ -665,10 +684,12 @@ class xmlParser:
             self.rainTime[id,:] = tmpTime[0,:]
             self.rainVal[id] = tmpVal[0]
             self.orographic[id] = tmpOro[0]
+            self.orographiclin[id] = tmpOroLin[0]
             self.ortime[id] = tmpoTime[0]
             self.rbgd[id] = tmprbgd[0]
             self.rmin[id] = tmprmin[0]
             self.rmax[id] = tmprmax[0]
+            self.rzmax[id] = tmprzmax[0]
             self.windx[id] = tmpwdx[0]
             self.windy[id] = tmpwdy[0]
             self.tauc[id] = tmptauc[0]
@@ -687,6 +708,7 @@ class xmlParser:
                     self.rbgd[id] = 0.
                     self.rmin[id] = 0.
                     self.rmax[id] = 0.
+                    self.rzmax[id] = 0.
                     self.windx[id] = 0.
                     self.windy[id] = 0.
                     self.tauc[id] = 1000.
@@ -700,10 +722,12 @@ class xmlParser:
                 self.rainTime[id,:] = tmpTime[p,:]
                 self.rainVal[id] = tmpVal[p]
                 self.orographic[id] = tmpOro[p]
+                self.orographiclin[id] = tmpOroLin[p]
                 self.ortime[id] = tmpoTime[p]
                 self.rbgd[id] = tmprbgd[p]
                 self.rmin[id] = tmprmin[p]
                 self.rmax[id] = tmprmax[p]
+                self.rzmax[id] = tmprzmax[p]
                 self.windx[id] = tmpwdx[p]
                 self.windy[id] = tmpwdy[p]
                 self.tauc[id] = tmptauc[p]
@@ -718,10 +742,12 @@ class xmlParser:
                 self.rainTime[id,0] = tmpTime[tmpNb-1,1]
                 self.rainTime[id,1] = self.tEnd
                 self.orographic[id] = False
+                self.orographiclin[id] = False
                 self.rainVal[id] = 0.
                 self.rbgd[id] = 0.
                 self.rmin[id] = 0.
                 self.rmax[id] = 0.
+                self.rzmax[id] = 0.
                 self.windx[id] = 0.
                 self.windy[id] = 0.
                 self.tauc[id] = 1000.
@@ -736,10 +762,12 @@ class xmlParser:
             self.rainTime = numpy.empty((self.rainNb,2))
             self.rainMap = numpy.empty((self.rainNb),dtype=object)
             self.orographic = numpy.empty(self.rainNb,dtype=bool)
+            self.orographiclin = numpy.empty(self.rainNb,dtype=bool)
             self.ortime = numpy.empty(self.rainNb)
             self.rbgd = numpy.empty(self.rainNb)
             self.rmin = numpy.empty(self.rainNb)
             self.rmax = numpy.empty(self.rainNb)
+            self.rzmax = numpy.empty(self.rainNb)
             self.windx = numpy.empty(self.rainNb)
             self.windy = numpy.empty(self.rainNb)
             self.tauc = numpy.empty(self.rainNb)
@@ -752,10 +780,12 @@ class xmlParser:
             self.rainTime[0,1] = self.tEnd
             self.rainMap[0] = None
             self.orographic[0] = False
+            self.orographiclin[0] = False
             self.rainVal[0] = 0.
             self.rbgd[0] = 0.
             self.rmin[0] = 0.
             self.rmax[0] = 0.
+            self.rzmax[0] = 0.
             self.windx[0] = 0.
             self.windy[0] = 0.
             self.tauc[0] = 1000.
@@ -882,6 +912,12 @@ class xmlParser:
                 self.mp = float(element.text)
             else:
                 self.mp = 0
+            element = None
+            element = erof.find('bedslp')
+            if element is not None:
+                self.bedslptype = int(element.text)
+            else:
+                self.bedslptype = 0
 
         # Extract linear and nonlinear slope diffusion structure parameters
         creep = None

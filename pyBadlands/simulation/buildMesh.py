@@ -41,8 +41,8 @@ def construct_mesh(input, filename, verbose=False):
     fixIDs = recGrid.boundsPt + recGrid.edgesPt
 
     force = forceSim.forceSim(input.seafile, input.seapos, input.rainMap,
-                input.rainTime, input.rainVal, input.orographic,
-                input.rbgd, input.rmin, input.rmax , input.windx,
+                input.rainTime, input.rainVal, input.orographic, input.orographiclin,
+                input.rbgd, input.rmin, input.rmax, input.rzmax, input.windx,
                 input.windy, input.tauc, input.tauf, input.nm,
                 input.cw, input.hw, input.ortime, input.tectFile,
                 input.tectTime, recGrid.regX, recGrid.regY, input.riverPos,

@@ -113,11 +113,12 @@
          The following methods can be used:
             - an uniform precipitation value for the entire region [m/a]
             - a map containing precipitation values for each nodes of the regular grid
+            - a linear elevation dependent precipitation function
             - an orographic precipitation computed using Smith & Barstad theory (2004)
     -->
     <precipitation>
         <!-- Number of precipitation events -->
-        <climates>3</climates>
+        <climates>4</climates>
         <!-- Uniform precipitation definition -->
         <rain>
             <!-- Rain start time [a] -->
@@ -136,12 +137,27 @@
             <!-- Precipitation map [m/a] -->
             <map>data/rainLR.csv</map>
         </rain>
+        <!-- Linear orographic precipitation model definition -->
+        <rain>
+          <!-- Rain start time [a] -->
+          <rstart>200000.</rstart>
+          <!-- Rain end time [a] -->
+          <rend>300000.</rend>
+          <!-- Rain computation time step [a] -->
+          <ortime>5000.</ortime>
+          <!-- Minimal precipitation value [m/a] -->
+          <rmin>0.2</rmin>
+          <!-- Maximal precipitation value [m/a] -->
+          <rmax>5.</rmax>
+          <!-- Maximal elevation for computing linear trend [m] -->
+          <rzmax>3000.</rzmax>
+        </rain>
         <!-- Orographic precipitation model definition -->
         <rain>
             <!-- Rain start time [a] -->
-            <rstart>100000.</rstart>
+            <rstart>300000.</rstart>
             <!-- Rain end time [a] -->
-            <rend>200000.</rend>
+            <rend>400000.</rend>
             <!-- Rain computation time step [a] -->
             <ortime>5000.</ortime>
             <!-- Background precipitation value [m/a] -->
@@ -216,6 +232,7 @@
     <!-- Flux-dependent function structure  (optional)
          It is possible to modify the general detachment limited law to simulate channel
          evolution governed by sediment flux–dependent bedrock incision rules.
+         Visit tinyurl.com/badlands-incision for more information.
     -->
     <sedfluxfunction>
         <!-- Incision model type is defined with an integer between 0 and 4:
@@ -239,6 +256,16 @@
         <!-- Erodibility dependence to the precipitation is defined with an exponent.
            Default value is set to 0. See Murphy et al. (2016), Nature, 532. -->
         <mp>0.</mp>
+        <!-- Bedload versus slope dependency. This option changes the amount of incision based on
+             the proportion of bedload material (i.e. gravels) present in stream. For any point in
+             the landscape the amount of bedload material is assumed slope-dependent. The user can
+             choose between the following options:
+              + 0 - no dependency (default)
+              + 1 - linear dependency
+              + 2 - exponential growth
+              + 3 - logarithmic growth
+        -->
+        <bedslp>0</bedslp>
     </sedfluxfunction>
 
     <!-- Erodibility structure
