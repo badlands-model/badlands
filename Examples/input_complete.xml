@@ -106,6 +106,8 @@
             <rQs>7.</rQs>
             <!-- Average sediment density [kg/m3] -->
             <rhoS>2750.</rhoS>
+            <!-- Rock type used if multiple types of rock are used -->
+            <rck>0</rck>
         </river>
     </rivers>
 
@@ -272,6 +274,8 @@
          This option allows you to specify different erodibility values either on the surface
          or within a number of initial stratigraphic layers. -->
     <erocoeffs>
+        <!-- Active layer thickness [m]-->
+        <actlay>1.</actlay>
         <!-- Number of rock types to track. -->
         <rocktype>4</rocktype>
         <!-- Definition of erodibility values for each rock types -->

@@ -128,7 +128,7 @@ class diffLinear:
 
         return numpy.nan_to_num(diff_flux * areacoeff * coeff)
 
-    def sedfluxmarine(self, diff_flux, sea, elevation, area):
+    def sedfluxmarine(self, sea, elevation, area):
         """
         This function computes the diffusion of marine sediments transported by river processes using
         a linear diffusion approximation.
@@ -139,10 +139,6 @@ class diffLinear:
 
         Parameters
         ----------
-
-        diff_flux
-            Numpy arrays representing for each node the sum of the ratio between the height differences
-            and the length of the mesh edge multiply by the length of the corresponding voronoi edge.
 
         sea
             Real value giving the sea-level height at considered time step.
@@ -160,4 +156,4 @@ class diffLinear:
         areacoeff[ids] = 1./area[ids]
         coeff = numpy.where(elevation >= sea, 0., self.CDriver)
 
-        return numpy.nan_to_num(diff_flux * areacoeff * coeff)
+        return numpy.nan_to_num(areacoeff * coeff)

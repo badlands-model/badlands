@@ -133,131 +133,130 @@ contains
 
   end subroutine allfillPD
 
-  subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diffsed, pydnodes, pyIDs)
+  subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diffsed, pydnodes, pyIDs, pyRockNb)
 
-    integer :: pydnodes, pyIDs
+    integer :: pydnodes, pyIDs, pyRockNb
     integer,dimension(pyIDs),intent(in) :: depIDs
     integer,dimension(pydnodes),intent(in) :: border
     real(kind=8),intent(in) :: sealevel
-    real(kind=8),dimension(pydnodes),intent(in) :: seavol
+    real(kind=8),dimension(pydnodes,pyRockNb),intent(in) :: seavol
     real(kind=8),dimension(pydnodes),intent(in) :: elevation
 
-    real(kind=8),dimension(pydnodes),intent(out) :: diffsed
+    real(kind=8),dimension(pydnodes,pyRockNb),intent(out) :: diffsed
 
-    real(kind=8),dimension(pydnodes) :: elev, seadep
+    real(kind=8),dimension(pydnodes) :: elev, seadep, newelev
 
-    integer :: it, m, n, p, k, pid, nid, id, nup, ndown, ngbh(20)
+    integer :: it, s, m, n, p, k, pid, nid, id, nup, ndown, ngbh(20)
     real(kind=8) :: dh, vol, minz, maxz
 
     dnodes = pydnodes
     elev = elevation
 
-    do m = 1, diffnbmax
-      seadep = seavol/float(diffnbmax)
-      do k = 1, pyIDs
-        n = depIDs(k)+1
-        id = n
-        pid = n
-        it = 0
-        sfd_loop: do
-            if(border(id)<1)then
-              seadep(id) = 0.
-              exit sfd_loop
-            endif
-            vol = max(0.,diffprop*(sealevel-elev(id))*area(id))
-            if(it>max_it_cyc)then
-              elev(id) = elev(id) + seadep(id)/area(id)
-              seadep(id) = 0.
-              exit sfd_loop
-            endif
-            if(seadep(id)/area(id)<diff_res)then
-              elev(id) = elev(id) + seadep(id)/area(id)
-              seadep(id) = 0.
-              exit sfd_loop
-            endif
-            it = it+1
-            if(seadep(id)<vol)then
-              elev(id) = elev(id) + seadep(id)/area(id)
-              seadep(id) = 0.
-              exit sfd_loop
-            else
-              seadep(id) = seadep(id) - vol
-              elev(id) = elev(id) + vol/area(id)
-            endif
-            if(seadep(id)>0.)then
-              minz = elev(id)
-              nid = 0
-              nup = 0
-              ndown = 0
-              maxz = -1.e8
-              loop: do p = 1, 20
-                if( neighbours(id,p) < 0 ) exit loop
-                ndown = ndown + 1
-                ngbh(ndown) = neighbours(id,p)+1
-                if(minz>elev(neighbours(id,p)+1))then
-                  nid = neighbours(id,p)+1
-                  minz = elev(nid)
-                endif
-                if(maxz<elev(neighbours(id,p)+1))then
-                  maxz = elev(neighbours(id,p)+1)
-                  nup = neighbours(id,p)+1
-                endif
-              enddo loop
-              if(nid==0)then
-                dh = maxz-elev(id)+0.1
-                if(seadep(id) > dh*area(id))then
-                  elev(id) = elev(id) + dh
-                  seadep(id) = seadep(id) - dh*area(id)
-                  pid = depIDs(k)+1
-                  nid = depIDs(k)+1
-                  seadep(nid) = seadep(nid)+seadep(id)
-                  seadep(id) = 0.
-                  id = nid
-                  it = 0
-                  ! vol = (seadep(id) - dh*area(id))/ndown
-                  ! do p = 1, ndown
-                  !   elev(ngbh(p)) = elev(ngbh(p)) + vol/area(id)
-                  ! enddo
-                else
-                  elev(id) = elev(id) + seadep(id)/area(id)
-                  seadep(id) = 0.
-                  exit sfd_loop
-                endif
+
+    do s = 1, pyRockNb
+      newelev = elev
+      do m = 1, diffnbmax
+        seadep = seavol(:,s)/float(diffnbmax)
+        do k = 1, pyIDs
+          n = depIDs(k)+1
+          id = n
+          pid = n
+          it = 0
+          sfd_loop: do
+              if(border(id)<1)then
+                seadep(id) = 0.
+                exit sfd_loop
+              endif
+              vol = max(0.,diffprop*(sealevel-elev(id))*area(id))
+              if(it>max_it_cyc)then
+                elev(id) = elev(id) + seadep(id)/area(id)
+                seadep(id) = 0.
+                exit sfd_loop
+              endif
+              if(seadep(id)/area(id)<diff_res)then
+                elev(id) = elev(id) + seadep(id)/area(id)
+                seadep(id) = 0.
+                exit sfd_loop
+              endif
+              it = it+1
+              if(seadep(id)<vol)then
+                elev(id) = elev(id) + seadep(id)/area(id)
+                seadep(id) = 0.
+                exit sfd_loop
               else
-                if(minz>elev(id))then
-                  dh = (minz-elev(id))+0.1
+                seadep(id) = seadep(id) - vol
+                elev(id) = elev(id) + vol/area(id)
+              endif
+              if(seadep(id)>0.)then
+                minz = elev(id)
+                nid = 0
+                nup = 0
+                ndown = 0
+                maxz = -1.e8
+                loop: do p = 1, 20
+                  if( neighbours(id,p) < 0 ) exit loop
+                  ndown = ndown + 1
+                  ngbh(ndown) = neighbours(id,p)+1
+                  if(minz>elev(neighbours(id,p)+1))then
+                    nid = neighbours(id,p)+1
+                    minz = elev(nid)
+                  endif
+                  if(maxz<elev(neighbours(id,p)+1))then
+                    maxz = elev(neighbours(id,p)+1)
+                    nup = neighbours(id,p)+1
+                  endif
+                enddo loop
+                if(nid==0)then
+                  dh = maxz-elev(id)+0.1
                   if(seadep(id) > dh*area(id))then
                     elev(id) = elev(id) + dh
                     seadep(id) = seadep(id) - dh*area(id)
+                    pid = depIDs(k)+1
+                    nid = depIDs(k)+1
+                    seadep(nid) = seadep(nid)+seadep(id)
+                    seadep(id) = 0.
+                    id = nid
+                    it = 0
                   else
                     elev(id) = elev(id) + seadep(id)/area(id)
                     seadep(id) = 0.
                     exit sfd_loop
                   endif
-                  pid = depIDs(k)+1
-                  nid = depIDs(k)+1
-                  seadep(nid) = seadep(nid)+seadep(id)
-                  seadep(id) = 0.
-                  id = nid
-                  it = 0
                 else
-                  seadep(nid) = seadep(id)
-                  seadep(id) = 0.
-                  pid = id
-                  id = nid
+                  if(minz>elev(id))then
+                    dh = (minz-elev(id))+0.1
+                    if(seadep(id) > dh*area(id))then
+                      elev(id) = elev(id) + dh
+                      seadep(id) = seadep(id) - dh*area(id)
+                    else
+                      elev(id) = elev(id) + seadep(id)/area(id)
+                      seadep(id) = 0.
+                      exit sfd_loop
+                    endif
+                    pid = depIDs(k)+1
+                    nid = depIDs(k)+1
+                    seadep(nid) = seadep(nid)+seadep(id)
+                    seadep(id) = 0.
+                    id = nid
+                    it = 0
+                  else
+                    seadep(nid) = seadep(id)
+                    seadep(id) = 0.
+                    pid = id
+                    id = nid
+                  endif
+
                 endif
-
+              else
+                seadep(id) = 0.
+                exit sfd_loop
               endif
-            else
-              seadep(id) = 0.
-              exit sfd_loop
-            endif
-        enddo sfd_loop
+          enddo sfd_loop
 
+        enddo
       enddo
+      diffsed(:,s) = elev - newelev
     enddo
-
-    diffsed = elev - elevation
 
     return
 

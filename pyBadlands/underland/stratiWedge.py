@@ -34,8 +34,8 @@ class stratiWedge():
         Numpy array containing the thickness of each stratigraphic layer for each type of sediment
     """
 
-    def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, folder, h5file, rockNb,
-                 regX, regY, elev, cumdiff=0, rfolder=None, rstep=0):
+    def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, activeh, folder, h5file, rockNb,
+                 regX, regY, elev, rockCk, cumdiff=0, rfolder=None, rstep=0):
         """
         Constructor.
 
@@ -55,6 +55,9 @@ class stratiWedge():
 
         thickMap
             Filename containing initial layer parameters
+
+        activeh
+            Active layer thickness.
 
         folder
             Name of the output folder.
@@ -77,6 +80,9 @@ class stratiWedge():
         elev
             Numpy arrays containing the elevation of the TIN nodes.
 
+        rockCk
+            Numpy arrays containing the different rock erodibility values.
+
         rfolder
             Restart folder.
 
@@ -95,6 +101,10 @@ class stratiWedge():
         self.folder = folder
         self.h5file = h5file
         self.rockNb = rockNb
+        self.initlay = elay
+        self.alayR = None
+        self.activeh = activeh
+        self.rockCk = rockCk
 
         # In case we restart a simulation
         if rstep > 0:
@@ -118,11 +128,13 @@ class stratiWedge():
 
             # Elevation at time of deposition (paleo-depth)
             self.paleoDepth = numpy.zeros([self.ptsNb,layNb+eroLay])
+            self.layerThick = numpy.zeros([self.ptsNb,layNb+eroLay])
             self.paleoDepth[:,:eroLay] = paleoDepth
             # Deposition thickness for each type of sediment
             self.depoThick = numpy.zeros([self.ptsNb,layNb+eroLay,rockNb])
             for r in range(rockNb):
                 self.depoThick[:,:eroLay,r] = numpy.array((df['/depoThickRock'+str(r)]))
+            self.layerThick[:,:eroLay] = numpy.sum(self.depoThick[:,:eroLay,:],axis=-1)
             # Define cumulative deposition/erosion from previous simulation
             self.oldload = cumdiff
         else:
@@ -134,6 +146,7 @@ class stratiWedge():
             self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay))
             # Deposition thickness for each type of sediment
             self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,rockNb))
+            self.layerThick = numpy.zeros([self.ptsNb,layNb+eroLay])
             # Rock type array
             rockType = -numpy.ones(self.ptsNb,dtype=int)
 
@@ -178,17 +191,124 @@ class stratiWedge():
                             ids = numpy.where(self.depoThick[:bPts,eroLay-l,r]>0)[0]
                             self.depoThick[ids,0,r] = 1.e6
                             self.paleoDepth[ids,0] = self.paleoDepth[ids,1]-1.e6
+                    self.layerThick[:,eroLay-l] = numpy.sum(self.depoThick[:,eroLay-l,:],axis=-1)
+                    self.layerThick[:,0] = 1.e6
             else:
                 # Add an infinite rock layer with the same characteristics as the deepest one
                 self.depoThick[:,0,0] = 1.e6
+                self.layerThick[:,0] = self.depoThick[:,0,0]
                 self.paleoDepth[:,0] = elev
+                self.step = 1
 
-    def write_hdf5_stratigraphy(self, outstep, rank):
+    def get_active_layer(self, actlay):
+        """
+        This function extracts the active layer based on the underlying stratigraphic architecture.
+
+        Parameters
+        ----------
+        actlay
+            Active layer elevation based on nodes elevation [m]
+        """
+
+        # Define temporary arrays
+        tmpIDs = numpy.arange(self.ptsNb)
+        tmpH = numpy.zeros((self.ptsNb,self.step+1))
+        tmpS = numpy.zeros((self.ptsNb,self.step+1,self.rockNb))
+        alayH = numpy.zeros(self.ptsNb)
+        self.alayR = numpy.zeros((self.ptsNb,self.rockNb))
+
+        # Compute cumulative stratal thicknesses
+        cumThick = numpy.cumsum(self.layerThick[:,self.step::-1],axis=1)[:,::-1]
+
+        # Find nodes with stratal thicknesses lower than active layer thickness
+        r,c = numpy.where(actlay.reshape(self.ptsNb,1)>=cumThick)
+        tmpH[r,c] = self.layerThick[r,c]
+        # Set active layer thickness
+        alayH = numpy.sum(tmpH,axis=1)
+        # Define each sediment type thickness
+        tmpS[r,c,:] =  self.depoThick[r,c,:]
+
+        # Get layer number of the top non zero stratigraphic thickness which needs to
+        # be partially incorporated in the active layer
+        cumThick[cumThick < actlay.reshape(self.ptsNb,1)] = 0
+        mask = (cumThick > 0).astype(int) == 0
+        eroIDs = numpy.bincount(numpy.nonzero(cumThick)[0]) - 1
+
+        # Find the proportion of sediment from this layer that will be passed to the
+        # active layer
+        prop = (actlay[tmpIDs]-alayH[tmpIDs])/self.layerThick[tmpIDs,eroIDs]
+        # Finalise the active layer composition description
+        for s in range(self.rockNb):
+            self.alayR[:,s] = numpy.sum(tmpS[:,:,s],axis=1) + prop * \
+                                self.depoThick[tmpIDs,eroIDs,s]
+
+        return
+
+    def update_deposition(self, deposition):
+        """
+        Add deposit to current stratigraphic layer.
+
+        Parameters
+        ----------
+        deposition
+            Value of the deposition for the given point [m]
+        """
+
+        for s in range(self.rockNb):
+            ids = numpy.where(deposition[:,s]>0)[0]
+            # Add deposit to the considered layer time
+            self.depoThick[ids,self.step,s] += deposition[ids,s]
+            self.layerThick[ids,self.step] += deposition[ids,s]
+
+        return
+
+    def update_erosion(self, erosion):
+        """
+        This function updates the stratigraphic layers based on eroded sediments from the active layers.
+
+        Parameters
+        ----------
+        erosion
+            Value of the erosion for the given points [m]
+        """
+
+        tmpH = numpy.zeros((self.ptsNb,self.step+1))
+        for s in range(self.rockNb):
+            ids = numpy.where(-erosion[:,s]>0)[0]
+            if len(ids)>0:
+                tmpH.fill(0.)
+                ero = -erosion[:,s]
+                # Compute cumulative stratal thicknesses
+                cumThick = numpy.cumsum(self.depoThick[:,self.step::-1,s],axis=1)[:,::-1]
+                # Find nodes with no remaining stratigraphic thicknesses
+                tmpE = numpy.array([ero,]*(self.step+1)).transpose()
+                r,c = numpy.where(tmpE>=cumThick)
+                tmpH[r,c] = self.depoThick[r,c,s]
+                sumH = numpy.sum(tmpH,axis=1)
+                self.layerThick[r,c] -= tmpH[r,c]
+                self.depoThick[r,c,s] = 0.
+                cumThick[r,c] = 0.
+                ero -= sumH
+
+                # Erode remaining stratal layers
+                # Update thickness of non completely eroded stratigraphic layer
+                if numpy.sum(ero) > 0:
+                    tmpIDs = numpy.where(ero>0)[0]
+                    eroIDs = numpy.bincount(numpy.nonzero(cumThick[tmpIDs,:])[0]) - 1
+                    self.layerThick[tmpIDs,eroIDs] -= ero[tmpIDs]
+                    self.depoThick[tmpIDs,eroIDs,s] -= ero[tmpIDs]
+
+        return
+
+    def write_hdf5_stratigraphy(self, lGIDs, outstep, rank):
         """
         This function writes for each processor the HDF5 file containing sub-surface information.
 
         Parameters
         ----------
+        lGIDs
+            Global node IDs for considered partition.
+
         outstep
             Output time step.
 
@@ -200,10 +320,10 @@ class stratiWedge():
         with h5py.File(sh5file, "w") as f:
 
             # Write stratal layers paeleoelevations per cells
-            f.create_dataset('paleoDepth',shape=(self.ptsNb,self.step), dtype='float32', compression='gzip')
-            f["paleoDepth"][:,:self.step] = self.paleoDepth[:,:self.step]
+            f.create_dataset('paleoDepth',shape=(len(lGIDs),self.step), dtype='float32', compression='gzip')
+            f["paleoDepth"][lGIDs,:self.step] = self.paleoDepth[lGIDs,:self.step]
 
             # Write stratal layers thicknesses per cells
             for r in range(self.rockNb):
-                f.create_dataset('depoThickRock'+str(r),shape=(self.ptsNb,self.step), dtype='float32', compression='gzip')
-                f['depoThickRock'+str(r)][:,:self.step] = self.depoThick[:,:self.step,r]
+                f.create_dataset('depoThickRock'+str(r),shape=(len(lGIDs),self.step), dtype='float32', compression='gzip')
+                f['depoThickRock'+str(r)][lGIDs,:self.step] = self.depoThick[lGIDs,:self.step,r]

@@ -46,7 +46,8 @@ def construct_mesh(input, filename, verbose=False):
                 input.windy, input.tauc, input.tauf, input.nm,
                 input.cw, input.hw, input.ortime, input.tectFile,
                 input.tectTime, recGrid.regX, recGrid.regY, input.riverPos,
-                input.riverTime, input.riverQws, input.riverNb, input.tDisplay)
+                input.riverTime, input.riverQws, input.riverRck, input.riverNb,
+                input.rockNb, input.tDisplay)
 
     if input.disp3d:
         force.time3d = input.time3d
@@ -129,13 +130,13 @@ def construct_mesh(input, filename, verbose=False):
         ePts = recGrid.edgesPt
         if input.restart:
             straTIN = stratiWedge.stratiWedge(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
-                            ePts, input.layersData, input.outDir, input.strath5file, input.rockNb,
-                            recGrid.regX, recGrid.regY, elevation, cumdiff, input.rfolder,
-                            input.rstep)
+                            ePts, input.layersData, input.actlay, input.outDir, input.strath5file,
+                            input.rockNb, recGrid.regX, recGrid.regY, elevation, input.rockCk, cumdiff,
+                            input.rfolder, input.rstep)
         else:
             straTIN = stratiWedge.stratiWedge(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
-                                    ePts, input.layersData, input.outDir, input.strath5file, input.rockNb,
-                                    recGrid.regX, recGrid.regY, elevation)
+                                    ePts, input.layersData, input.actlay, input.outDir, input.strath5file,
+                                    input.rockNb, recGrid.regX, recGrid.regY, elevation, input.rockCk)
     else:
         straTIN = None
 
@@ -229,6 +230,8 @@ def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
     if input.restart:
         local_cum = np.zeros(totPts)
         local_cum.fill(-1.e6)
+        local_hill = np.zeros(totPts)
+        local_hill.fill(-1.e6)
         if input.flexure:
             local_cumflex = np.zeros(totPts)
             local_cumflex.fill(-1.e6)

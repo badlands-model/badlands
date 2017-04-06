@@ -50,19 +50,22 @@ contains
 
   end subroutine eroparams
 
-  subroutine discharge(pyStack, pyRcv, pyDischarge, pyDis, pylNodesNb, pygNodesNb)
+  subroutine discharge(pyStack, pyRcv, pyElev, pyDischarge, pyDis, pyLay, pylNodesNb, pygNodesNb)
 
       integer :: pygNodesNb
       integer :: pylNodesNb
       integer,dimension(pylNodesNb),intent(in) :: pyStack
       integer,dimension(pygNodesNb),intent(in) :: pyRcv
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
 
       real(kind=8),dimension(pygNodesNb),intent(out) :: pyDis
+      real(kind=8),dimension(pygNodesNb),intent(out) :: pyLay
 
       integer :: n, donor, recvr
 
       pyDis = pyDischarge
+      pyLay = 0.
 
       do n = pylNodesNb, 1, -1
         donor = pyStack(n) + 1
@@ -70,6 +73,7 @@ contains
         if( donor /= recvr )then
             pyDis(recvr) = pyDis(recvr) + pyDis(donor)
         endif
+        pyLay(donor) = pyElev(donor)-pyElev(recvr)
       enddo
 
       return
@@ -325,12 +329,71 @@ contains
 
   end subroutine flowcfl
 
-  subroutine streampower(pyStack, pyRcv, pitID, pitVol, pitDrain, pyXY, pyArea, pyMaxH, &
-      pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, perc_dep, slp_cr, sea, dt, &
-      borders, pyDepo, pyEro, sedFluxes, pylNodesNb, pygNodesNb)
+  subroutine diffseased(pyZ, pyBord, pyDep, pyFrac, pyCoeff, pyNgbs, pyEdge, pyDist, &
+                                pyGIDs, pyDiff, pylocalNb, pyglobalNb, pyRockNb)
+
+      integer :: pyglobalNb
+      integer :: pylocalNb
+      integer :: pyRockNb
+      integer,dimension(pylocalNb),intent(in) :: pyGIDs
+      integer,dimension(pyglobalNb),intent(in) :: pyDep
+      integer,dimension(pyglobalNb),intent(in) :: pyBord
+      integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
+
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyZ
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyCoeff
+      real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyEdge
+      real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyDist
+      real(kind=8),dimension(pyglobalNb,pyRockNb),intent(in) :: pyFrac
+
+      real(kind=8),dimension(pyglobalNb,pyRockNb),intent(out) :: pyDiff
+
+      integer :: k, gid, ngbid, p, r
+      real(kind=8) :: flx
+
+      pyDiff = 0.
+
+      do k = 1, pylocalNb
+        gid = pyGIDs(k)+1
+        if(pyBord(gid)>0)then
+          loop: do p =1,20
+            if(pyNgbs(gid,p)<0) exit loop
+            ngbid = pyNgbs(gid,p)+1
+            if(pyBord(ngbid)>0.)then
+              if(pyDep(gid)>0 .and. pyZ(gid)>pyZ(ngbid))then
+                flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                do r = 1, pyRockNb
+                  pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(gid,r)*flx
+                enddo
+              elseif(pyDep(ngbid)>0 .and. pyZ(gid)<pyZ(ngbid))then
+                flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                do r = 1, pyRockNb
+                  pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(ngbid,r)*flx
+                enddo
+              endif
+            elseif(pyBord(gid)<1)then
+              if(pyDep(gid)>0 .and. pyZ(gid)>pyZ(ngbid))then
+                flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                do r = 1, pyRockNb
+                  pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(gid,r)*flx
+                enddo
+              endif
+            endif
+          enddo loop
+        endif
+      enddo
+
+      return
+
+  end subroutine diffseased
+
+  subroutine streampower(pyStack, pyRcv, pitID, pitVol1, pitDrain, pyXY, pyArea, pyMaxH, &
+      pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, actlay, perc_dep, slp_cr, sea, dt, &
+      borders, pyDepo, pyEro, sedFluxes, pylNodesNb, pygNodesNb, pyRockNb)
 
       integer :: pylNodesNb
       integer :: pygNodesNb
+      integer :: pyRockNb
       real(kind=8),intent(in) :: dt
       real(kind=8),intent(in) :: sea
       real(kind=8),intent(in) :: perc_dep
@@ -343,25 +406,29 @@ contains
       real(kind=8),dimension(pygNodesNb,2),intent(in) :: pyXY
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyArea
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyDischarge
-      real(kind=8),dimension(pygNodesNb),intent(in) :: Cero
+      real(kind=8),dimension(pygNodesNb,pyRockNb),intent(in) :: Cero
+      real(kind=8),dimension(pygNodesNb,pyRockNb),intent(in) :: actlay
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyMaxH
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyMaxD
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyFillH
       real(kind=8),dimension(pygNodesNb),intent(in) :: pyElev
-      real(kind=8),dimension(pygNodesNb),intent(in) :: pyRiv
-      real(kind=8),dimension(pygNodesNb),intent(in) :: pitVol
+      real(kind=8),dimension(pygNodesNb,pyRockNb),intent(in) :: pyRiv
+      real(kind=8),dimension(pygNodesNb),intent(in) :: pitVol1
 
-      real(kind=8),dimension(pygNodesNb),intent(out) :: pyDepo
-      real(kind=8),dimension(pygNodesNb),intent(out) :: pyEro
-      real(kind=8),dimension(pygNodesNb),intent(out) :: sedFluxes
+      real(kind=8),dimension(pygNodesNb,pyRockNb),intent(out) :: pyDepo
+      real(kind=8),dimension(pygNodesNb,pyRockNb),intent(out) :: pyEro
+      real(kind=8),dimension(pygNodesNb,pyRockNb),intent(out) :: sedFluxes
 
-      integer :: n, donor, recvr, nID, tmpID
-      real(kind=8) :: maxh, SPL, Qs, dh, waterH, erodep, pitDep, fct, Qt, Qb
-      real(kind=8) :: dist, slp, slpdh, updh, tmpdist, width, frac, upperslp, bedfrac
-      real(kind=8),dimension(pygNodesNb) :: upZ, updist, bedFluxes
+      integer :: n, donor, recvr, nID, tmpID, r
+      real(kind=8) :: maxh, dh, waterH, fct, Qt, totflx, totspl, newdist
+      real(kind=8) :: dist, slp, slpdh, updh, tmpdist, totdist, width, frac, upperslp, bedfrac
+      real(kind=8),dimension(pyRockNb) :: SPL, Qs, Qb, frck, erodep, pitDep
+      real(kind=8),dimension(pygNodesNb) :: upZ, updist, pitVol
+      real(kind=8),dimension(pygNodesNb,pyRockNb) :: bedFluxes
 
       pyDepo = 0.
       pyEro = 0.
+      pitVol = pitVol1
       sedFluxes = pyRiv * dt
       if(bedslptype > 0) bedFluxes = 0.
       upZ = 1.e6
@@ -382,6 +449,8 @@ contains
         ! Compute stream power law
         slpdh = 0.
         bedfrac = 1.
+        totspl = 0
+        totdist = 0.
         if( recvr /= donor .and. dh > 0.)then
           ! In case where there is no depression or we are above sea-water
           if(waterH == 0. .and. pyFillH(donor) >= sea)then
@@ -390,7 +459,7 @@ contains
             ! Check if this is an alluvial plain in which case we force deposition
             if(updist(donor) > 0. .and. dist > 0. .and. slp_cr > 0.)then
               updh = upZ(donor) - pyElev(donor)
-              if(sedFluxes(donor) > 0. .and. updh/updist(donor) < slp_cr .and. slp < slp_cr .and. updh > 0)then
+              if(maxval(sedFluxes(donor,:)) > 0. .and. updh/updist(donor) < slp_cr .and. slp < slp_cr .and. updh > 0)then
                 slpdh = perc_dep * updh
                 slpdh = min(slpdh,pyMaxD(donor))
               endif
@@ -415,35 +484,64 @@ contains
 
             ! Compute the stream power law expressed in m/y
             if(dist > 0.)then
+              SPL = 0.
+              totspl = 0
+
+              ! Get fraction of each rock type present in the active layer
+              totflx = 0.
+              if(pyRockNb>1)then
+                do r = 1, pyRockNb
+                  totflx = totflx+actlay(donor,r)
+                enddo
+                frck(1:pyRockNb) = actlay(donor,1:pyRockNb)/totflx
+              else
+                frck(1) = 1.
+              endif
 
               ! Incision rule types
               ! Detachment limited
               if(incisiontype==0 .and. slpdh == 0.)then
-                SPL = -Cero(donor) * bedfrac * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                do r = 1, pyRockNb
+                  SPL(r) = -Cero(donor,r) * frck(r) * bedfrac * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                  totspl = totspl + SPL(r)
+                enddo
+
               ! Generalised undercapacity model (linear sedflux dependency)
               elseif(incisiontype==1)then
                 Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
-                if(Qt>0.)then
+                totflx = 0.
+                do r = 1, pyRockNb
                   if(bedslptype > 0)then
-                    fct = 1. - bedFluxes(donor)/Qt
+                    totflx = totflx + bedFluxes(donor,r)
                   else
-                    fct = 1. - sedFluxes(donor)/Qt
+                    totflx = totflx + sedFluxes(donor,r)
                   endif
+                enddo
+                if(Qt>0.)then
+                  fct = 1. - totflx/Qt
                   if(fct<0.) fct = 0.
                   if(fct>1.) fct = 1.
                 else
                   fct = 0.
                 endif
-                SPL = -Cero(donor) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                do r = 1, pyRockNb
+                  SPL(r) = -Cero(donor,r) * frck(r) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                  totspl = totspl + SPL(r)
+                enddo
+
               ! Almost parabolic sedflux dependency
               elseif(incisiontype==2)then
                 Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
-                if(Qt>0.)then
+                totflx = 0.
+                do r = 1, pyRockNb
                   if(bedslptype > 0)then
-                    frac = bedFluxes(donor)/Qt
+                    totflx = totflx + bedFluxes(donor,r)
                   else
-                    frac = sedFluxes(donor)/Qt
+                    totflx = totflx + sedFluxes(donor,r)
                   endif
+                enddo
+                if(Qt>0.)then
+                  frac = totflx/Qt
                   if(frac<0.1)then
                     fct = 2.6*frac + 0.1
                   else
@@ -454,16 +552,24 @@ contains
                 else
                   fct = 0.
                 endif
-                SPL = -Cero(donor) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                do r = 1, pyRockNb
+                  SPL(r) = -Cero(donor,r) * frck(r) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                  totspl = totspl + SPL(r)
+                enddo
+
               ! Almost parabolic sedflux dependency
               elseif(incisiontype==3)then
                 Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
-                if(Qt>0.)then
+                totflx = 0.
+                do r = 1, pyRockNb
                   if(bedslptype > 0)then
-                    frac = bedFluxes(donor)/Qt
+                    totflx = totflx + bedFluxes(donor,r)
                   else
-                    frac = sedFluxes(donor)/Qt
+                    totflx = totflx + sedFluxes(donor,r)
                   endif
+                enddo
+                if(Qt>0.)then
+                  frac = totflx/Qt
                   if(frac<0.35)then
                     fct = exp(-(frac - 0.35)**2/(0.22)**2)
                   else
@@ -474,16 +580,24 @@ contains
                 else
                   fct = 0.
                 endif
-                SPL = -Cero(donor) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                do r = 1, pyRockNb
+                  SPL(r) = -Cero(donor,r) * frck(r) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                  totspl = totspl + SPL(r)
+                enddo
+
               ! Saltation abrasion incision model
               elseif(incisiontype==4)then
                 Qt = sed_kt * (pyDischarge(donor))**sed_mt * (slp)**sed_nt
-                if(Qt>0.)then
+                totflx = 0.
+                do r = 1, pyRockNb
                   if(bedslptype > 0)then
-                    fct = 1. - bedFluxes(donor)/Qt
+                    totflx = totflx + bedFluxes(donor,r)
                   else
-                    fct = 1. - sedFluxes(donor)/Qt
+                    totflx = totflx + sedFluxes(donor,r)
                   endif
+                enddo
+                if(Qt>0.)then
+                  fct = 1. - totflx/Qt
                   if(fct<0.) fct = 0.
                   if(fct>1.) fct = 1.
                 else
@@ -492,14 +606,14 @@ contains
                 ! Channel width
                 width = width_kw * (pyDischarge(donor))**width_b
                 if(width>0)then
-                  if(bedslptype > 0)then
-                    SPL = -Cero(donor) * bedFluxes(donor)/width * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
-                  else
-                    SPL = -Cero(donor) * sedFluxes(donor)/width * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
-                  endif
+                  do r = 1, pyRockNb
+                    SPL(r) = -Cero(donor,r) * frck(r) * totflx/width * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                    totspl = totspl + SPL(r)
+                  enddo
                 else
                   SPL = 0.
                 endif
+
               endif
             endif
           endif
@@ -522,97 +636,163 @@ contains
         erodep = 0.
         pitDep = 0.
         ! Erosion case
-        if(SPL < 0.)then
+        if(totspl < 0.)then
           ! Sediment volume [m3]
-          erodep = SPL * dt * pyArea(donor)
-          Qs = -erodep + sedFluxes(donor)
-          if(bedslptype > 0) Qb = -erodep*bedfrac + bedFluxes(donor)
+          ! Limit erosion based on active layer rock proportion
+          if(pyRockNb>1)then
+            do r = 1, pyRockNb
+              if(-SPL(r)*dt>actlay(donor,r))then
+                erodep(r) = -actlay(donor,r) * pyArea(donor)
+              else
+                erodep(r) = SPL(r) * dt * pyArea(donor)
+              endif
+              Qs(r) = -erodep(r) + sedFluxes(donor,r)
+              if(bedslptype > 0) Qb(r) = -erodep(r)*bedfrac + bedFluxes(donor,r)
+            enddo
+          else
+            erodep(1) = SPL(1) * dt * pyArea(donor)
+            Qs(1) = -erodep(1) + sedFluxes(donor,1)
+            if(bedslptype > 0) Qb(1) = -erodep(1)*bedfrac + bedFluxes(donor,1)
+          endif
+
         ! Deposition case
-        elseif( SPL >= 0. .and. pyArea(donor) > 0.)then
+        elseif( totspl >= 0. .and. pyArea(donor) > 0.)then
           ! Fill depression
           if(waterH > 0. .and. pyfillH(donor) > sea)then
             Qs = 0.
             if(bedslptype > 0) Qb = 0.
             erodep = 0.
-            pitDep = sedFluxes(donor)
+            totdist = 0.
+            do r = 1, pyRockNb
+              pitDep(r) = sedFluxes(donor,r)
+              totdist = totdist + pitDep(r)
+            enddo
+
           ! Marine deposit
           elseif(pyElev(donor) <= sea)then
             ! Add all sediment to the node
-            erodep = sedFluxes(donor)
+            do r = 1, pyRockNb
+              erodep(r) = sedFluxes(donor,r)
+            enddo
             Qs = 0.
             if(bedslptype > 0) Qb = 0.
+
           ! Alluvial plain deposit
           elseif(maxh > 0. .and. waterH == 0. .and. donor /= recvr .and. pyElev(donor) > sea)then
-            if(sedFluxes(donor)/pyArea(donor) < maxh)then
-              erodep = sedFluxes(donor)
+            totflx = 0.
+            do r = 1, pyRockNb
+              totflx = totflx+sedFluxes(donor,r)
+            enddo
+
+            if(totflx/pyArea(donor) < maxh)then
+              do r = 1, pyRockNb
+                erodep(r) = sedFluxes(donor,r)
+              enddo
               Qs = 0.
               if(bedslptype > 0) Qb = 0.
             else
-              erodep = maxh*pyArea(donor)
-              Qs = sedFluxes(donor) - erodep
-              if(bedslptype > 0) Qb = max(0.,bedFluxes(donor) - erodep)
+              do r = 1, pyRockNb
+                frac =  sedFluxes(donor,r)/totflx
+                erodep(r) = frac*maxh*pyArea(donor)
+                Qs(r) = sedFluxes(donor,r) - erodep(r)
+                if(bedslptype > 0) Qb(r) = max(0.,bedFluxes(donor,r) - erodep(r))
+              enddo
             endif
+
           ! Base-level (sink)
           elseif(donor == recvr .and. pyArea(donor) > 0.)then
-            erodep = sedFluxes(donor)
+            do r = 1, pyRockNb
+              erodep(r) = sedFluxes(donor,r)
+            enddo
             Qs = 0.
             if(bedslptype > 0) Qb = 0.
           else
             erodep = 0.
-            Qs = sedFluxes(donor)
-            if(bedslptype > 0) Qb = bedFluxes(donor)
+            do r = 1, pyRockNb
+              Qs(r) = sedFluxes(donor,r)
+              if(bedslptype > 0) Qb(r) = bedFluxes(donor,r)
+            enddo
           endif
         endif
 
         ! Update sediment volume in receiver node
-        if(pitDep==0.)then
-          sedFluxes(recvr) = sedFluxes(recvr) + Qs
-          if(bedslptype > 0) bedFluxes(recvr) = bedFluxes(recvr) + Qb
-          if(erodep<0.)then
-            pyEro(donor) = pyEro(donor) + erodep
-          else
-            pyDepo(donor) = pyDepo(donor) + erodep
-          endif
+        if(maxval(pitDep)==0.)then
+          do r = 1, pyRockNb
+            sedFluxes(recvr,r) = sedFluxes(recvr,r) + Qs(r)
+            if(bedslptype > 0) bedFluxes(recvr,r) = bedFluxes(recvr,r) + Qb(r)
+            if(erodep(r)<0.)then
+              pyEro(donor,r) = pyEro(donor,r) + erodep(r)
+            else
+              pyDepo(donor,r) = pyDepo(donor,r) + erodep(r)
+            endif
+          enddo
 
         ! In case we fill a depression
-        elseif(pitDep>0. .and. pyArea(pitID(donor)+1)>0.)then
+        elseif(maxval(pitDep)>0. .and. pyArea(pitID(donor)+1)>0.)then
           ! Perform distribution
           tmpID = pitID(donor) + 1
-          tmpdist = pitDep
-          do while(tmpdist > 0.)
+
+          do while(totdist > 0.)
+            ! Get the volume already deposited on the considered node
+            tmpdist = 0.
+            do r = 1, pyRockNb
+              tmpdist = tmpdist + pyDepo(tmpID,r)
+            enddo
+
             ! In case the depression is underwater
             if(pyfillH(tmpID)<sea)then
               if(pyElev(donor)<sea)then
-                pyDepo(donor) = pyDepo(donor) + tmpdist
-                tmpdist = 0.
+                do r = 1, pyRockNb
+                  pyDepo(donor,r) = pyDepo(donor,r) + pitDep(r)
+                enddo
+                totdist = 0.
               else
-                sedFluxes(recvr) = sedFluxes(recvr) + tmpdist
-                tmpdist = 0.
+                do r = 1, pyRockNb
+                  sedFluxes(recvr,r) = sedFluxes(recvr,r) + pitDep(r)
+                enddo
+                totdist = 0.
               endif
               nID = recvr
+
             ! In case the depression is not filled
-            elseif(pyDepo(tmpID)+tmpdist<=pitVol(tmpID))then
-              pyDepo(tmpID) = pyDepo(tmpID) + tmpdist
-              tmpdist = 0.
+            elseif(tmpdist+totdist<=pitVol(tmpID))then
+              do r = 1, pyRockNb
+                pyDepo(tmpID,r) = pyDepo(tmpID,r) + pitDep(r)
+              enddo
+              totdist = 0.
               nID = tmpID
+
             ! In case this is an internally drained depression
             elseif(pitDrain(tmpID)+1==tmpID)then
-              pyDepo(tmpID) = pyDepo(tmpID) + tmpdist
-              tmpdist = 0.
+              do r = 1, pyRockNb
+                pyDepo(tmpID,r) = pyDepo(tmpID,r) + pitDep(r)
+              enddo
+              totdist = 0.
               nID = tmpID
+
             ! Otherwise get the amount to distibute towards draining basins
             else
               if(borders(tmpID) == 0)then
-                 tmpdist = 0.
+                 totdist = 0.
                  nID = tmpID
-              elseif(pyDepo(tmpID)==pitVol(tmpID))then
+              elseif(tmpdist == pitVol(tmpID))then
                  nID = tmpID
               else
-                 tmpdist = tmpdist - ( pitVol(tmpID) - pyDepo(tmpID) )
-                 pyDepo(tmpID) = pitVol(tmpID)
+                 newdist = 0.
+                 totflx = 0.
+                 do r = 1, pyRockNb
+                   frac = pitDep(r)/totdist
+                   pyDepo(tmpID,r) = pyDepo(tmpID,r) + (pitVol(tmpID) - tmpdist)*frac
+                   pitDep(r) = (totdist - (pitVol(tmpID) - tmpdist))*frac
+                   newdist = newdist + pitDep(r)
+                   totflx = totflx + pyDepo(tmpID,r)
+                 enddo
+                 totdist = newdist
+                 pitVol(tmpID) = totflx
                  nID = tmpID
               endif
             endif
+
             tmpID = pitDrain(nID) + 1
           enddo
         endif

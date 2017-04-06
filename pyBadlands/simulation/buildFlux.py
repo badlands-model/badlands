@@ -92,13 +92,13 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
 
     # Compute discharge
     walltime = time.clock()
-    flow.compute_flow(FVmesh.control_volumes, riverrain)
+    flow.compute_flow(elevation, FVmesh.control_volumes, riverrain)
     if rank == 0 and verbose:
         print " -   compute discharge ", time.clock() - walltime
 
     return fillH, elevation
 
-def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, lGIDs, applyDisp, \
+def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, lGIDs, applyDisp, straTIN, \
                   mapero, cumdiff, cumhill, fillH, disp, inGIDs, elevation, tNow, tEnd, verbose=False):
     """
     Compute sediment fluxes.
@@ -108,6 +108,21 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD
     flow_time = time.clock()
+
+    # Get active layer
+    if straTIN is not None:
+        flow.activelay[flow.activelay<1.] = 1.
+        flow.activelay[flow.activelay>straTIN.activeh] = straTIN.activeh
+        straTIN.get_active_layer(flow.activelay)
+        activelay = straTIN.alayR
+        flow.straTIN = 1
+        # Set the average erodibility based on rock types in the
+        # active layer
+        flow.erodibility = np.sum(straTIN.rockCk*activelay/straTIN.activeh,axis=1)
+        eroCk = straTIN.rockCk
+    else:
+        activelay = None
+        eroCk = 0.
 
     # Find border/inside nodes
     ids = np.arange(len(FVmesh.control_volumes))
@@ -145,43 +160,63 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     walltime = time.clock()
     ids = np.where(force.rivQs>0)
     tmp = force.rivQs[ids]
-    timestep, sedchange = flow.compute_sedflux(FVmesh.control_volumes, elevation, rain, fillH, borders, domain,
-                                          CFLtime, force.rivQs, force.sealevel, input.perc_dep,
-                                          input.slp_cr, FVmesh.neighbours, verbose)
+
+    timestep, sedchange, erosion, deposition = flow.compute_sedflux(FVmesh.control_volumes, elevation, rain, fillH,
+                                          borders, domain, CFLtime, activelay, eroCk, force.rivQs, force.sealevel,
+                                          input.perc_dep, input.slp_cr, FVmesh.neighbours, verbose)
     if rank == 0 and verbose:
         print " -   Get stream fluxes ", time.clock() - walltime
-    elevation += sedchange
-    cumdiff += sedchange
+    ed = np.sum(sedchange,axis=1)
+    elevation += ed
+    cumdiff += ed
 
     # Compute marine sediment diffusion
     if hillslope.CDriver > 0.:
         walltime = time.clock()
-        diffstep = timestep
+
+        # Initialise marine sediments diffusion array
         it = 0
-        # Find marine sediment to be diffused
+        diffstep = timestep
+        frac = np.zeros(deposition.shape)
         diffsed = np.zeros(len(elevation))
         seaIDs = np.zeros(len(elevation),dtype=int)
-        tmp = np.where(np.logical_and(sedchange>0.,elevation<force.sealevel))[0]
-        diffsed[tmp] = sedchange[tmp]
+
         # Perform river related sediment diffusion
         while diffstep > 0. and it < 100:
+            sumdep = np.sum(deposition,axis=1)
+            tmp = np.where(np.logical_and(sumdep>0.,elevation<force.sealevel))[0]
+            if it == 0:
+                diffsed[tmp] = sumdep[tmp]
             # Only diffuse sediment pile which are above 1 m thick
             tmpIDs = np.where(diffsed>1.)[0]
             seaIDs[tmpIDs] = 1
             # Compute marine fluxes
             flow.compute_marine_diffusion(elevation, borders, seaIDs, FVmesh.neighbours,
                            FVmesh.vor_edges, FVmesh.edge_length,lGIDs)
-            diffmarine = hillslope.sedfluxmarine(flow.diff_flux, force.sealevel, elevation,
+            diffcoeff = hillslope.sedfluxmarine(force.sealevel, elevation,
                                                  FVmesh.control_volumes)
-            diffmarine[outsideIDs] = 0.
+            diffcoeff[outsideIDs] = 0.
+            diffmarine = diffcoeff*flow.diff_flux
             # Define maximum time step
             maxstep = min(hillslope.CFLms,diffstep)
             # Check for excessive erosion thicknesses
-            limitIDs = np.where(np.logical_and(-diffmarine*maxstep>diffsed,diffmarine<0.))[0]
+            limitIDs = np.where(np.logical_and(-diffmarine*maxstep>sumdep,diffmarine<0.))[0]
             if len(limitIDs) > 0:
-                mindt = -diffsed[limitIDs]/diffmarine[limitIDs]
+                mindt = -sumdep[limitIDs]/diffmarine[limitIDs]
                 maxstep = max(mindt.min(),input.minDT)
             diffstep -= maxstep
+            # Distribute rock based on their respective proportions in the deposited columns
+            if straTIN is not None:
+                # Get proportion of each rock contained in the marine deposits
+                frac.fill(0.)
+                frac[tmp,:] = deposition[tmp,:]/sumdep[tmp].reshape(len(tmp),1)
+                # Compute multi-rock diffusion
+                sedpropflux = flow.compute_marinesed_diffusion(elevation, borders, seaIDs, frac,
+                                    diffcoeff*maxstep, FVmesh.neighbours, FVmesh.vor_edges,
+                                    FVmesh.edge_length,lGIDs)
+                # Update deposition
+                deposition += sedpropflux
+                deposition[deposition<0] = 0.
             # Update elevation, erosion/deposition and remaining river sediment to diffuse
             elevation += diffmarine*maxstep
             cumdiff += diffmarine*maxstep
@@ -191,6 +226,10 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         if rank == 0 and verbose:
             print " -   Get river sediment marine fluxes ", time.clock() - walltime
 
+    if straTIN is not None:
+        straTIN.update_erosion(erosion)
+        straTIN.update_deposition(deposition)
+    stop
     # Compute hillslope processes
     walltime = time.clock()
     flow.compute_hillslope_diffusion(elevation, borders, FVmesh.neighbours,

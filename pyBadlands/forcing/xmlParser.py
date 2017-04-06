@@ -72,6 +72,7 @@ class xmlParser:
         self.riverTime = None
         self.riverPos = None
         self.riverQws = None
+        self.riverRck = 0
 
         self.rainNb = None
         self.rainVal = None
@@ -147,6 +148,7 @@ class xmlParser:
 
         self.rockNb = 0
         self.rockCk = None
+        self.actlay = 50.
         self.initlayers = 0
         self.layersData = None
 
@@ -483,6 +485,12 @@ class xmlParser:
                     rhoS = 2650.
                 # Convert from kg/a to m3/a
                 self.riverQws[id,1] = qs/rhoS
+                element = None
+                element = riv.find('rck')
+                if element is not None:
+                    self.riverRck[id] = int(element.text)
+                else:
+                    self.riverRck[id] = 0
 
                 id += 1
         else:
@@ -952,6 +960,13 @@ class xmlParser:
         erost = root.find('erocoeffs')
         if erost is not None:
             element = None
+            element = erost.find('actlay')
+            if element is not None:
+                self.actlay = float(element.text)
+            else:
+                self.actlay = 50.
+            id = 0
+            element = None
             element = erost.find('rocktype')
             if element is not None:
                 self.rockNb = int(element.text)
@@ -989,6 +1004,7 @@ class xmlParser:
                 id += 1
         else:
             self.rockNb = 0
+            self.actlay = 50.
             self.rockCk = None
             self.initlayers = 0
             self.layersData = None

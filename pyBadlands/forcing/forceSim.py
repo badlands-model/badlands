@@ -109,7 +109,7 @@ class forceSim:
                  orographic = None, orographiclin = None, rbgd = None, rmin = None, rmax = None, rzmax = None,
                  windx = None, windy = None, tauc = None, tauf = None, nm = None, cw = None, hw = None,
                  ortime = None, MapDisp = None, TimeDisp = None, regX = None, regY = None, rivPos = None,
-                 rivTime = None, rivQws = None, rivNb = 0, Tdisplay = 0.):
+                 rivTime = None, rivQws = None, riverRck=None, rivNb = 0, rockNb = 0, Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
@@ -122,8 +122,10 @@ class forceSim:
         self.rivPos = rivPos
         self.rivTime = rivTime
         self.rivQws = rivQws
+        self.riverRck = riverRck
         self.rivQs = None
         self.rivQw = None
+        self.rockNb = rockNb
 
         self.Map_rain = MapRain
         self.rainVal = ValRain
@@ -227,7 +229,10 @@ class forceSim:
         """
 
         self.rivQw = numpy.zeros(len(self.tXY))
-        self.rivQs = numpy.zeros(len(self.tXY))
+        if self.rockNb == 0:
+            self.rivQs = numpy.zeros((len(self.tXY),1))
+        else:
+            self.rivQs = numpy.zeros((len(self.tXY),self.rockNb))
 
         if self.rivNb > 0:
             active = numpy.where(numpy.logical_and(self.rivTime[:,0] <= time, self.rivTime[:,1] > time))[0]
@@ -238,8 +243,9 @@ class forceSim:
                 for r in range(rivNb):
                     riv_qw = self.rivQws[active[r],0]
                     riv_qs = self.rivQws[active[r],1]
+                    rivRock = self.riverRck[active[r]]
                     self.rivQw[ids[r]] += riv_qw
-                    self.rivQs[ids[r]] += riv_qs
+                    self.rivQs[ids[r],rivRock] += riv_qs
 
     def update_force_TIN(self, tXY):
         """

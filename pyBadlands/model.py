@@ -302,7 +302,7 @@ class Model(object):
                 self.outputStep += 1
                 last_output = time.clock()
 
-                # self.straTIN.write_hdf5_stratigraphy(0,0)
+                # self.straTIN.add_Layer(self.lGIDs,self.outputStep-1,self._rank, outStrata)
                 # exit
 
             # Update next stratal layer time
@@ -319,7 +319,7 @@ class Model(object):
 
             # Compute sediment transport up to tStop
             self.tNow, self.elevation, self.cumdiff, self.cumhill = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
-                              self.FVmesh, self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.mapero,  \
+                              self.FVmesh, self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.straTIN, self.mapero,  \
                               self.cumdiff, self.cumhill, self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time
