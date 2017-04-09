@@ -95,7 +95,7 @@ class diffLinear:
         comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFLms = CFL[0]
 
-    def sedflux(self, diff_flux, sea, elevation, area):
+    def sedflux(self, sea, elevation, area):
         """
         This function computes the sedimentary fluxes induced by hillslope processes based
         on a linear diffusion approximation.
@@ -126,7 +126,7 @@ class diffLinear:
         areacoeff[ids] = 1./area[ids]
         coeff = numpy.where(elevation >= sea, self.CDaerial, self.CDmarine)
 
-        return numpy.nan_to_num(diff_flux * areacoeff * coeff)
+        return numpy.nan_to_num(areacoeff * coeff)
 
     def sedfluxmarine(self, sea, elevation, area):
         """

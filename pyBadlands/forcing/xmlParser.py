@@ -56,7 +56,6 @@ class xmlParser:
         self.maxDT = 1.e6
 
         self.stratdx = 0.
-        self.laytime = 0.
 
         self.seapos = 0.
         self.seafile = None
@@ -151,6 +150,7 @@ class xmlParser:
         self.actlay = 50.
         self.initlayers = 0
         self.layersData = None
+        self.laytime = 0.
 
         self._get_XmL_Data()
 
@@ -972,6 +972,16 @@ class xmlParser:
                 self.rockNb = int(element.text)
             else:
                 self.rockNb = 0
+            element = None
+            element = erost.find('laytime')
+            if element is not None:
+                self.laytime = float(element.text)
+            else:
+                self.laytime = self.tDisplay
+            if self.laytime >  self.tDisplay:
+                 self.laytime = self.tDisplay
+            if self.tDisplay % self.laytime != 0:
+                raise ValueError('Error in the XmL file: stratal layer interval needs to be an exact multiple of the display interval!')
             id = 0
             self.rockCk = numpy.zeros(self.rockNb)
             for rcktyp in erost.iter('rockero'):

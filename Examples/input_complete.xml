@@ -278,6 +278,8 @@
         <actlay>1.</actlay>
         <!-- Number of rock types to track. -->
         <rocktype>4</rocktype>
+        <!-- Stratal layer interval [a] -->
+        <laytime>2500.</laytime>
         <!-- Definition of erodibility values for each rock types -->
         <rockero>
             <!-- Erodibility coefficient for rock type 1 -->

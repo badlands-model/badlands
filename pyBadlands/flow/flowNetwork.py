@@ -107,7 +107,7 @@ class flowNetwork:
         self._rank = self._comm.Get_rank()
         self._size = self._comm.Get_size()
 
-    def compute_hillslope_diffusion(self, elev, borders, neighbours, edges, distances, globalIDs):
+    def compute_hillslope_diffusion(self, elev, borders, neighbours, edges, distances, globalIDs, difftype):
         """
         Perform hillslope evolution based on diffusion processes.
 
@@ -130,8 +130,14 @@ class flowNetwork:
 
         globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
+
+        difftype
+            Falg to compute the diffusion when multiple rocks are used.
         """
-        diff_flux = sfd.diffusion(elev, borders, neighbours, edges, distances, globalIDs)
+        if difftype == 0:
+            diff_flux = sfd.diffusion(elev, borders, neighbours, edges, distances, globalIDs)
+        else:
+            diff_flux = sfd.diffusionero(elev, borders, neighbours, edges, distances, globalIDs)
 
         # Send local diffusion flux globally
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
@@ -170,10 +176,10 @@ class flowNetwork:
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
         self.diff_flux = diff_flux
 
-    def compute_marinesed_diffusion(self, elev, borders, dep, sedfrac, coeff, neighbours,
+    def compute_sediment_diffusion(self, elev, borders, dep, sedfrac, coeff, neighbours,
                                           edges, distances, globalIDs):
         """
-        Perform river transported marine sediments diffusion for multiple rock types.
+        Perform sediment diffusion for multiple rock types.
 
         Parameters
         ----------
@@ -204,7 +210,7 @@ class flowNetwork:
         globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
         """
-        diff_prop = FLOWalgo.flowcompute.diffseased(elev, borders, dep, sedfrac, coeff, neighbours,
+        diff_prop = FLOWalgo.flowcompute.diffsediment(elev, borders, dep, sedfrac, coeff, neighbours,
                                            edges, distances, globalIDs)
 
         # Send local diffusion flux globally
@@ -468,7 +474,7 @@ class flowNetwork:
             self.pitDrain = -numpy.ones(len(pitID))
             self.allDrain = -numpy.ones(len(pitID))
 
-    def compute_sedflux(self, Acell, elev, rain, fillH, borders, domain, dt, actlay, rockCk, rivqs, rivR,
+    def compute_sedflux(self, Acell, elev, rain, fillH, borders, domain, dt, actlay, rockCk, rivqs,
         sealevel, perc_dep, slp_cr, ngbh, verbose=False):
         """
         Calculates the sediment flux at each node.
@@ -520,7 +526,11 @@ class flowNetwork:
         rank = comm.Get_rank()
         size = comm.Get_size()
         newdt = numpy.copy(dt)
-        sedflux = numpy.zeros((len(elev),len(rockCk)))
+        if actlay is None:
+            sedflux = numpy.zeros((len(elev),1))
+        else:
+            sedflux = numpy.zeros((len(elev),len(rockCk)))
+
         verbose = False
 
         # Compute sediment flux using libUtils
@@ -650,14 +660,18 @@ class flowNetwork:
                 tmpIDs = numpy.intersect1d(volIDs,pitIDs)
                 depID = numpy.where(numpy.sum(depo,axis=1)>0.)[0]
                 landIDs = numpy.intersect1d(depID,tmpIDs)
+
                 if len(landIDs) > 0:
                     perc = numpy.zeros(depo.shape)
                     # Get the percentage to deposit
                     perc[landIDs,:] = depo[landIDs,:]/self.pitVolume[landIDs].reshape(len(landIDs),1)
-                    tmp = numpy.where(numpy.sum(perc,axis=1)>1)[0]
+                    tmp = numpy.where(numpy.sum(perc,axis=1)>1.001)[0]
                     overfilled = numpy.intersect1d(tmp,insideIDs)
                     if len(overfilled) > 0:
                         print 'WARNING: overfilling persists during land pit deposition.',len(overfilled)
+                        if self.straTIN >= 0:
+                            for p in range(len(overfilled)):
+                                print overfilled[p],perc[overfilled[p],:],numpy.sum(perc[overfilled[p],:]),self.pitVolume[overfilled[p]]
                     #assert len(overfilled) == 0, 'WARNING: overfilling persists during land pit deposition.'
 
                     for p in range(len(landIDs)):
@@ -666,10 +680,17 @@ class flowNetwork:
 
                     sumperc = numpy.sum(perc,axis=1)
                     exIDs = numpy.where(sumperc>1.)[0]
-                    perc[exIDs,:] /= sumperc[exIDs]
-                    tmp = numpy.where(sumperc>0.)
-                    deposition[tmp,:] = (fillH[tmp]-elev[tmp]).reshape(len(tmp),1)*perc[tmp,:]
-                    depo[landIDs,:] = 0.
+                    if len(exIDs)>0:
+                        perc[exIDs,:] /= sumperc[exIDs].reshape(len(exIDs),1)
+                    tmp = numpy.where(sumperc>0.)[0]
+                    if len(tmp) > 0:
+                        if len(tmp) == 1:
+                            deposition[tmp,:] = (fillH[tmp]-elev[tmp])*perc[tmp,:]
+                            depo[landIDs,:] = 0.
+                        else:
+                            deposition[tmp,:] = (fillH[tmp]-elev[tmp]).reshape(len(tmp),1)*perc[tmp,:]
+                            depo[landIDs,:] = 0.
+
                     if rank==0 and verbose:
                         print "   - Compute land pit deposition ", time.clock() - time1
                         time1 = time.clock()
@@ -698,6 +719,7 @@ class flowNetwork:
 
             # Define erosion/deposition changes
             sedflux[insideIDs,:] = erosion[insideIDs,:]+deposition[insideIDs,:]
+
             if rank==0 and verbose:
                 print "   - Total sediment flux time ", time.clock() - time0
 

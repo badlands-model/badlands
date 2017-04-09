@@ -301,13 +301,15 @@ class Model(object):
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
                 last_output = time.clock()
-
-                # self.straTIN.add_Layer(self.lGIDs,self.outputStep-1,self._rank, outStrata)
+                if self.straTIN is not None:
+                    self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
                 # exit
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
                 self.force.next_layer += self.input.laytime
+                if self.straTIN is not None:
+                    self.straTIN.step += 1
                 if self.strata:
                     self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
                         self._rank, outStrata, self.outputStep-1)
@@ -351,7 +353,9 @@ class Model(object):
                                 self.mapero, self.cumflex)
             self.force.next_display += self.input.tDisplay
             self.outputStep += 1
-
+            if self.straTIN is not None:
+                self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
+            
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += self.input.laytime

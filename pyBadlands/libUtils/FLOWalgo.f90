@@ -329,7 +329,7 @@ contains
 
   end subroutine flowcfl
 
-  subroutine diffseased(pyZ, pyBord, pyDep, pyFrac, pyCoeff, pyNgbs, pyEdge, pyDist, &
+  subroutine diffsediment(pyZ, pyBord, pyDep, pyFrac, pyCoeff, pyNgbs, pyEdge, pyDist, &
                                 pyGIDs, pyDiff, pylocalNb, pyglobalNb, pyRockNb)
 
       integer :: pyglobalNb
@@ -385,7 +385,7 @@ contains
 
       return
 
-  end subroutine diffseased
+  end subroutine diffsediment
 
   subroutine streampower(pyStack, pyRcv, pitID, pitVol1, pitDrain, pyXY, pyArea, pyMaxH, &
       pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, actlay, perc_dep, slp_cr, sea, dt, &

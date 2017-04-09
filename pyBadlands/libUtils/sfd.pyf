@@ -54,6 +54,23 @@ interface
     double precision intent(out) :: pyDiff(pyglobalNb)
   end subroutine diffusion
 
+  subroutine diffusionero(pyZ, pyBord, pyNgbs, pyEdge, pyDist, pyGIDs, pyEro, pylocalNb, pyglobalNb)
+    intent(c) diffusionero               ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyEro(pyglobalNb)
+  end subroutine diffusionero
+
   subroutine diffusionmarine(pyZ, pyBord, pyDep, pyNgbs, pyEdge, pyDist, pyGIDs, pyDiff, pylocalNb, pyglobalNb)
     intent(c) diffusionmarine            ! directions is a C function
     intent(c)                            ! all foo arguments are

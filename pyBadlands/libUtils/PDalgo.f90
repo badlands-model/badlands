@@ -132,7 +132,7 @@ contains
     return
 
   end subroutine allfillPD
-
+  
   subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diffsed, pydnodes, pyIDs, pyRockNb)
 
     integer :: pydnodes, pyIDs, pyRockNb
@@ -152,7 +152,6 @@ contains
     dnodes = pydnodes
     elev = elevation
 
-
     do s = 1, pyRockNb
       newelev = elev
       do m = 1, diffnbmax
@@ -168,6 +167,7 @@ contains
                 exit sfd_loop
               endif
               vol = max(0.,diffprop*(sealevel-elev(id))*area(id))
+
               if(it>max_it_cyc)then
                 elev(id) = elev(id) + seadep(id)/area(id)
                 seadep(id) = 0.
@@ -240,7 +240,7 @@ contains
                     id = nid
                     it = 0
                   else
-                    seadep(nid) = seadep(id)
+                    seadep(nid) = seadep(nid)+seadep(id)
                     seadep(id) = 0.
                     pid = id
                     id = nid
