@@ -362,13 +362,11 @@ contains
             if(pyBord(ngbid)>0.)then
               if(pyDep(gid)>0 .and. pyZ(gid)>pyZ(ngbid))then
                 flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
-                ! pyDiff(gid,:) = pyDiff(gid, :) + pyFrac(gid,:)*flx
                 do r = 1, pyRockNb
                   pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(gid,r)*flx
                 enddo
               elseif(pyDep(ngbid)>0 .and. pyZ(gid)<pyZ(ngbid))then
                 flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
-                ! pyDiff(gid,:) = pyDiff(gid, :) + pyFrac(gid,:)*flx
                 do r = 1, pyRockNb
                   pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(ngbid,r)*flx
                 enddo
@@ -376,7 +374,6 @@ contains
             elseif(pyBord(gid)<1)then
               if(pyDep(gid)>0 .and. pyZ(gid)>pyZ(ngbid))then
                 flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
-                ! pyDiff(gid,:) = pyDiff(gid, :) + pyFrac(gid,:)*flx
                 do r = 1, pyRockNb
                   pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(gid,r)*flx
                 enddo
