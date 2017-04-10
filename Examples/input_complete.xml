@@ -46,19 +46,6 @@
         <stratdx>500.</stratdx>
         <!-- Stratal layer interval [a] -->
         <laytime>2500.</laytime>
-        <!-- Number of stratigraphic regions (optional) -->
-        <region>1</region>
-        <!-- Region bounding box (optional)-->
-        <domain>
-            <!-- Lower left corner X coordinate -->
-            <llcx>87000</llcx>
-            <!-- Lower left corner Y coordinate -->
-            <llcy>34000</llcy>
-            <!-- Upper right corner X coordinate -->
-            <urcx>132000</urcx>
-            <!-- Upper right corner Y coordinate -->
-            <urcy>169000</urcy>
-        </domain>
     </strata>
 
     <!-- Sea-level structure -->
@@ -119,6 +106,8 @@
             <rQs>7.</rQs>
             <!-- Average sediment density [kg/m3] -->
             <rhoS>2750.</rhoS>
+            <!-- Rock type used if multiple types of rock are used -->
+            <rck>0</rck>
         </river>
     </rivers>
 
@@ -126,11 +115,12 @@
          The following methods can be used:
             - an uniform precipitation value for the entire region [m/a]
             - a map containing precipitation values for each nodes of the regular grid
+            - a linear elevation dependent precipitation function
             - an orographic precipitation computed using Smith & Barstad theory (2004)
     -->
     <precipitation>
         <!-- Number of precipitation events -->
-        <climates>3</climates>
+        <climates>4</climates>
         <!-- Uniform precipitation definition -->
         <rain>
             <!-- Rain start time [a] -->
@@ -149,12 +139,27 @@
             <!-- Precipitation map [m/a] -->
             <map>data/rainLR.csv</map>
         </rain>
+        <!-- Linear orographic precipitation model definition -->
+        <rain>
+          <!-- Rain start time [a] -->
+          <rstart>200000.</rstart>
+          <!-- Rain end time [a] -->
+          <rend>300000.</rend>
+          <!-- Rain computation time step [a] -->
+          <ortime>5000.</ortime>
+          <!-- Minimal precipitation value [m/a] -->
+          <rmin>0.2</rmin>
+          <!-- Maximal precipitation value [m/a] -->
+          <rmax>5.</rmax>
+          <!-- Maximal elevation for computing linear trend [m] -->
+          <rzmax>3000.</rzmax>
+        </rain>
         <!-- Orographic precipitation model definition -->
         <rain>
             <!-- Rain start time [a] -->
-            <rstart>100000.</rstart>
+            <rstart>300000.</rstart>
             <!-- Rain end time [a] -->
-            <rend>200000.</rend>
+            <rend>400000.</rend>
             <!-- Rain computation time step [a] -->
             <ortime>5000.</ortime>
             <!-- Background precipitation value [m/a] -->
@@ -226,33 +231,48 @@
         <diffprop>0.2</diffprop>
     </sp_law>
 
-    <!-- Erodibility function structure  (optional)
-         It is possible to modify the erodibility coefficient to explicitly incorporate:
-          + the effect of local mean annual precipitation rate, and
-          + the effect of bedload sediment vs water discharge,
-          + where the dependency of bedload transport is related to the upstream slope.
-         An example of how to define these functions is provided in the erodibilityFct notebook
-         in pyBadlands Companion. -->
-    <erofunction>
+    <!-- Flux-dependent function structure  (optional)
+         It is possible to modify the general detachment limited law to simulate channel
+         evolution governed by sediment flux–dependent bedrock incision rules.
+         Visit tinyurl.com/badlands-incision for more information.
+    -->
+    <sedfluxfunction>
+        <!-- Incision model type is defined with an integer between 0 and 4:
+              + 0 - detachment limited (default) does not required to set additional parameters.
+              + 1 - generalised undercapacity model (linear sedflux dependency) [cover effect]
+              + 2 - parabolic sedflux dependency [tool & cover effect]
+              + 3 - Turowski sedflux dependency [tool & cover effect]
+              + 4 - saltation abrasion incision model
+             See Hobley et al. (2011), JGR, 116 for more information.
+        -->
+        <modeltype>0</modeltype>
+        <!-- Volumetric sediment transport capacity formulation is built with a stream power law
+             and requires the definition of 2 exponents for water discharge (mt) and slope (nt). -->
+        <mt>1.5</mt>
+        <nt>1.</nt>
+        <!-- Transportability of channel sediment (erodibility coefficient) -->
+        <kt>2.e-6</kt>
+        <!-- Power law relation between channel width and discharge -->
+        <kw>1</kw>
+        <b>0.5</b>
         <!-- Erodibility dependence to the precipitation is defined with an exponent.
            Default value is set to 0. See Murphy et al. (2016), Nature, 532. -->
-        <precipexpo>0.</precipexpo>
-        <!-- Erodibility dependence to the bedload sediment supply is defined in a file.
-           The file can be created with the erodibilityFct notebook in pyBadlands Companion,
-           it consists of 2 columns: first column is the ratio of bedload versus water fluxes and
-           the second is the erodibility factor (all values are between [0,1])
-           See Sklar & Dietrich (2004), Water Resour. Res., 40. -->
-        <sedratio>data/sedsupply.csv</sedratio>
-        <!-- Contributing proportion of bedload contributing to erosion. Again this is defined in
-           a file that can be created with the erodibilityFct notebook in pyBadlands Companion.
-           it consists of 2 columns: first column is the upstream slope [m/m] and the second
-           is the percentage of sediment eroded and transported as bedload. -->
-        <bedslope>data/bedslope.csv</bedslope>
-    </erofunction>
+        <mp>0.</mp>
+        <!-- Bedload versus slope dependency. This option changes the amount of incision based on
+             the proportion of bedload material (i.e. gravels) present in stream. For any point in
+             the landscape the amount of bedload material is assumed slope-dependent. The user can
+             choose between the following options:
+              + 0 - no dependency (default)
+              + 1 - linear dependency
+              + 2 - exponential growth
+              + 3 - logarithmic growth
+        -->
+        <bedslp>0</bedslp>
+    </sedfluxfunction>
 
-    <!-- Erodibility structure
+    <!-- Erodibility structure simple
          This option allows you to specify different erodibility values either on the surface
-         or within a number of initial stratigraphic layers. -->
+        or within a number of initial stratigraphic layers. -->
     <erocoeff>
         <!-- Number of erosion layers. -->
         <erolayers>4</erolayers>
@@ -288,6 +308,63 @@
             <thmap>data/thlay4.csv</thmap>
         </erolay>
     </erocoeff>
+
+    <!-- Erodibility structure with multiple rock types
+         This option allows you to specify different erodibility values based on different
+         rock types. The approach tracks rocks erosion/transport/deposition through space and
+         time over the simulated domain.
+         NOTE:
+         In this first version, the algorithm is not working with 3D displacements for now and
+         is pretty slow.-->
+    <erocoeffs>
+        <!-- Active layer thickness [m]-->
+        <actlay>1.</actlay>
+        <!-- Number of rock types to track. -->
+        <rocktype>4</rocktype>
+        <!-- Stratal layer interval [a] -->
+        <laytime>2500.</laytime>
+        <!-- Definition of erodibility values for each rock types -->
+        <rockero>
+            <!-- Erodibility coefficient for rock type 1 -->
+            <erorock>5.e-6</erorock>
+        </rockero>
+        <rockero>
+            <!-- Erodibility coefficient for rock type 2 -->
+            <erorock>8.e-9</erorock>
+        </rockero>
+        <rockero>
+            <!-- Erodibility coefficient for rock type 3 -->
+            <erorock>2.e-6</erorock>
+        </rockero>
+        <rockero>
+            <!-- Erodibility coefficient for rock type 4 -->
+            <erorock>4.e-6</erorock>
+        </rockero>
+
+        <!-- Number of erosion layers. -->
+        <erolayers>4</erolayers>
+        <!-- The layering is defined from top to bottom, with a file containing the
+             following properties for each points of the regular grid (DEM):
+              - 1st column the thickness of the considered layer
+              - 2nd column the rock type ID (an integer) -->
+        <!-- Constant erodibility and layer thickness -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlaytop.csv</laymap>
+        </erolay>
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlay2.csv</laymap>
+        </erolay>
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlay3.csv</laymap>
+        </erolay>
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlay4.csv</laymap>
+        </erolay>
+    </erocoeffs>
 
     <!-- Hillslope diffusion parameters:
          Parameterisation of the sediment transport includes the simple creep transport

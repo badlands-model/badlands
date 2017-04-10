@@ -68,8 +68,8 @@ class Model(object):
     def build_mesh(self, filename, verbose):
         # Construct Badlands mesh and grid to run simulation
         self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, parentIDs, \
-            self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumflex, self.strata, \
-            self.mapero, self.tinFlex, self.flex = buildMesh.construct_mesh(self.input, filename, verbose)
+            self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumhill, self.cumflex, self.strata, self.mapero, \
+            self.tinFlex, self.flex, self.straTIN = buildMesh.construct_mesh(self.input, filename, verbose)
 
         # Define hillslope parameters
         self.rain = np.zeros(self.totPts, dtype=float)
@@ -79,14 +79,12 @@ class Model(object):
         self.hillslope.CDriver = self.input.CDr
 
         # Define flow parameters
-        self.flow = flowNetwork(self.force, self.input.precipfac, self.input.rhoS)
+        self.flow = flowNetwork(self.input)
 
         if self.input.erolays is None:
             self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
         else:
             self.flow.erodibility = self.mapero.erodibility
-        self.flow.m = self.input.SPLm
-        self.flow.n = self.input.SPLn
         self.flow.mindt = self.input.minDT
         self.flow.xycoords = self.FVmesh.node_coords[:,:2]
         self.flow.spl = self.input.spl
@@ -220,8 +218,8 @@ class Model(object):
                     else:
                         # Define 3D displacements on the stratal regions
                         if self.strata is not None:
-                            updateMesh, regdX, regdY = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs,
-                                                                                      True, self.strata.xyi, self.strata.ids)
+                            updateMesh, regdX, regdY = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2],
+                                                                  self.inIDs, True, self.strata.xyi, self.strata.ids)
                         else:
                             updateMesh = self.force.load_Disp_map(self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs)
 
@@ -243,7 +241,7 @@ class Model(object):
                         if self.strata is not None:
                             if self.strata.oldload is None:
                                 self.strata.oldload = np.zeros(len(self.elevation), dtype=float)
-                        if self.input.laytime > 0 and self.strata is not None:
+                        if self.input.laytime > 0 and self.strata.oldload is not None:
                             sload = self.strata.oldload
                             fstrat = 1
                         # Define erodibility map flags
@@ -255,8 +253,8 @@ class Model(object):
                             vKe = self.mapero.Ke
                             vTh = self.mapero.thickness
                         # Apply horizontal displacements
-                        self.recGrid.tinMesh, self.elevation, self.cumdiff, fcum, scum, Ke, Th = self.force.apply_XY_dispacements(
-                            self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, tflex=flexiso, scum=sload, Te=vTh,
+                        self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumhill, fcum, scum, Ke, Th = self.force.apply_XY_dispacements(
+                            self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumhill, tflex=flexiso, scum=sload, Te=vTh,
                             Ke=vKe, flexure=fflex, strat=fstrat, ero=fero)
                         # Update relevant parameters in deformed TIN
                         if fflex == 1:
@@ -297,16 +295,21 @@ class Model(object):
                     outStrata = 1
                 checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow,
                                             self.FVmesh, self.tMesh, self.force, self.flow, self.rain,
-                                            self.elevation, self.fillH, self.cumdiff, self.outputStep,
-                                            self.mapero, self.cumflex)
+                                            self.elevation, self.fillH, self.cumdiff, self.cumhill,
+                                            self.outputStep, self.mapero, self.cumflex)
                 # Update next display time
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
                 last_output = time.clock()
+                if self.straTIN is not None:
+                    self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
+                # exit
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
                 self.force.next_layer += self.input.laytime
+                if self.straTIN is not None:
+                    self.straTIN.step += 1
                 if self.strata:
                     self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
                         self._rank, outStrata, self.outputStep-1)
@@ -317,9 +320,9 @@ class Model(object):
                         tEnd, self.force.next_disp, self.force.next_rain])
 
             # Compute sediment transport up to tStop
-            self.tNow, self.elevation, self.cumdiff = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, self.FVmesh,
-                              self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.mapero, self.cumdiff, \
-                              self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
+            self.tNow, self.elevation, self.cumdiff, self.cumhill = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
+                              self.FVmesh, self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.straTIN, self.mapero,  \
+                              self.cumdiff, self.cumhill, self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time
         if self._rank == 0:
@@ -346,10 +349,12 @@ class Model(object):
         if self.input.udw == 0 or self.tNow == self.input.tEnd or self.tNow == self.force.next_display:
             checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
                                 self.FVmesh, self.tMesh, self.force, self.flow, self.rain, \
-                                self.elevation, self.fillH, self.cumdiff, self.outputStep, self.mapero, \
-                                self.cumflex)
+                                self.elevation, self.fillH, self.cumdiff, self.cumhill, self.outputStep, \
+                                self.mapero, self.cumflex)
             self.force.next_display += self.input.tDisplay
             self.outputStep += 1
+            if self.straTIN is not None:
+                self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
 
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:

@@ -98,7 +98,7 @@ class diffLinear:
         comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFLms = CFL[0]
 
-    def sedflux(self, diff_flux, sea, elevation, area):
+    def sedflux(self, sea, elevation, area):
         """
         This function computes the sedimentary fluxes induced by hillslope processes based
         on a linear diffusion approximation.
@@ -129,9 +129,9 @@ class diffLinear:
         areacoeff[ids] = 1./area[ids]
         coeff = numpy.where(elevation >= sea, self.CDaerial, self.CDmarine)
 
-        return numpy.nan_to_num(diff_flux * areacoeff * coeff)
+        return numpy.nan_to_num(areacoeff * coeff)
 
-    def sedfluxmarine(self, diff_flux, sea, elevation, area):
+    def sedfluxmarine(self, sea, elevation, area):
         """
         This function computes the diffusion of marine sediments transported by river processes using
         a linear diffusion approximation.
@@ -142,10 +142,6 @@ class diffLinear:
 
         Parameters
         ----------
-
-        diff_flux
-            Numpy arrays representing for each node the sum of the ratio between the height differences
-            and the length of the mesh edge multiply by the length of the corresponding voronoi edge.
 
         sea
             Real value giving the sea-level height at considered time step.
@@ -163,4 +159,4 @@ class diffLinear:
         areacoeff[ids] = 1./area[ids]
         coeff = numpy.where(elevation >= sea, 0., self.CDriver)
 
-        return numpy.nan_to_num(diff_flux * areacoeff * coeff)
+        return numpy.nan_to_num(areacoeff * coeff)

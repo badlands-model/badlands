@@ -68,6 +68,7 @@ class visSurf:
         self.discharge = None
         self.logdischarge = None
         self.cumchange = None
+        self.hillchange = None
         self.dx = None
         self.nx = None
         self.ny = None
@@ -99,15 +100,18 @@ class visSurf:
             df = h5py.File('%s/h5/tin.time%s.p%s.hdf5'%(self.folder, self.timestep, i), 'r')
             coords = numpy.array((df['/coords']))
             cumdiff = numpy.array((df['/cumdiff']))
+            cumhill = numpy.array((df['/cumhill']))
             discharge = numpy.array((df['/discharge']))
             if i == 0:
                 x = coords[:,0]
                 y = coords[:,1]
                 z = coords[:,2]
                 c = cumdiff.ravel()
+                h = cumhill.ravel()
                 d = discharge.ravel()
             else:
                 c = numpy.append(c, cumdiff)
+                h = numpy.append(h, cumhill)
                 d = numpy.append(d, discharge)
                 x = numpy.append(x, coords[:,0])
                 y = numpy.append(y, coords[:,1])
@@ -128,33 +132,40 @@ class visSurf:
         XY = numpy.column_stack((x,y))
         tree = cKDTree(XY)
         distances, indices = tree.query(xyi, k=3)
-        
+
         if len(z[indices].shape) == 3:
             z_vals = z[indices][:,:,0]
             d_vals = d[indices][:,:,0]
             c_vals = c[indices][:,:,0]
+            h_vals = h[indices][:,:,0]
         else:
             z_vals = z[indices]
             d_vals = d[indices]
             c_vals = c[indices]
+            h_vals = h[indices]
 
         zi = numpy.average(z_vals,weights=(1./distances), axis=1)
         di = numpy.average(d_vals,weights=(1./distances), axis=1)
         ci = numpy.average(c_vals,weights=(1./distances), axis=1)
+        hi = numpy.average(h_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]
         if len(onIDs) > 0:
             zi[onIDs] = z[indices[onIDs,0]]
             di[onIDs] = d[indices[onIDs,0]]
             ci[onIDs] = c[indices[onIDs,0]]
+            hi[onIDs] = h[indices[onIDs,0]]
 
         self.z = numpy.reshape(zi,(self.ny,self.nx))
 
         if self.crange != None:
             cclip = numpy.clip(ci, self.crange[0], self.crange[1])
             self.cumchange = numpy.reshape(cclip,(self.ny,self.nx))
+            hclip = numpy.clip(hi, self.crange[0], self.crange[1])
+            self.hillchange = numpy.reshape(hclip,(self.ny,self.nx))
         else:
             self.cumchange = numpy.reshape(ci,(self.ny,self.nx))
+            self.hillchange = numpy.reshape(hclip,(self.ny,self.nx))
 
         self.discharge = numpy.reshape(di,(self.ny,self.nx))
 

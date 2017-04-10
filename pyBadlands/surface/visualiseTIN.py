@@ -78,7 +78,7 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
     return lGIDs[allInside], outcell[localCell2] + 1
 
 def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
-               cells, rank, rainOn, eroOn, erodibility):
+               cumhill, cells, rank, rainOn, eroOn, erodibility):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -110,6 +110,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
 
     cumdiff
         Numpy float-type array containing the cumulative elevation changes values of the local TIN.
+
+    cumhill
+        Numpy float-type array containing the cumulative elevation changes values for hillslope of the local TIN.
 
     erodibility
         Numpy float-type array containing the top surface erodibility values of the local TIN.
@@ -152,8 +155,11 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
         f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
 
+        f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["cumhill"][:,0] = cumhill
+
 def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
-                       cumflex, cells, rank, rainOn, eroOn, erodibility):
+                       cumhill, cumflex, cells, rank, rainOn, eroOn, erodibility):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -182,6 +188,9 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
 
     cumdiff
         Numpy float-type array containing the cumulative elevation changes values of the local TIN.
+
+    cumhill
+        Numpy float-type array containing the cumulative elevation changes values for hillslope of the local TIN.
 
     erodibility
         Numpy float-type array containing the top surface erodibility values of the local TIN.
@@ -226,6 +235,9 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
 
         f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
+
+        f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["cumhill"][:,0] = cumhill
 
         f.create_dataset('cumflex',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumflex"][:,0] = cumflex
@@ -343,6 +355,11 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
         f.write('         <Attribute Type="Scalar" Center="Node" Name="EroDep">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/cumdiff</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
+
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="EroDep hillslope">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/cumhill</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
 
         if flexOn:

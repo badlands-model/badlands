@@ -72,16 +72,20 @@ class xmlParser:
         self.riverTime = None
         self.riverPos = None
         self.riverQws = None
+        self.riverRck = 0
 
         self.rainNb = None
         self.rainVal = None
         self.rainTime = None
         self.oroRain = False
         self.orographic = None
+        self.orographiclin = None
+        self.rzmax = None
         self.ortime = None
         self.rbgd = None
         self.rmin = None
         self.rmax = None
+        self.rzmax = None
         self.windx = None
         self.windy = None
         self.tauc = 1000.
@@ -97,14 +101,17 @@ class xmlParser:
         self.diffnb = 5
         self.diffprop = 0.9
         self.spl = False
+
+        self.incisiontype = 0
+        self.mp = 0.
+        self.mt = 0.
+        self.nt = 0.
+        self.kt = 0.
+        self.kw = 0.
+        self.b = 0.
+        self.bedslptype = 0
+
         self.Hillslope = False
-
-        self.erof = False
-        self.precipfac = 0.
-        self.rhoS = 2500.
-        self.sedsupply = None
-        self.bedslope = None
-
         self.CDa = 0.
         self.CDm = 0.
         self.CDr = 0.
@@ -112,6 +119,7 @@ class xmlParser:
 
         self.outDir = None
         self.sh5file = 'h5/sed'
+        self.strath5file = 'h5/stratal.time'
 
         self.th5file = 'h5/tin.time'
         self.txmffile = 'xmf/tin.time'
@@ -120,7 +128,7 @@ class xmlParser:
         self.fh5file = 'h5/flow.time'
         self.fxmffile = 'xmf/flow.time'
         self.fxdmffile = 'flow.series.xdmf'
-        
+
         self.flexure = False
         self.ftime = None
         self.fnx = None
@@ -137,6 +145,13 @@ class xmlParser:
         self.eroVal = None
         self.thickMap = None
         self.thickVal = None
+
+        self.rockNb = 0
+        self.rockCk = None
+        self.actlay = 50.
+        self.initlayers = 0
+        self.layersData = None
+        self.laytime = 0.
 
         self._get_XmL_Data()
 
@@ -471,6 +486,12 @@ class xmlParser:
                     rhoS = 2650.
                 # Convert from kg/a to m3/a
                 self.riverQws[id,1] = qs/rhoS
+                element = None
+                element = riv.find('rck')
+                if element is not None:
+                    self.riverRck[id] = int(element.text)
+                else:
+                    self.riverRck[id] = 0
 
                 id += 1
         else:
@@ -489,11 +510,13 @@ class xmlParser:
             tmpVal = numpy.empty(tmpNb)
             tmpMap = numpy.empty(tmpNb,dtype=object)
             tmpOro = numpy.empty(tmpNb,dtype=bool)
+            tmpOroLin = numpy.empty(tmpNb,dtype=bool)
             tmpTime = numpy.empty((tmpNb,2))
             tmpoTime = numpy.empty(tmpNb)
             tmprbgd = numpy.empty(tmpNb)
             tmprmin = numpy.empty(tmpNb)
             tmprmax = numpy.empty(tmpNb)
+            tmprzmax = numpy.empty(tmpNb)
             tmpwdx = numpy.empty(tmpNb)
             tmpwdy = numpy.empty(tmpNb)
             tmptauc = numpy.empty(tmpNb)
@@ -564,6 +587,15 @@ class xmlParser:
                 else:
                     tmprmax[id] = 0.
                 element = None
+                element = clim.find('rzmax')
+                if element is not None:
+                    tmprzmax[id] = float(element.text)
+                    tmpOroLin[id] = True
+                    self.oroRain = True
+                else:
+                    tmprzmax[id] = 0.
+                    tmpOroLin[id] = False
+                element = None
                 element = clim.find('windx')
                 if element is not None:
                     tmpwdx[id] = float(element.text)
@@ -622,10 +654,12 @@ class xmlParser:
             self.rainMap = numpy.empty(self.rainNb,dtype=object)
             self.rainTime = numpy.empty((self.rainNb,2))
             self.orographic = numpy.empty(self.rainNb,dtype=bool)
+            self.orographiclin = numpy.empty(self.rainNb,dtype=bool)
             self.ortime = numpy.empty(self.rainNb)
             self.rbgd = numpy.empty(self.rainNb)
             self.rmin = numpy.empty(self.rainNb)
             self.rmax = numpy.empty(self.rainNb)
+            self.rzmax = numpy.empty(self.rainNb)
             self.windx = numpy.empty(self.rainNb)
             self.windy = numpy.empty(self.rainNb)
             self.tauc = numpy.empty(self.rainNb)
@@ -638,10 +672,12 @@ class xmlParser:
             if tmpTime[id,0] > self.tStart:
                 self.rainMap[id] = None
                 self.orographic[id] = False
+                self.orographiclin[id] = False
                 self.rainVal[id] = 0.
                 self.rbgd[id] = 0.
                 self.rmin[id] = 0.
                 self.rmax[id] = 0.
+                self.rzmax[id] = 0.
                 self.windx[id] = 0.
                 self.windy[id] = 0.
                 self.tauc[id] = 1000.
@@ -657,10 +693,12 @@ class xmlParser:
             self.rainTime[id,:] = tmpTime[0,:]
             self.rainVal[id] = tmpVal[0]
             self.orographic[id] = tmpOro[0]
+            self.orographiclin[id] = tmpOroLin[0]
             self.ortime[id] = tmpoTime[0]
             self.rbgd[id] = tmprbgd[0]
             self.rmin[id] = tmprmin[0]
             self.rmax[id] = tmprmax[0]
+            self.rzmax[id] = tmprzmax[0]
             self.windx[id] = tmpwdx[0]
             self.windy[id] = tmpwdy[0]
             self.tauc[id] = tmptauc[0]
@@ -679,6 +717,7 @@ class xmlParser:
                     self.rbgd[id] = 0.
                     self.rmin[id] = 0.
                     self.rmax[id] = 0.
+                    self.rzmax[id] = 0.
                     self.windx[id] = 0.
                     self.windy[id] = 0.
                     self.tauc[id] = 1000.
@@ -692,10 +731,12 @@ class xmlParser:
                 self.rainTime[id,:] = tmpTime[p,:]
                 self.rainVal[id] = tmpVal[p]
                 self.orographic[id] = tmpOro[p]
+                self.orographiclin[id] = tmpOroLin[p]
                 self.ortime[id] = tmpoTime[p]
                 self.rbgd[id] = tmprbgd[p]
                 self.rmin[id] = tmprmin[p]
                 self.rmax[id] = tmprmax[p]
+                self.rzmax[id] = tmprzmax[p]
                 self.windx[id] = tmpwdx[p]
                 self.windy[id] = tmpwdy[p]
                 self.tauc[id] = tmptauc[p]
@@ -710,10 +751,12 @@ class xmlParser:
                 self.rainTime[id,0] = tmpTime[tmpNb-1,1]
                 self.rainTime[id,1] = self.tEnd
                 self.orographic[id] = False
+                self.orographiclin[id] = False
                 self.rainVal[id] = 0.
                 self.rbgd[id] = 0.
                 self.rmin[id] = 0.
                 self.rmax[id] = 0.
+                self.rzmax[id] = 0.
                 self.windx[id] = 0.
                 self.windy[id] = 0.
                 self.tauc[id] = 1000.
@@ -728,10 +771,12 @@ class xmlParser:
             self.rainTime = numpy.empty((self.rainNb,2))
             self.rainMap = numpy.empty((self.rainNb),dtype=object)
             self.orographic = numpy.empty(self.rainNb,dtype=bool)
+            self.orographiclin = numpy.empty(self.rainNb,dtype=bool)
             self.ortime = numpy.empty(self.rainNb)
             self.rbgd = numpy.empty(self.rainNb)
             self.rmin = numpy.empty(self.rainNb)
             self.rmax = numpy.empty(self.rainNb)
+            self.rzmax = numpy.empty(self.rainNb)
             self.windx = numpy.empty(self.rainNb)
             self.windy = numpy.empty(self.rainNb)
             self.tauc = numpy.empty(self.rainNb)
@@ -744,10 +789,12 @@ class xmlParser:
             self.rainTime[0,1] = self.tEnd
             self.rainMap[0] = None
             self.orographic[0] = False
+            self.orographiclin[0] = False
             self.rainVal[0] = 0.
             self.rbgd[0] = 0.
             self.rmin[0] = 0.
             self.rmax[0] = 0.
+            self.rzmax[0] = 0.
             self.windx[0] = 0.
             self.windy[0] = 0.
             self.tauc[0] = 1000.
@@ -828,33 +875,58 @@ class xmlParser:
             self.SPLero = 0.
             self.diffnb = 5
 
-        # Extract erodibility functions structure parameters
+        # Extract flux-dependent function structure parameters
         erof = None
-        erof = root.find('erofunction')
+        erof = root.find('sedfluxfunction')
         if erof is not None:
-            self.erof = True
             element = None
-            element = erof.find('precipexpo')
+            element = erof.find('modeltype')
             if element is not None:
-                self.precipfac = float(element.text)
+                self.incisiontype = int(element.text)
             else:
-                self.precipfac = 0.
+                self.incisiontype = 0
             element = None
-            element = erof.find('sedratio')
+            element = erof.find('mt')
             if element is not None:
-                self.sedsupply = element.text
-                if not os.path.isfile(self.sedsupply):
-                    raise ValueError('File for erodibility dependence to sediment supply is missing or the given path is incorrect.')
+                self.mt = element.text
             else:
-                self.sedsupply = None
+                self.mt = 0
             element = None
-            element = erof.find('bedslope')
+            element = erof.find('nt')
             if element is not None:
-                self.bedslope = element.text
-                if not os.path.isfile(self.bedslope):
-                    raise ValueError('File for bedload dependence to slope is missing or the given path is incorrect.')
+                self.nt = element.text
             else:
-                self.bedslope = None
+                self.nt = 0
+            element = None
+            element = erof.find('kt')
+            if element is not None:
+                self.kt = element.text
+            else:
+                self.kt = 0
+            element = None
+            element = erof.find('kw')
+            if element is not None:
+                self.kw = element.text
+            else:
+                self.kw = 0
+            element = None
+            element = erof.find('b')
+            if element is not None:
+                self.b = element.text
+            else:
+                self.b = 0
+            element = None
+            element = erof.find('mp')
+            if element is not None:
+                self.mp = float(element.text)
+            else:
+                self.mp = 0
+            element = None
+            element = erof.find('bedslp')
+            if element is not None:
+                self.bedslptype = int(element.text)
+            else:
+                self.bedslptype = 0
 
         # Extract linear and nonlinear slope diffusion structure parameters
         creep = None
@@ -884,6 +956,70 @@ class xmlParser:
             self.CDm = 0.
             self.CDr = 0.
 
+        # Loading erodibility layers
+        erost = None
+        erost = root.find('erocoeffs')
+        if erost is not None:
+            element = None
+            element = erost.find('actlay')
+            if element is not None:
+                self.actlay = float(element.text)
+            else:
+                self.actlay = 50.
+            id = 0
+            element = None
+            element = erost.find('rocktype')
+            if element is not None:
+                self.rockNb = int(element.text)
+            else:
+                self.rockNb = 0
+            element = None
+            element = erost.find('laytime')
+            if element is not None:
+                self.laytime = float(element.text)
+            else:
+                self.laytime = self.tDisplay
+            if self.laytime >  self.tDisplay:
+                 self.laytime = self.tDisplay
+            if self.tDisplay % self.laytime != 0:
+                raise ValueError('Error in the XmL file: stratal layer interval needs to be an exact multiple of the display interval!')
+            id = 0
+            self.rockCk = numpy.zeros(self.rockNb)
+            for rcktyp in erost.iter('rockero'):
+                if id >= self.rockNb:
+                    raise ValueError('The number of rock erodibilities values does not match the number of defined rock types.')
+                element = None
+                element = rcktyp.find('erorock')
+                if element is not None:
+                    self.rockCk[id] = float(element.text)
+                else:
+                    self.rockCk[id] = None
+                id += 1
+            element = None
+            element = erost.find('erolayers')
+            if element is not None:
+                self.initlayers = int(element.text)
+            else:
+                self.initlayers = 0
+            id = 0
+            self.layersData = numpy.empty(self.initlayers,dtype=object)
+            for rcklay in erost.iter('erolay'):
+                if id >= self.initlayers:
+                    raise ValueError('The number of erodibility layer maps does not match the number of defined layers.')
+                element = None
+                element = rcklay.find('laymap')
+                if element is not None:
+                    self.layersData[id] = element.text
+                else:
+                    self.layersData[id] = None
+                id += 1
+        else:
+            self.rockNb = 0
+            self.actlay = 50.
+            self.rockCk = None
+            self.initlayers = 0
+            self.layersData = None
+
         # Loading variable erodibility layers
         erostruct = None
         erostruct = root.find('erocoeff')
@@ -895,9 +1031,7 @@ class xmlParser:
                 if self.erolays == 0:
                     tmpNb = 1
                     self.eroMap = numpy.empty(1,dtype=object)
-                    self.eroVal = numpy.empty(1,dtype=object)
-                    self.thickMap = numpy.empty(1,dtype=object)
-                    self.thickVal = numpy.empty(1,dtype=object)
+                    self.eroVal = numpy.zeros(1,dtype=object)
                 else:
                     tmpNb = self.erolays
                     self.eroMap = numpy.empty(self.erolays,dtype=object)

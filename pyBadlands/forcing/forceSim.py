@@ -110,15 +110,13 @@ class forceSim:
     bedslope : string
         Path to the bedload versus slope function file (if any).
 
-    Tdisplay : float
-        Display interval (in years).
     """
 
     def __init__(self, seafile = None, sea0 = 0., MapRain = None, TimeRain = None, ValRain = None,
-                 orographic = None, rbgd = None, rmin = None, rmax = None, windx = None, windy = None,
-                 tauc = None, tauf = None, nm = None, cw = None, hw = None, ortime = None, MapDisp = None,
-                 TimeDisp = None, regX = None, regY = None, rivPos = None, rivTime = None, rivQws = None,
-                 rivNb = 0, erof = False, sedsupply = None, bedslope = None, Tdisplay = 0.):
+                 orographic = None, orographiclin = None, rbgd = None, rmin = None, rmax = None, rzmax = None,
+                 windx = None, windy = None, tauc = None, tauf = None, nm = None, cw = None, hw = None,
+                 ortime = None, MapDisp = None, TimeDisp = None, regX = None, regY = None, rivPos = None,
+                 rivTime = None, rivQws = None, riverRck=None, rivNb = 0, rockNb = 0, Tdisplay = 0.):
 
         self.regX = regX
         self.regY = regY
@@ -131,16 +129,20 @@ class forceSim:
         self.rivPos = rivPos
         self.rivTime = rivTime
         self.rivQws = rivQws
+        self.riverRck = riverRck
         self.rivQs = None
         self.rivQw = None
+        self.rockNb = rockNb
 
         self.Map_rain = MapRain
         self.rainVal = ValRain
         self.T_rain = TimeRain
         self.orographic = orographic
+        self.orographiclin = orographiclin
         self.rbgd = rbgd
         self.rmin = rmin
         self.rmax = rmax
+        self.rzmax = rzmax
         self.windx = windx
         self.windy = windy
         self.tauc = tauc
@@ -163,14 +165,6 @@ class forceSim:
         self.seaval = None
         self.seaFunc = None
 
-        self.erofct = erof
-        self.fsedsupply = sedsupply
-        self.fbedslope = bedslope
-        self.sedsupply = None
-        self.sedsupval = None
-        self.bedslope = None
-        self.bedloadprop = None
-
         self.tXY = None
         self.dispX = None
         self.dispY = None
@@ -186,12 +180,6 @@ class forceSim:
         if self.seafile != None:
             self._build_Sea_function()
 
-        if self.fsedsupply != None:
-            self._build_SedSupply_function()
-
-        if self.fbedslope != None:
-            self._build_BedSlope_function()
-
     def _build_Sea_function(self):
         """
         Using Pandas library to read the sea level file and define sea level interpolation
@@ -206,35 +194,6 @@ class forceSim:
         self.seatime = seadata.values[:,0]
         self.seaval = seadata.values[:,1]
         self.seaFunc = interpolate.interp1d(self.seatime, self.seaval, kind='linear')
-
-    def _build_SedSupply_function(self):
-        """
-        Using Pandas library to read the sediment supply file and define the interpolation
-        function based on Scipy 1D linear function.
-        """
-
-        # Read sediment supply file
-        sedsup = pandas.read_csv(self.fsedsupply, sep=r'\s+', engine='c',
-                               header=None, na_filter=False,
-                               dtype=numpy.float, low_memory=False)
-
-        # Conversion from kg/s to m3/yr
-        self.sedsupply = sedsup.values[:,0]
-        self.sedsupval = sedsup.values[:,1]
-
-    def _build_BedSlope_function(self):
-        """
-        Using Pandas library to read the bedload versus slope file and define bedload proportion interpolation
-        function based on Scipy 1D linear function.
-        """
-
-        # Read bedload versus slope file
-        beddata = pandas.read_csv(self.fbedslope, sep=r'\s+', engine='c',
-                               header=None, na_filter=False,
-                               dtype=numpy.float, low_memory=False)
-
-        self.bedslope = beddata.values[:,0]
-        self.bedloadprop = beddata.values[:,1]
 
     def getSea(self, time):
         """
@@ -277,7 +236,10 @@ class forceSim:
         """
 
         self.rivQw = numpy.zeros(len(self.tXY))
-        self.rivQs = numpy.zeros(len(self.tXY))
+        if self.rockNb == 0:
+            self.rivQs = numpy.zeros((len(self.tXY),1))
+        else:
+            self.rivQs = numpy.zeros((len(self.tXY),self.rockNb))
 
         if self.rivNb > 0:
             active = numpy.where(numpy.logical_and(self.rivTime[:,0] <= time, self.rivTime[:,1] > time))[0]
@@ -288,8 +250,9 @@ class forceSim:
                 for r in range(rivNb):
                     riv_qw = self.rivQws[active[r],0]
                     riv_qs = self.rivQws[active[r],1]
+                    rivRock = self.riverRck[active[r]]
                     self.rivQw[ids[r]] += riv_qw
-                    self.rivQs[ids[r]] += riv_qs
+                    self.rivQs[ids[r],rivRock] += riv_qs
 
     def update_force_TIN(self, tXY):
         """
@@ -327,13 +290,20 @@ class forceSim:
 
         events = numpy.where( (self.T_rain[:,1] - time) <= 0)[0]
         event = len(events)
-
         if not (time >= self.T_rain[event,0]) and not (time < self.T_rain[event,1]):
             raise ValueError('Problem finding the rain map to load!')
 
         if self.orographic[event]:
-            tinRain = self.build_OrographicRain_map(event, elev, inIDs)
-            self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
+            if self.rzmax[event] <= 0:
+                tinRain = self.build_OrographicRain_map(event, elev, inIDs)
+                self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
+            else:
+                tinRain = numpy.zeros(len(self.tXY[inIDs,0]), dtype=float)
+                rainslope = (self.rmax[event]-self.rmin[event])/self.rzmax[event]
+                tinRain = rainslope*elev[inIDs]+self.rmin[event]
+                tinRain[tinRain<0.] = 0.
+                tinRain[tinRain>self.rmax[event]] = self.rmax[event]
+                self.next_rain = min(time + self.ortime[event], self.T_rain[event,1])
         elif self.Map_rain[event] == None:
             tinRain = numpy.zeros(len(self.tXY[inIDs,0]), dtype=float)
             tinRain = self.rainVal[event]
@@ -350,7 +320,7 @@ class forceSim:
 
     def build_OrographicRain_map(self, event, elev, inIDs):
         """
-        Build rain map using SMith & Barstad (2004) model for a given period and perform interpolation from regular grid to
+        Build rain map using Smith & Barstad (2004) model for a given period and perform interpolation from regular grid to
         unstructured TIN one.
 
         Parameters
@@ -602,7 +572,7 @@ class forceSim:
         else:
             return update
 
-    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, tflex=None, scum=None,
+    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, hcum, tflex=None, scum=None,
                                       Te=None, Ke=None, flexure=0, strat=0, ero=0):
         """
         Apply horizontal displacements and check if any points need to be merged.
@@ -626,6 +596,9 @@ class forceSim:
 
         scum : float
             Numpy array with erosion/deposition used for stratal mesh.
+
+        hcum : float
+            Numpy array with erosion/deposition for hillslope used for stratal mesh.
 
         Te : float
             Numpy array with thickness used for erosional mesh.
@@ -652,6 +625,9 @@ class forceSim:
 
         newcum
             Numpy array containing the updated erosion/deposition values for the new TIN.
+
+        newhcum
+            Numpy array containing the updated erosion/deposition values for hillslope in the new TIN.
 
         newcumf
             Numpy array containing the updated cumulative flexural values for the new TIN.
@@ -691,6 +667,7 @@ class forceSim:
             self.tXY = numpy.delete(self.tXY, tID, 0)
             elev = numpy.delete(telev, tID, 0)
             cum = numpy.delete(tcum, tID, 0)
+            hum = numpy.delete(hcum, tID, 0)
             if flexure == 1:
                 cumf = numpy.delete(tflex, tID, 0)
             if strat == 1:
@@ -706,6 +683,7 @@ class forceSim:
             self.tXY = tXY
             elev = telev
             cum = tcum
+            hum = hcum
             if flexure == 1:
                 cumf = tflex
             if strat == 1:
@@ -735,6 +713,7 @@ class forceSim:
             if len(elev[indices].shape) == 3:
                 z_vals = elev[indices][:,:,0]
                 cum_vals = cum[indices][:,:,0]
+                hum_vals = hum[indices][:,:,0]
                 if flexure == 1:
                     cumf_vals = cumf[indices][:,:,0]
                 if strat == 1:
@@ -742,12 +721,14 @@ class forceSim:
             else:
                 z_vals = elev[indices]
                 cum_vals = cum[indices]
+                hum_vals = hum[indices]
                 if flexure == 1:
                     cumf_vals = cumf[indices]
                 if strat == 1:
                     scum_vals = stcum[indices]
             z_avg = numpy.average(z_vals, weights=weights,axis=1)
             cum_avg = numpy.average(cum_vals, weights=weights,axis=1)
+            hum_avg = numpy.average(hum_vals, weights=weights,axis=1)
             if flexure == 1:
                 cumf_avg = numpy.average(cumf_vals, weights=weights,axis=1)
             if strat == 1:
@@ -768,6 +749,7 @@ class forceSim:
             newXY = numpy.delete(self.tXY, mergedIDs, 0)
             newelev = numpy.delete(elev, mergedIDs, 0)
             newcum = numpy.delete(cum, mergedIDs, 0)
+            newhcum = numpy.delete(hum, mergedIDs, 0)
             if flexure == 1:
                 newcumf = numpy.delete(cumf, mergedIDs, 0)
             if strat == 1:
@@ -782,6 +764,7 @@ class forceSim:
             newXY = numpy.concatenate((newXY, mXY), axis=0)
             newelev = numpy.concatenate((newelev, z_avg), axis=0)
             newcum = numpy.concatenate((newcum, cum_avg), axis=0)
+            newhcum = numpy.concatenate((newhcum, hum_avg), axis=0)
             if flexure == 1:
                 newcumf = numpy.concatenate((newcumf, cumf_avg), axis=0)
             if strat == 1:
@@ -796,6 +779,7 @@ class forceSim:
             newXY = self.tXY
             newelev = elev
             newcum = cum
+            newhcum = hum
             if flexure == 1:
                 newcumf = cumf
             if strat == 1:
@@ -815,6 +799,7 @@ class forceSim:
             if len(elev[ids].shape) == 3:
                 zvals = elev[ids][:,:,0]
                 cumvals = cum[ids][:,:,0]
+                humvals = hum[ids][:,:,0]
                 if flexure == 1:
                     cumfvals = cumf[ids][:,:,0]
                 if strat == 1:
@@ -822,6 +807,7 @@ class forceSim:
             else:
                 zvals = elev[ids]
                 cumvals = cum[ids]
+                humvals = hum[ids]
                 if flexure == 1:
                     cumfvals = cumf[ids]
                 if strat == 1:
@@ -838,6 +824,7 @@ class forceSim:
                         Kevals[:,k] = mKe[ids,k]
             zavg = numpy.average(zvals, weights=weights,axis=1)
             cumavg = numpy.average(cumvals, weights=weights,axis=1)
+            humavg = numpy.average(humvals, weights=weights,axis=1)
             if flexure == 1:
                 cumfavg = numpy.average(cumfvals, weights=weights,axis=1)
             if strat == 1:
@@ -850,6 +837,7 @@ class forceSim:
                     Keavg[:,k] = Kevals[indices[0],k]
             newelev = numpy.concatenate((newelev, zavg), axis=0)
             newcum = numpy.concatenate((newcum, cumavg), axis=0)
+            newhcum = numpy.concatenate((newhcum, humavg), axis=0)
             if flexure == 1:
                 newcumf = numpy.concatenate((newcumf, cumfavg), axis=0)
             if strat == 1:
@@ -871,4 +859,4 @@ class forceSim:
             newKe = None
             newTe = None
 
-        return newTIN, newelev, newcum, newcumf, newscum, newKe, newTe
+        return newTIN, newelev, newcum, newhcum, newcumf, newscum, newKe, newTe
