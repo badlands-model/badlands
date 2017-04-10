@@ -613,7 +613,6 @@ contains
                 else
                   SPL = 0.
                 endif
-
               endif
             endif
           endif

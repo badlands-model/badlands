@@ -122,7 +122,7 @@ class Model(object):
             self.flex.update_flexure_parameters(self.FVmesh.node_coords[:,:2])
 
         # Update stratigraphic mesh
-        if self.input.stratdx>0:
+        if self.input.stratdx > 0:
             self.strata.update_TIN(self.FVmesh.node_coords[:, :2])
 
         # Update erodibility maps
@@ -355,7 +355,7 @@ class Model(object):
             self.outputStep += 1
             if self.straTIN is not None:
                 self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
-            
+
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += self.input.laytime

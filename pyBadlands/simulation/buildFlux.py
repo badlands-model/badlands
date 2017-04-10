@@ -297,6 +297,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     elif input.btype == 'wall1':
         elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]-0.1
         elevation[:recGrid.nx+1] = elevation[flow.parentIDs[:recGrid.nx+1]]+100.
+
     cumdiff += diff
     cumhill += diff
     if rank == 0 and verbose:

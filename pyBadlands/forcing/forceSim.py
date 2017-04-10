@@ -101,8 +101,15 @@ class forceSim:
     rivNb : int
         Number of rivers.
 
-    Tdisplay : float
-        Display interval (in years).
+    erof : boolean
+        Numpy array containing the active time for the rivers.
+
+    sedsupply : string
+        Path to the erodibility factor versus sediment supply file (if any).
+
+    bedslope : string
+        Path to the bedload versus slope function file (if any).
+
     """
 
     def __init__(self, seafile = None, sea0 = 0., MapRain = None, TimeRain = None, ValRain = None,

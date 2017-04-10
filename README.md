@@ -4,6 +4,7 @@ pyBadlands - python version of Badlands
 <div align="center">
     <img width=1000 src="https://github.com/badlands-model/Badlands-doc/blob/master/figures/StratigraphciModelling.png" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
 </div>
+
 [![DOI](https://zenodo.org/badge/51286954.svg)](https://zenodo.org/badge/latestdoi/51286954)
 
 ## Overview
@@ -20,7 +21,7 @@ The easiest way to get started is with the [Docker container](https://hub.docker
 
 If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](https://github.com/badlands-model/pyBadlands-Dependencies-Docker/blob/master/Dockerfile) & [**code**](https://github.com/badlands-model/pyBadlands-Docker-Demo/blob/master/Dockerfile)) are the best documentation of the required packages.
 
-The latest pyBadlands version is the one that’s in our Github [repository](https://github.com/badlands-model/pyBadlands). Get it using this shell command, which requires Git:
+The latest pyBadlands version is the one that’s in our Github [repository](https://github.com/badlands-model/pyBadlands). Get it using this shell command, which requires Git: 
 * `git clone https://github.com/badlands-model/pyBadlands.git`
 
 **API documentation** is available from [http://pybadlands.readthedocs.io](http://pybadlands.readthedocs.io/en/master/)

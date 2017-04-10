@@ -89,7 +89,10 @@ class diffLinear:
 
         # First-order, forward-in-time scheme
         CFL = numpy.zeros(1)
-        CFL[0] = 0.05*numpy.amin(edgedist[distIDs]**2)/self.CDriver
+        if self.CDriver == 0.:
+            CFL[0] = 0.05*numpy.amin(edgedist[distIDs]**2)
+        else:
+            CFL[0] = 0.05*numpy.amin(edgedist[distIDs]**2)/self.CDriver
 
         # Global mimimum value for diffusion stability
         comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)

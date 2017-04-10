@@ -56,6 +56,7 @@ class xmlParser:
         self.maxDT = 1.e6
 
         self.stratdx = 0.
+        self.laytime = 0.
 
         self.seapos = 0.
         self.seafile = None
