@@ -270,9 +270,52 @@
         <bedslp>0</bedslp>
     </sedfluxfunction>
 
-    <!-- Erodibility structure
+    <!-- Erodibility structure simple
          This option allows you to specify different erodibility values either on the surface
-         or within a number of initial stratigraphic layers. -->
+        or within a number of initial stratigraphic layers. -->
+    <erocoeff>
+        <!-- Number of erosion layers. -->
+        <erolayers>4</erolayers>
+        <!-- The layering is defined from top to bottom, with:
+            - either a constant erodibility value for the entire layer or with an erodibility map
+            - either a constant thickness for the entire layer or with a thickness map -->
+        <!-- Constant erodibility and layer thickness -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>10</thcst>
+        </erolay>
+        <!-- Constant erodibility and variable layer thickness map -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <erocst>3.e-6</erocst>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay2.csv</thmap>
+        </erolay>
+        <!-- Variable erodibilities and constant layer thickness -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay3.csv</eromap>
+            <!-- Uniform thickness value for the considered layer [m]. -->
+            <thcst>30</thcst>
+        </erolay>
+        <!-- Variable erodibilities and thicknesses -->
+        <erolay>
+            <!-- Variable erodibilities for the considered layer. -->
+            <eromap>data/erolay4.csv</eromap>
+            <!-- Variable thicknesses for the considered layer [m]. -->
+            <thmap>data/thlay4.csv</thmap>
+        </erolay>
+    </erocoeff>
+
+    <!-- Erodibility structure with multiple rock types
+         This option allows you to specify different erodibility values based on different
+         rock types. The approach tracks rocks erosion/transport/deposition through space and
+         time over the simulated domain.
+         NOTE:
+         In this first version, the algorithm is not working with 3D displacements for now and
+         is pretty slow.-->
     <erocoeffs>
         <!-- Active layer thickness [m]-->
         <actlay>1.</actlay>

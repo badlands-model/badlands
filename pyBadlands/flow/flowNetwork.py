@@ -526,12 +526,11 @@ class flowNetwork:
         rank = comm.Get_rank()
         size = comm.Get_size()
         newdt = numpy.copy(dt)
+
         if actlay is None:
             sedflux = numpy.zeros((len(elev),1))
         else:
             sedflux = numpy.zeros((len(elev),len(rockCk)))
-
-        verbose = False
 
         # Compute sediment flux using libUtils
         # Stream power law
@@ -543,25 +542,23 @@ class flowNetwork:
             # Find border/inside nodes
             insideIDs = numpy.where(borders>0)[0]
             if self.mp>0.:
-                eroCoeff = self.erodibility*numpy.power(rain,self.mp)
-                eroCoeff.reshape((len(elev),1))
                 if self.straTIN == 1:
                     rp = numpy.power(rain,self.mp).reshape((len(elev),1))
                     eroCoeff = rockCk * rp
+                else:
+                    eroCoeff = self.erodibility*numpy.power(rain,self.mp)
+                    eroCoeff.reshape((len(elev),1))
             else:
-                eroCoeff = self.erodibility
-                eroCoeff.reshape((len(eroCoeff),1))
                 if self.straTIN == 1:
-                    eroCoeff = numpy.ones((len(elev),1))*rockCk
-
+                    eroCoeff = numpy.tile(rockCk, (len(elev),1))
+                else:
+                    eroCoeff = self.erodibility.reshape((len(elev),1))
             if actlay is None:
-                activelay = numpy.zeros((len(elev),1))
-            else:
-                activelay = actlay
+                actlay = numpy.zeros((len(elev),1))
 
             cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
-                     elev,rivqs,eroCoeff,activelay,perc_dep,slp_cr,sealevel,newdt,borders)
+                     elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,borders)
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
 
@@ -597,10 +594,11 @@ class flowNetwork:
             if rank==0 and verbose:
                 print "   - Compute depressions connectivity ", time.clock() - time1
                 time1 = time.clock()
+
             if newdt < dt:
                 cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                         self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
-                        elev,rivqs,eroCoeff,activelay,perc_dep,slp_cr,sealevel,newdt,borders)
+                        elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,borders)
                 comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
                 comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
                 volChange = cdepo+cero
@@ -624,10 +622,8 @@ class flowNetwork:
             self.sedload = sedld/(newdt*3.154e7)
 
             # Compute erosion
-            ero = numpy.zeros(cero.shape)
-            ero[insideIDs,:] = cero[insideIDs,:]
-            erosion = numpy.zeros(ero.shape)
-            erosion[insideIDs,:] = ero[insideIDs,:]/Acell[insideIDs].reshape(len(insideIDs),1)
+            erosion = numpy.zeros(cero.shape)
+            erosion[insideIDs,:] = cero[insideIDs,:]/Acell[insideIDs].reshape(len(insideIDs),1)
             if rank==0 and verbose:
                 print "   - Compute erosion ", time.clock() - time1
                 time1 = time.clock()
