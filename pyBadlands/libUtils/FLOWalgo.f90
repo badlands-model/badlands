@@ -806,4 +806,125 @@ contains
 
   end subroutine streampower
 
+
+  subroutine getid1(volc,vol,alldrain,pit,sumvol,ids,ids2,newNb,newNb2,ptsNb,sedNb)
+
+    integer :: ptsNb
+    integer :: sedNb
+    integer,dimension(ptsNb),intent(in) :: pit
+    integer,dimension(ptsNb),intent(in) :: alldrain
+    real(kind=8),dimension(ptsNb,sedNb),intent(in) :: volc
+    real(kind=8),dimension(ptsNb),intent(in) :: vol
+
+    integer, intent(out) :: newNb
+    integer, intent(out) :: newNb2
+    integer,dimension(ptsNb), intent(out) :: ids
+    integer,dimension(ptsNb), intent(out) :: ids2
+    real(kind=8),dimension(ptsNb), intent(out) :: sumvol
+
+    integer :: p,s
+
+    newNb = 0
+    newNb2 = 0
+    sumvol = 0.
+    ids = 0
+    ids2 = 0
+
+    do p = 1, ptsNb
+      do s = 1, sedNb
+        sumvol(p) = sumvol(p)+volc(p,s)
+      enddo
+      if(sumvol(p)>vol(p) .and. vol(p)>0.)then
+        newNb = newNb+1
+        ids(newNb) = p-1
+      endif
+      if(pit(p)>=0.and.alldrain(p)==pit(p))then
+        newNb2 = newNb2+1
+        ids2(newNb2) = p-1
+      endif
+    enddo
+
+    return
+
+  end subroutine getid1
+
+
+  subroutine getids(fillH,elev,depo,vol,seal,ids,ids2,ids3,perc,newNb,newNb2,newNb3,ptsNb,sedNb)
+
+    integer :: ptsNb
+    integer :: sedNb
+
+    real(kind=8),intent(in) :: seal
+    real(kind=8),dimension(ptsNb),intent(in) :: fillH
+    real(kind=8),dimension(ptsNb),intent(in) :: elev
+    real(kind=8),dimension(ptsNb),intent(in) :: vol
+    real(kind=8),dimension(ptsNb,sedNb),intent(in) :: depo
+
+    integer, intent(out) :: newNb
+    integer, intent(out) :: newNb2
+    integer, intent(out) :: newNb3
+    integer,dimension(ptsNb), intent(out) :: ids
+    integer,dimension(ptsNb), intent(out) :: ids2
+    integer,dimension(ptsNb), intent(out) :: ids3
+    real(kind=8),dimension(ptsNb,sedNb), intent(out) :: perc
+
+    integer :: p,s,in
+    real(kind=8) :: sumdep, sumperc
+
+    newNb = 0
+    newNb2 = 0
+    newNb3 = 0
+    ids = 0
+    ids2 = 0
+    ids3 = 0
+    perc = 0.
+
+    do p = 1, ptsNb
+      in = 0
+      sumdep = 0.
+      sumperc = 0.
+      ! Get alluvial plain deposition ID
+      if(elev(p)>seal .and. fillH(p)==elev(p))then
+        in = 1
+        do s = 1, sedNb
+          sumdep = sumdep+depo(p,s)
+        enddo
+        if(sumdep>0.)then
+          newNb = newNb+1
+          ids(newNb) = p-1
+        endif
+      endif
+
+      ! Get land pit deposition ID
+      if(elev(p)>seal .and. fillH(p)>seal .and. vol(p)>0.)then
+        if(sumdep==0. .and. in == 0)then
+          do s = 1, sedNb
+            sumdep = sumdep+depo(p,s)
+          enddo
+        endif
+        if(sumdep>0.)then
+          newNb2 = newNb2+1
+          ids2(newNb2) = p-1
+        endif
+      endif
+
+      ! Get water deposition ID
+      if(elev(p)<=seal)then
+        do s = 1, sedNb
+          sumdep = sumdep+depo(p,s)
+          perc(p,s) = depo(p,s)/vol(p)
+          sumperc = sumperc+perc(p,s)
+        enddo
+        if(sumdep>0.)then
+          newNb3 = newNb3+1
+          ids3(newNb3) = p-1
+          if(sumperc>1.) perc(p,:) = perc(p,:)/sumperc
+        endif
+      endif
+    enddo
+
+    return
+
+  end subroutine getids
+
 end module flowcompute
