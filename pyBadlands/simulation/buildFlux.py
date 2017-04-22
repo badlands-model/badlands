@@ -178,7 +178,6 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         # Initialise marine sediments diffusion array
         it = 0
         sumdep = np.sum(deposition,axis=1)
-        # sumdep2 = np.sum(deposition,axis=1)
         maxth = 0.5
         diffstep = timestep
         diffcoeff = hillslope.sedfluxmarine(force.sealevel, elevation, FVmesh.control_volumes)
