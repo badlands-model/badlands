@@ -21,6 +21,10 @@ from scipy.spatial import cKDTree
 from scipy.interpolate import RegularGridInterpolator
 from pyBadlands.libUtils import FASTloop
 
+import os
+if 'READTHEDOCS' not in os.environ:
+    from pyBadlands.libUtils import PDalgo
+
 class stratiWedge():
     """
     This class builds stratigraphic layers over time based on erosion/deposition values.
@@ -127,11 +131,11 @@ class stratiWedge():
             self.step = paleoDepth.shape[1]
 
             # Elevation at time of deposition (paleo-depth)
-            self.paleoDepth = numpy.zeros([self.ptsNb,layNb+eroLay])
-            self.layerThick = numpy.zeros([self.ptsNb,layNb+eroLay])
+            self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
+            self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             self.paleoDepth[:,:eroLay] = paleoDepth
             # Deposition thickness for each type of sediment
-            self.depoThick = numpy.zeros([self.ptsNb,layNb+eroLay,rockNb])
+            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,rockNb),order='F')
             for r in range(rockNb):
                 self.depoThick[:,:eroLay,r] = numpy.array((df['/depoThickRock'+str(r)]))
             self.layerThick[:,:eroLay] = numpy.sum(self.depoThick[:,:eroLay,:],axis=-1)
@@ -143,10 +147,10 @@ class stratiWedge():
 
             tmpTH = numpy.zeros(self.ptsNb)
             # Elevation at time of deposition (paleo-depth)
-            self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay))
+            self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             # Deposition thickness for each type of sediment
-            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,rockNb))
-            self.layerThick = numpy.zeros([self.ptsNb,layNb+eroLay])
+            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,rockNb),order='F')
+            self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             # Rock type array
             rockType = -numpy.ones(self.ptsNb,dtype=int)
 
@@ -200,7 +204,7 @@ class stratiWedge():
                 self.paleoDepth[:,0] = elev
                 self.step = 1
 
-    def get_active_layer(self, actlay):
+    def get_active_layer(self, actlay, verbose=False):
         """
         This function extracts the active layer based on the underlying stratigraphic architecture.
 
@@ -210,93 +214,47 @@ class stratiWedge():
             Active layer elevation based on nodes elevation [m]
         """
 
-        # Define temporary arrays
-        tmpIDs = numpy.arange(self.ptsNb)
-        tmpH = numpy.zeros((self.ptsNb,self.step+1))
-        tmpS = numpy.zeros((self.ptsNb,self.step+1,self.rockNb))
-        alayH = numpy.zeros(self.ptsNb)
-        self.alayR = numpy.zeros((self.ptsNb,self.rockNb))
+        # Initialise MPI communications
+        comm = mpi.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
 
-        # Compute cumulative stratal thicknesses
-        cumThick = numpy.cumsum(self.layerThick[:,self.step::-1],axis=1)[:,::-1]
-
-        # Find nodes with stratal thicknesses lower than active layer thickness
-        r,c = numpy.where(actlay.reshape(self.ptsNb,1)>=cumThick)
-        tmpH[r,c] = self.layerThick[r,c]
-        # Set active layer thickness
-        alayH = numpy.sum(tmpH,axis=1)
-        # Define each sediment type thickness
-        tmpS[r,c,:] =  self.depoThick[r,c,:]
-
-        # Get layer number of the top non zero stratigraphic thickness which needs to
-        # be partially incorporated in the active layer
-        cumThick[cumThick < actlay.reshape(self.ptsNb,1)] = 0
-        mask = (cumThick > 0).astype(int) == 0
-        eroIDs = numpy.bincount(numpy.nonzero(cumThick)[0]) - 1
-
-        # Find the proportion of sediment from this layer that will be passed to the
-        # active layer
-        prop = (actlay[tmpIDs]-alayH[tmpIDs])/self.layerThick[tmpIDs,eroIDs]
-        # Finalise the active layer composition description
-        for s in range(self.rockNb):
-            self.alayR[:,s] = numpy.sum(tmpS[:,:,s],axis=1) + prop * \
-                                self.depoThick[tmpIDs,eroIDs,s]
+        time0 = time.clock()
+        self.alayR = PDalgo.pdstack.getactlay(actlay, self.layerThick[:,:self.step+1],
+                                    self.depoThick[:,:self.step+1,:])
+        if rank==0 and verbose:
+            print "   - Get active layer composition ", time.clock() - time0
+            time0 = time.clock()
 
         return
 
-    def update_deposition(self, deposition):
+    def update_layers(self, erosion, deposition, verbose=False):
         """
-        Add deposit to current stratigraphic layer.
+        This function updates the stratigraphic layers based active layer composition.
 
         Parameters
         ----------
         deposition
             Value of the deposition for the given point [m]
-        """
 
-        for s in range(self.rockNb):
-            ids = numpy.where(deposition[:,s]>0)[0]
-            # Add deposit to the considered layer time
-            self.depoThick[ids,self.step,s] += deposition[ids,s]
-            self.layerThick[ids,self.step] += deposition[ids,s]
-
-        return
-
-    def update_erosion(self, erosion):
-        """
-        This function updates the stratigraphic layers based on eroded sediments from the active layers.
-
-        Parameters
-        ----------
         erosion
             Value of the erosion for the given points [m]
         """
 
-        tmpH = numpy.zeros((self.ptsNb,self.step+1))
-        for s in range(self.rockNb):
-            ids = numpy.where(-erosion[:,s]>0)[0]
-            if len(ids)>0:
-                tmpH.fill(0.)
-                ero = -erosion[:,s]
-                # Compute cumulative stratal thicknesses
-                cumThick = numpy.cumsum(self.depoThick[:,self.step::-1,s],axis=1)[:,::-1]
-                # Find nodes with no remaining stratigraphic thicknesses
-                tmpE = numpy.array([ero,]*(self.step+1)).transpose()
-                r,c = numpy.where(tmpE>=cumThick)
-                tmpH[r,c] = self.depoThick[r,c,s]
-                sumH = numpy.sum(tmpH,axis=1)
-                self.layerThick[r,c] -= tmpH[r,c]
-                self.depoThick[r,c,s] = 0.
-                cumThick[r,c] = 0.
-                ero -= sumH
+        # Initialise MPI communications
+        comm = mpi.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
 
-                # Erode remaining stratal layers
-                # Update thickness of non completely eroded stratigraphic layer
-                if numpy.sum(ero) > 0:
-                    tmpIDs = numpy.where(ero>0)[0]
-                    eroIDs = numpy.bincount(numpy.nonzero(cumThick[tmpIDs,:])[0]) - 1
-                    self.layerThick[tmpIDs,eroIDs] -= ero[tmpIDs]
-                    self.depoThick[tmpIDs,eroIDs,s] -= ero[tmpIDs]
+        time0 = time.clock()
+        newH, newS = PDalgo.pdstack.updatestrati(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
+                                    erosion, deposition)
+
+        self.depoThick[:,:self.step+1,:] = newS
+        self.layerThick[:,:self.step+1] = newH
+
+        if rank==0 and verbose:
+            print "   - Update erosion/deposition ", time.clock() - time0
 
         return
 

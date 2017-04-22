@@ -69,7 +69,6 @@ class flowNetwork:
         self.localsedflux = None
         self.maxh = None
         self.maxdep = None
-        self.diff_flux = None
         self.diff_cfl = None
         self.chi = None
         self.basinID = None
@@ -100,6 +99,11 @@ class flowNetwork:
         self.straTIN = 0
         self.activelay = None
 
+        self.borders = None
+        self.domain = None
+        self.insideIDs = None
+        self.outsideIDs = None
+
         FLOWalgo.flowcompute.eroparams(input.incisiontype,input.SPLm,input.SPLn,input.mt,
                                        input.nt,input.kt,input.kw,input.b,input.bedslptype)
 
@@ -107,7 +111,7 @@ class flowNetwork:
         self._rank = self._comm.Get_rank()
         self._size = self._comm.Get_size()
 
-    def compute_hillslope_diffusion(self, elev, borders, neighbours, edges, distances, globalIDs, difftype):
+    def compute_hillslope_diffusion(self, elev, neighbours, edges, distances, globalIDs, type):
         """
         Perform hillslope evolution based on diffusion processes.
 
@@ -116,9 +120,6 @@ class flowNetwork:
         elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        borders
-            Numpy arrays flagging the boundary nodes.
-
         neighbours
             Numpy integer-type array with the neighbourhood IDs.
 
@@ -131,19 +132,22 @@ class flowNetwork:
         globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
 
-        difftype
+        type
             Falg to compute the diffusion when multiple rocks are used.
         """
-        if difftype == 0:
-            diff_flux = sfd.diffusion(elev, borders, neighbours, edges, distances, globalIDs)
+
+        if type == 0:
+            diff_flux = sfd.diffusion(elev, self.borders, neighbours, edges, distances, globalIDs)
         else:
-            diff_flux = sfd.diffusionero(elev, borders, neighbours, edges, distances, globalIDs)
+            diff_flux = sfd.diffusionero(elev, self.borders, neighbours, edges, distances, globalIDs)
 
         # Send local diffusion flux globally
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
-        self.diff_flux = diff_flux
 
-    def compute_marine_diffusion(self, elev, borders, dep, neighbours, edges, distances, globalIDs):
+        return diff_flux
+        
+    def compute_marine_diffusion(self, elev, depoH, neighbours, edges, distances, coeff,
+                                 globalIDs, seal, maxth, tstep):
         """
         Perform river transported marine sediments diffusion.
 
@@ -152,9 +156,6 @@ class flowNetwork:
         elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        borders
-            Numpy arrays flagging the boundary nodes.
-
         dep
             Numpy arrays flagging the deposited nodes.
 
@@ -170,14 +171,18 @@ class flowNetwork:
         globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
         """
-        diff_flux = sfd.diffusionmarine(elev, borders, dep, neighbours, edges, distances, globalIDs)
+        diff_flux, ndt = FLOWalgo.flowcompute.diffmarine(elev, self.borders, depoH, neighbours, edges,
+                                           distances, coeff, globalIDs, seal, maxth, tstep)
 
         # Send local diffusion flux globally
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
-        self.diff_flux = diff_flux
+        mindt = numpy.array(ndt)
+        self._comm.Allreduce(mpi.IN_PLACE,mindt,op=mpi.MIN)
 
-    def compute_sediment_diffusion(self, elev, borders, dep, sedfrac, coeff, neighbours,
-                                          edges, distances, globalIDs):
+        return diff_flux,mindt
+
+    def compute_sediment_marine(self, elev, dep, sdep, coeff, neighbours, seal, maxth,
+                                edges, distances, globalIDs):
         """
         Perform sediment diffusion for multiple rock types.
 
@@ -186,14 +191,8 @@ class flowNetwork:
         elev
             Numpy arrays containing the elevation of the TIN nodes.
 
-        borders
-            Numpy arrays flagging the boundary nodes.
-
         dep
-            Numpy arrays flagging the deposited nodes.
-
-        sedfrac
-            Numpy arrays containing the rock type fractions.
+            Numpy arrays containing the rock deposition.
 
         coeff
             Numpy arrays containing the coefficient value for the diffusion algorithm.
@@ -210,13 +209,54 @@ class flowNetwork:
         globalIDs
             Numpy integer-type array containing for local nodes their global IDs.
         """
-        diff_prop = FLOWalgo.flowcompute.diffsediment(elev, borders, dep, sedfrac, coeff, neighbours,
-                                           edges, distances, globalIDs)
-
+        diff_prop, diff_flux = FLOWalgo.flowcompute.diffsedmarine(elev, self.borders, dep, sdep,
+                                           seal, maxth, coeff, neighbours, edges, distances, globalIDs)
         # Send local diffusion flux globally
+        self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
         self._comm.Allreduce(mpi.IN_PLACE,diff_prop,op=mpi.MAX)
 
-        return diff_prop
+        return diff_prop,diff_flux
+
+    def compute_sediment_hillslope(self, elev, difflay, coeff, neighbours,
+                                    edges, layh, distances, globalIDs):
+        """
+        Perform sediment diffusion for multiple rock types.
+
+        Parameters
+        ----------
+        elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        difflay
+            Numpy arrays containing the rock type fractions in the active layer.
+
+        coeff
+            Numpy arrays containing the coefficient value for the diffusion algorithm.
+
+        neighbours
+            Numpy integer-type array with the neighbourhood IDs.
+
+        edges
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+
+        layh
+            Numpy arrays containing the thickness of the active layer.
+
+        distances
+            Numpy real-type array with the distances between each connection in the TIN.
+
+        globalIDs
+            Numpy integer-type array containing for local nodes their global IDs.
+        """
+        sumdiff, ero, depo = FLOWalgo.flowcompute.diffsedhillslope(elev, self.borders, difflay,
+                                           layh, coeff, neighbours, edges, distances, globalIDs)
+
+        # Send local diffusion flux globally
+        self._comm.Allreduce(mpi.IN_PLACE,ero,op=mpi.MAX)
+        self._comm.Allreduce(mpi.IN_PLACE,depo,op=mpi.MAX)
+        self._comm.Allreduce(mpi.IN_PLACE,sumdiff,op=mpi.MAX)
+
+        return sumdiff,ero,depo
 
     def SFD_receivers(self, fillH, elev, neighbours, edges, distances, globalIDs):
         """
@@ -474,7 +514,7 @@ class flowNetwork:
             self.pitDrain = -numpy.ones(len(pitID))
             self.allDrain = -numpy.ones(len(pitID))
 
-    def compute_sedflux(self, Acell, elev, rain, fillH, borders, domain, dt, actlay, rockCk, rivqs,
+    def compute_sedflux(self, Acell, elev, rain, fillH, dt, actlay, rockCk, rivqs,
         sealevel, perc_dep, slp_cr, ngbh, verbose=False):
         """
         Calculates the sediment flux at each node.
@@ -492,12 +532,6 @@ class flowNetwork:
 
         fillH
             Numpy array containing the lake elevations.
-
-        borders
-            Numpy array containing identifying borders and insides points.
-
-        domain
-            Shape of the inside points IDs.
 
         dt
             Real value corresponding to the maximal stability time step.
@@ -521,6 +555,8 @@ class flowNetwork:
             Maximum percentage of deposition at any given time interval.
         """
 
+        check = False
+
         # Initialise MPI communications
         comm = mpi.COMM_WORLD
         rank = comm.Get_rank()
@@ -540,7 +576,6 @@ class flowNetwork:
                 time1 = time.clock()
 
             # Find border/inside nodes
-            insideIDs = numpy.where(borders>0)[0]
             if self.mp>0.:
                 if self.straTIN == 1:
                     rp = numpy.power(rain,self.mp).reshape((len(elev),1))
@@ -550,7 +585,7 @@ class flowNetwork:
                     eroCoeff.reshape((len(elev),1))
             else:
                 if self.straTIN == 1:
-                    eroCoeff = numpy.tile(rockCk, (len(elev),1))
+                    eroCoeff = numpy.tile(rockCk,(len(elev),1))
                 else:
                     eroCoeff = self.erodibility.reshape((len(elev),1))
             if actlay is None:
@@ -558,7 +593,7 @@ class flowNetwork:
 
             cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
-                     elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,borders)
+                     elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,self.borders)
             comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
             comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
 
@@ -571,20 +606,20 @@ class flowNetwork:
                 time1 = time.clock()
 
             # Find overfilling catchments
-            tmpChange = numpy.sum(volChange,axis=1)
-            ids = numpy.where(numpy.logical_and(tmpChange>self.pitVolume,self.pitVolume>0.))[0]
+            tmpChange,id1,id2,nb1,nb2 = FLOWalgo.flowcompute.getid1(volChange,self.pitVolume,self.allDrain,self.pitID)
 
             # Check if there are some internally drained depressions within the computational domain?
-            intID = numpy.where(numpy.logical_and(self.allDrain == self.pitID,self.pitID>=0))[0]
-            if len(intID)>0 and len(ids)>0:
-                search = domain.contains_points(self.xycoords[intID])
+            if nb1>0 and nb2>0:
+                ids = id1[:nb1]
+                intID = id2[:nb2]
+                search = self.domain.contains_points(self.xycoords[intID])
                 # For all these closed basins find the ones overfilled
                 if len(search) > 0:
                     overfilled = numpy.intersect1d(intID[search],ids)
                     # Limit the time step to restrict deposition in these basins
                     if len(overfilled) > 0:
                         # Compute the percentage of overfilling
-                        percOver = self.pitVolume[overfilled].reshape(len(overfilled),1)/tmpChange
+                        percOver = self.pitVolume[overfilled]/tmpChange[overfilled]
                         newdt = dt*percOver.min()
 
             if newdt>1.:
@@ -598,23 +633,23 @@ class flowNetwork:
             if newdt < dt:
                 cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                         self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
-                        elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,borders)
+                        elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,self.borders)
                 comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
                 comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
                 volChange = cdepo+cero
-                tmpChange = numpy.sum(volChange,axis=1)
                 if rank==0 and verbose:
                     print "   - Compute volumetric fluxes with updated dt ", time.clock() - time1
                     time1 = time.clock()
 
-                # Ensure no overfilling remains
-                ids = numpy.where(numpy.logical_and(tmpChange>self.pitVolume,self.pitVolume>0.))[0]
-                search = domain.contains_points(self.xycoords[intID])
-                if (len(search)>0) and (len(ids)>0):
-                    overfilled = numpy.intersect1d(intID[search],ids)
-                    if len(overfilled) > 0:
-                        print 'WARNING: overfilling persists after time-step limitation.',len(overfilled)
-                    #assert len(overfilled) == 0, 'WARNING: overfilling persists after time-step limitation.'
+                if check:
+                    # Ensure no overfilling remains
+                    tmpChange = numpy.sum(volChange,axis=1)
+                    ids = numpy.where(numpy.logical_and(tmpChange>self.pitVolume,self.pitVolume>0.))[0]
+                    search = self.domain.contains_points(self.xycoords[intID])
+                    if (len(search)>0) and (len(ids)>0):
+                        overfilled = numpy.intersect1d(intID[search],ids)
+                        if len(overfilled) > 0:
+                            print 'WARNING: overfilling persists after time-step limitation.',len(overfilled)
 
             # Update river sediment load in kg/s
             sedld = numpy.sum(sedload,axis=1)
@@ -623,7 +658,7 @@ class flowNetwork:
 
             # Compute erosion
             erosion = numpy.zeros(cero.shape)
-            erosion[insideIDs,:] = cero[insideIDs,:]/Acell[insideIDs].reshape(len(insideIDs),1)
+            erosion[self.insideIDs,:] = cero[self.insideIDs,:]/Acell[self.insideIDs].reshape(len(self.insideIDs),1)
             if rank==0 and verbose:
                 print "   - Compute erosion ", time.clock() - time1
                 time1 = time.clock()
@@ -634,16 +669,14 @@ class flowNetwork:
                 deposition = numpy.zeros(cdepo.shape)
             else:
                 depo = numpy.zeros(cdepo.shape)
-                depo[insideIDs,:] = cdepo[insideIDs,:]
+                depo[self.insideIDs,:] = cdepo[self.insideIDs,:]
                 deposition = numpy.zeros(depo.shape)
 
-                tmp = numpy.where(elev>sealevel)[0]
-                landIDs = numpy.intersect1d(tmp,insideIDs)
-
                 # Compute alluvial plain deposition
-                depID = numpy.where(numpy.logical_and(fillH==elev,numpy.sum(depo,axis=1)>0.))[0]
-                plainID = numpy.intersect1d(depID,landIDs)
-                if len(plainID) > 0:
+                plainid,landid,seaid,perc,nplain,nland,nsea = FLOWalgo.flowcompute.getids(fillH,elev,depo,
+                                                                    self.pitVolume,sealevel)
+                if nplain > 0:
+                    plainID = plainid[:nplain]
                     deposition[plainID,:] = depo[plainID,:]/Acell[plainID].reshape(len(plainID),1)
                     depo[plainID,:] = 0.
                     if rank==0 and verbose:
@@ -651,70 +684,40 @@ class flowNetwork:
                         time1 = time.clock()
 
                 # Compute land pit deposition
-                pitIDs = numpy.where(numpy.logical_and(elev>sealevel,fillH>sealevel))[0]
-                volIDs = numpy.where(self.pitVolume>0.)[0]
-                tmpIDs = numpy.intersect1d(volIDs,pitIDs)
-                depID = numpy.where(numpy.sum(depo,axis=1)>0.)[0]
-                landIDs = numpy.intersect1d(depID,tmpIDs)
-
-                if len(landIDs) > 0:
-                    perc = numpy.zeros(depo.shape)
-                    # Get the percentage to deposit
-                    perc[landIDs,:] = depo[landIDs,:]/self.pitVolume[landIDs].reshape(len(landIDs),1)
-                    tmp = numpy.where(numpy.sum(perc,axis=1)>1.001)[0]
-                    overfilled = numpy.intersect1d(tmp,insideIDs)
-                    if len(overfilled) > 0:
-                        print 'WARNING: overfilling persists during land pit deposition.',len(overfilled)
-                        if self.straTIN >= 0:
-                            for p in range(len(overfilled)):
-                                print overfilled[p],perc[overfilled[p],:],numpy.sum(perc[overfilled[p],:]),self.pitVolume[overfilled[p]]
-                    #assert len(overfilled) == 0, 'WARNING: overfilling persists during land pit deposition.'
-
+                if nland > 0:
+                    landIDs = landid[:nland]
                     for p in range(len(landIDs)):
                         tmp = numpy.where(self.pitID==landIDs[p])[0]
-                        perc[tmp,:] = perc[landIDs[p],:]
-
-                    sumperc = numpy.sum(perc,axis=1)
-                    exIDs = numpy.where(sumperc>1.)[0]
-                    if len(exIDs)>0:
-                        perc[exIDs,:] /= sumperc[exIDs].reshape(len(exIDs),1)
-                    tmp = numpy.where(sumperc>0.)[0]
-                    if len(tmp) > 0:
                         if len(tmp) == 1:
-                            deposition[tmp,:] = (fillH[tmp]-elev[tmp])*perc[tmp,:]
-                            depo[landIDs,:] = 0.
+                            deposition[tmp,:] = (fillH[tmp]-elev[tmp])*perc[landIDs[p],:]
                         else:
-                            deposition[tmp,:] = (fillH[tmp]-elev[tmp]).reshape(len(tmp),1)*perc[tmp,:]
-                            depo[landIDs,:] = 0.
-
+                            deposition[tmp,:] = (fillH[tmp]-elev[tmp]).reshape(len(tmp),1)*perc[landIDs[p],:]
+                    depo[landIDs,:] = 0.
                     if rank==0 and verbose:
                         print "   - Compute land pit deposition ", time.clock() - time1
                         time1 = time.clock()
 
                 # Compute water deposition
-                tmp = numpy.where(numpy.logical_and(numpy.sum(depo,axis=1)>0.,elev<=sealevel))[0]
-                seaIDs = numpy.intersect1d(tmp,insideIDs)
-                if len(seaIDs) > 0:
+                if nsea > 0:
+                    # Distribute marine sediments based on angle of repose
+                    seaIDs = seaid[:nsea]
                     seavol = numpy.zeros(depo.shape)
                     seavol[seaIDs,:] = depo[seaIDs,:]
-                    # Distribute marine sediments based on angle of repose
-                    seadep = PDalgo.pdstack.marine_distribution(elev, seavol, sealevel, borders, seaIDs)
+                    seadep = PDalgo.pdstack.marine_distribution(elev, seavol, sealevel, self.borders, seaIDs)
                     deposition += seadep
+                    depo[seaIDs,:] = 0.
                     if rank==0 and verbose:
                         print "   - Compute marine deposition ", time.clock() - time1
                         time1 = time.clock()
-                    depo[seaIDs,:] = 0.
 
                 # Is there some remaining deposits?
-                tmp = numpy.where(numpy.sum(depo,axis=1)>0)[0]
-                remainIDs = numpy.intersect1d(tmp,insideIDs)
-                if len(remainIDs)>0:
+                if numpy.any(depo):
                     if rank == 0:
-                        print 'WARNING: forced deposition is performed during this timestep.',len(remainIDs)
-                    deposition[remainIDs,:] = depo[remainIDs,:]/Acell[remainIDs].reshape(len(remainIDs),1)
+                        print 'WARNING: forced deposition is performed during this timestep.'
+                    deposition[self.insideIDs,:] += depo[self.insideIDs,:]/Acell[self.insideIDs].reshape(len(self.insideIDs),1)
 
             # Define erosion/deposition changes
-            sedflux[insideIDs,:] = erosion[insideIDs,:]+deposition[insideIDs,:]
+            sedflux[self.insideIDs,:] = erosion[self.insideIDs,:]+deposition[self.insideIDs,:]
 
             if rank==0 and verbose:
                 print "   - Total sediment flux time ", time.clock() - time0

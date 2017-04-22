@@ -132,7 +132,7 @@ contains
     return
 
   end subroutine allfillPD
-  
+
   subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diffsed, pydnodes, pyIDs, pyRockNb)
 
     integer :: pydnodes, pyIDs, pyRockNb
@@ -166,7 +166,14 @@ contains
                 seadep(id) = 0.
                 exit sfd_loop
               endif
-              vol = max(0.,diffprop*(sealevel-elev(id))*area(id))
+              maxz = -1.e8
+              loop0: do p = 1, 20
+                if( neighbours(id,p) < 0 ) exit loop0
+                if(maxz<elev(neighbours(id,p)+1)) maxz = elev(neighbours(id,p)+1)
+              enddo loop0
+              if(maxz>sealevel) maxz = sealevel
+              if(maxz<elev(id)) maxz = elev(id)
+              vol = max(0.,diffprop*(maxz-elev(id))*area(id))
 
               if(it>max_it_cyc)then
                 elev(id) = elev(id) + seadep(id)/area(id)
@@ -313,5 +320,107 @@ contains
     return
 
   end subroutine pitfilling
+
+  subroutine getactlay(alay,layTH,laySD,alayS,nbPts,nbLay,nbSed)
+
+    integer :: nbPts
+    integer :: nbLay
+    integer :: nbSed
+    real(kind=8),dimension(nbPts),intent(in) :: alay
+    real(kind=8),dimension(nbPts,nbLay),intent(in) :: layTH
+    real(kind=8),dimension(nbPts,nbLay,nbSed),intent(in) :: laySD
+    real(kind=8),dimension(nbPts,nbSed),intent(out) :: alayS
+
+    integer :: n,k,s,lid
+    real(kind=8) :: cumh,alayh,prop
+
+    alayS = 0.
+
+    do n = 1, nbPts
+      ! Compute cumulative stratal thicknesses
+      cumh = layTH(n,nbLay)
+      alayh = 0.
+      lid = nbLay
+      if(cumh<=alay(n))then
+        lp: do k = nbLay-1,1,-1
+          cumh = cumh+layTH(n,k)
+          ! Store stratal thicknesses lower than active layer thickness
+          if(alay(n)>=cumh)then
+            alayh = cumh
+            do s = 1, nbSed
+              alayS(n,s) = alayS(n,s)+laySD(n,k,s)
+            enddo
+          else
+            lid = k
+            exit lp
+          endif
+        enddo lp
+      endif
+
+      ! Find the proportion of sediment that still needs to be passed to the active layer
+      if(layTH(n,lid)>0.)then
+        prop = (alay(n)-alayh)/layTH(n,lid)
+        prop = min(prop,1.)
+        prop = max(prop,0.)
+        if(prop>0.)then
+          do s = 1, nbSed
+            alayS(n,s) = alayS(n,s)+prop*laySD(n,lid,s)
+          enddo
+        endif
+      endif
+    enddo
+
+    return
+
+  end subroutine getactlay
+
+  subroutine updatestrati(layS,layH,eros,depo,newH,newS,nbPts,nbLay,nbSed)
+
+    integer :: nbPts
+    integer :: nbLay
+    integer :: nbSed
+    real(kind=8),dimension(nbPts,nbSed),intent(in) :: eros
+    real(kind=8),dimension(nbPts,nbSed),intent(in) :: depo
+    real(kind=8),dimension(nbPts,nbLay),intent(in) :: layH
+    real(kind=8),dimension(nbPts,nbLay,nbSed),intent(in) :: layS
+
+    real(kind=8),dimension(nbPts,nbLay),intent(out) :: newH
+    real(kind=8),dimension(nbPts,nbLay,nbSed),intent(out) :: newS
+
+    integer :: n,k,s
+    real(kind=8) :: ero,dep
+
+    newS = layS
+    newH = layH
+
+    do n = 1, nbPts
+      do s = 1,nbSed
+        ero = -eros(n,s)
+        dep = depo(n,s)
+        if(ero>0.)then
+          lp: do k = nbLay,1,-1
+            if(newS(n,k,s)>0.)then
+              if(newS(n,k,s)>=ero)then
+                newS(n,k,s) = newS(n,k,s) - ero
+                newH(n,k) = newH(n,k) - ero
+                exit lp
+              else
+                ero = ero - newS(n,k,s)
+                newH(n,k) = newH(n,k) - newS(n,k,s)
+                newS(n,k,s) = 0.
+              endif
+            endif
+          enddo lp
+        endif
+        if(dep>0.)then
+          newH(n,nbLay) = newH(n,nbLay) + dep
+          newS(n,nbLay,s) = newS(n,nbLay,s) + dep
+        endif
+      enddo
+    enddo
+
+    return
+
+  end subroutine updatestrati
 
 end module pdstack

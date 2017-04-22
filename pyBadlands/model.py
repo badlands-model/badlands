@@ -77,6 +77,7 @@ class Model(object):
         self.hillslope.CDaerial = self.input.CDa
         self.hillslope.CDmarine = self.input.CDm
         self.hillslope.CDriver = self.input.CDr
+        self.hillslope.updatedt = 0
 
         # Define flow parameters
         self.flow = flowNetwork(self.input)
@@ -134,6 +135,8 @@ class Model(object):
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
         self.flow.xgrid = None
         self.flow.sedload = None
+        self.flow.domain = None
+        self.hillslope.updatedt = 0
 
     def run_to_time(self, tEnd, profile=False, verbose=False):
         """
