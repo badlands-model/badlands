@@ -228,59 +228,6 @@ class stratiWedge():
 
         return
 
-        #
-        # PURE PYTHON VERSION
-        #
-        time0 = time.clock()
-        # Define temporary arrays
-        tmpIDs = numpy.arange(self.ptsNb)
-        tmpH = numpy.zeros((self.ptsNb,self.step+1))
-        tmpS = numpy.zeros((self.ptsNb,self.step+1,self.rockNb))
-        alayH = numpy.zeros(self.ptsNb)
-        self.alayR = numpy.zeros((self.ptsNb,self.rockNb))
-        if rank==0 and verbose:
-            print "   - Define active layer temporary arrays ", time.clock() - time0
-            time0 = time.clock()
-
-        # Compute cumulative stratal thicknesses
-        cumThick = numpy.cumsum(self.layerThick[:,self.step::-1],axis=1)[:,::-1]
-        if rank==0 and verbose:
-            print "   - Compute cumulative stratal thicknesses ", time.clock() - time0
-            time0 = time.clock()
-
-        # Find nodes with stratal thicknesses lower than active layer thickness
-        r,c = numpy.where(actlay.reshape(self.ptsNb,1)>=cumThick)
-        tmpH[r,c] = self.layerThick[r,c]
-        # Set active layer thickness
-        alayH = numpy.sum(tmpH,axis=1)
-        # Define each sediment type thickness
-        tmpS[r,c,:] =  self.depoThick[r,c,:]
-        if rank==0 and verbose:
-            print "   - Set active layer thickness ", time.clock() - time0
-            time0 = time.clock()
-
-        # Get layer number of the top non zero stratigraphic thickness which needs to
-        # be partially incorporated in the active layer
-        cumThick[cumThick < actlay.reshape(self.ptsNb,1)] = 0
-        mask = (cumThick > 0).astype(int) == 0
-        eroIDs = numpy.bincount(numpy.nonzero(cumThick)[0]) - 1
-        if rank==0 and verbose:
-            print "   - Find top layer IDs to import ", time.clock() - time0
-            time0 = time.clock()
-
-        # Find the proportion of sediment from this layer that will be passed to the
-        # active layer
-        prop = (actlay[tmpIDs]-alayH[tmpIDs])/self.layerThick[tmpIDs,eroIDs]
-        # Finalise the active layer composition description
-        for s in range(self.rockNb):
-            self.alayR[:,s] = numpy.sum(tmpS[:,:,s],axis=1) + prop * \
-                                self.depoThick[tmpIDs,eroIDs,s]
-        if rank==0 and verbose:
-            print "   - Find proportion in top layer ", time.clock() - time0
-            time0 = time.clock()
-
-        return
-
     def update_layers(self, erosion, deposition, verbose=False):
         """
         This function updates the stratigraphic layers based active layer composition.
@@ -308,59 +255,6 @@ class stratiWedge():
 
         if rank==0 and verbose:
             print "   - Update erosion/deposition ", time.clock() - time0
-
-        return
-
-    def update_deposition(self, deposition):
-        """
-        Add deposit to current stratigraphic layer.
-
-        Parameters
-        ----------
-        deposition
-            Value of the deposition for the given point [m]
-        """
-
-        self.depoThick[:,self.step,:] += deposition
-        self.layerThick[:,self.step] += numpy.sum(deposition,axis=1)
-
-        return
-
-    def update_erosion(self, erosion):
-        """
-        This function updates the stratigraphic layers based on eroded sediments from the active layers.
-
-        Parameters
-        ----------
-        erosion
-            Value of the erosion for the given points [m]
-        """
-
-        tmpH = numpy.zeros((self.ptsNb,self.step+1))
-        for s in range(self.rockNb):
-            ids = numpy.where(-erosion[:,s]>0)[0]
-            if len(ids)>0:
-                tmpH.fill(0.)
-                ero = -erosion[:,s]
-                # Compute cumulative stratal thicknesses
-                cumThick = numpy.cumsum(self.depoThick[:,self.step::-1,s],axis=1)[:,::-1]
-                # Find nodes with no remaining stratigraphic thicknesses
-                tmpE = numpy.array([ero,]*(self.step+1)).transpose()
-                r,c = numpy.where(tmpE>=cumThick)
-                tmpH[r,c] = self.depoThick[r,c,s]
-                sumH = numpy.sum(tmpH,axis=1)
-                self.layerThick[r,c] -= tmpH[r,c]
-                self.depoThick[r,c,s] = 0.
-                cumThick[r,c] = 0.
-                ero -= sumH
-
-                # Erode remaining stratal layers
-                # Update thickness of non completely eroded stratigraphic layer
-                if numpy.sum(ero) > 0:
-                    tmpIDs = numpy.where(ero>0)[0]
-                    eroIDs = numpy.bincount(numpy.nonzero(cumThick[tmpIDs,:])[0]) - 1
-                    self.layerThick[tmpIDs,eroIDs] -= ero[tmpIDs]
-                    self.depoThick[tmpIDs,eroIDs,s] -= ero[tmpIDs]
 
         return
 

@@ -29,6 +29,8 @@ class diffLinear:
         self.CDriver = None
         self.CFL = None
         self.CFLms = None
+        self.ids = None
+        self.updatedt = 0
 
     def dt_stability(self, edgelen):
         """
@@ -62,6 +64,7 @@ class diffLinear:
         # Global mimimum value for diffusion stability
         comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFL = CFL[0]
+        self.updatedt = 1
 
     def dt_stability_ms(self, edgelen):
         """
@@ -123,10 +126,11 @@ class diffLinear:
             Numpy arrays containing the area of the voronoi polygon for each TIN nodes.
         """
 
-        ids = numpy.where(area > 0)[0]
+        if self.ids is None:
+            self.ids = numpy.where(area > 0)[0]
 
         areacoeff = numpy.zeros(len(area))
-        areacoeff[ids] = 1./area[ids]
+        areacoeff[self.ids] = 1./area[self.ids]
         coeff = numpy.where(elevation >= sea, self.CDaerial, self.CDmarine)
 
         return numpy.nan_to_num(areacoeff * coeff)
@@ -153,10 +157,11 @@ class diffLinear:
             Numpy arrays containing the area of the voronoi polygon for each TIN nodes.
         """
 
-        ids = numpy.where(area > 0)[0]
+        if self.ids is None:
+            self.ids = numpy.where(area > 0)[0]
 
         areacoeff = numpy.zeros(len(area))
-        areacoeff[ids] = 1./area[ids]
+        areacoeff[self.ids] = 1./area[self.ids]
         coeff = numpy.where(elevation >= sea, 0., self.CDriver)
 
         return numpy.nan_to_num(areacoeff * coeff)

@@ -166,7 +166,14 @@ contains
                 seadep(id) = 0.
                 exit sfd_loop
               endif
-              vol = max(0.,diffprop*(sealevel-elev(id))*area(id))
+              maxz = -1.e8
+              loop0: do p = 1, 20
+                if( neighbours(id,p) < 0 ) exit loop0
+                if(maxz<elev(neighbours(id,p)+1)) maxz = elev(neighbours(id,p)+1)
+              enddo loop0
+              if(maxz>sealevel) maxz = sealevel
+              if(maxz<elev(id)) maxz = elev(id)
+              vol = max(0.,diffprop*(maxz-elev(id))*area(id))
 
               if(it>max_it_cyc)then
                 elev(id) = elev(id) + seadep(id)/area(id)

@@ -329,54 +329,148 @@ contains
 
   end subroutine flowcfl
 
-  subroutine diffsediment(pyZ, pyBord, pyDep, pyFrac, pyCoeff, pyNgbs, pyEdge, pyDist, &
-                                pyGIDs, pyDiff, pylocalNb, pyglobalNb, pyRockNb)
+  subroutine diffmarine(pyZ, pyBord, pyDepoH, pyNgbs, pyEdge, pyDist, pyCoeff, pyGIDs, &
+                        slvl, pymaxth, tstep, pyDiff, mindt, pylocalNb, pyglobalNb)
+
+      integer :: pyglobalNb
+      integer :: pylocalNb
+      integer,dimension(pylocalNb),intent(in) :: pyGIDs
+      integer,dimension(pyglobalNb),intent(in) :: pyBord
+      integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
+
+      real(kind=8),intent(in) :: slvl
+      real(kind=8),intent(in) :: pymaxth
+      real(kind=8),intent(in) :: tstep
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyZ
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyCoeff
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyDepoH
+      real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyEdge
+      real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyDist
+
+      real(kind=8),intent(out) :: mindt
+      real(kind=8),dimension(pyglobalNb),intent(out) :: pyDiff
+
+      integer :: k, gid, ngbid, p
+      real(kind=8) :: flx
+
+      pyDiff = 0.
+      mindt = 1.e8
+      do k = 1, pylocalNb
+        gid = pyGIDs(k)+1
+        if(pyBord(gid)>0 .and. pyZ(gid)<slvl)then
+          loop: do p =1,20
+            if(pyNgbs(gid,p)<0) exit loop
+            ngbid = pyNgbs(gid,p)+1
+            if(pyBord(ngbid)>0.)then
+              flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+              if(pyDepoH(gid)>pymaxth .and. pyZ(gid)>pyZ(ngbid))then
+                pyDiff(gid) = pyDiff(gid) + pyCoeff(gid)*flx
+              elseif(pyDepoH(ngbid)>pymaxth .and. pyZ(gid)<pyZ(ngbid))then
+                pyDiff(gid) = pyDiff(gid) + pyCoeff(gid)*flx
+              endif
+            elseif(pyBord(ngbid)<1)then
+              if(pyDepoH(gid)>pymaxth .and. pyZ(gid)>pyZ(ngbid))then
+                flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                pyDiff(gid) = pyDiff(gid) + pyCoeff(gid)*flx
+              endif
+            endif
+          enddo loop
+          ! In case we diffuse more sediment than what is available during the
+          ! considered time step, flag it
+          if(pyDiff(gid)<0. .and. pyDiff(gid)*tstep<-pyDepoH(gid))then
+            mindt = min(-pyDepoH(gid)/pyDiff(gid),mindt)
+          endif
+        endif
+      enddo
+
+      return
+
+  end subroutine diffmarine
+
+  subroutine diffsedmarine(pyZ, pyBord, pyDepo, pyDepoH, slvl, pymaxth, pyCoeff, pyNgbs, pyEdge, &
+                          pyDist, pyGIDs, pyDiff, sumDiff, pylocalNb, pyglobalNb, pyRockNb)
 
       integer :: pyglobalNb
       integer :: pylocalNb
       integer :: pyRockNb
       integer,dimension(pylocalNb),intent(in) :: pyGIDs
-      integer,dimension(pyglobalNb),intent(in) :: pyDep
       integer,dimension(pyglobalNb),intent(in) :: pyBord
       integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
 
+      real(kind=8),intent(in) :: slvl
+      real(kind=8),intent(in) :: pymaxth
       real(kind=8),dimension(pyglobalNb),intent(in) :: pyZ
       real(kind=8),dimension(pyglobalNb),intent(in) :: pyCoeff
       real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyEdge
       real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyDist
-      real(kind=8),dimension(pyglobalNb,pyRockNb),intent(in) :: pyFrac
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyDepoH
+      real(kind=8),dimension(pyglobalNb,pyRockNb),intent(in) :: pyDepo
 
       real(kind=8),dimension(pyglobalNb,pyRockNb),intent(out) :: pyDiff
+      real(kind=8),dimension(pyglobalNb),intent(out) :: sumDiff
 
       integer :: k, gid, ngbid, p, r
-      real(kind=8) :: flx
+      real(kind=8) :: flx, frac, sfrac, tfrac, sed(pyRockNb), tsed
 
       pyDiff = 0.
+      sumDiff = 0.
 
       do k = 1, pylocalNb
         gid = pyGIDs(k)+1
-        if(pyBord(gid)>0)then
+        if(pyBord(gid)>0 .and. pyZ(gid)<slvl)then
           loop: do p =1,20
             if(pyNgbs(gid,p)<0) exit loop
             ngbid = pyNgbs(gid,p)+1
             if(pyBord(ngbid)>0.)then
-              if(pyDep(gid)>0 .and. pyZ(gid)>pyZ(ngbid))then
-                flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+              flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+              if(pyDepoH(gid)>pymaxth .and. pyZ(gid)>pyZ(ngbid))then
+                sfrac = 0.
+                sed = 0.
+                tsed = 0.
                 do r = 1, pyRockNb
-                  pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(gid,r)*flx
+                  frac = pyDepo(gid,r)/pyDepoH(gid)
+                  sfrac = sfrac + frac
+                  sed(r) = pyCoeff(gid)*frac*flx
+                  tsed = tsed + sed(r)
                 enddo
-              elseif(pyDep(ngbid)>0 .and. pyZ(gid)<pyZ(ngbid))then
-                flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                if(sfrac>0.)then
+                  tfrac = 1./sfrac
+                  pyDiff(gid,:) = pyDiff(gid,:) + tfrac*sed(:)
+                  sumDiff(gid) = sumDiff(gid) + tfrac*tsed
+                endif
+              elseif(pyDepoH(ngbid)>pymaxth .and. pyZ(gid)<pyZ(ngbid))then
+                sfrac = 0.
+                sed = 0.
+                tsed = 0.
                 do r = 1, pyRockNb
-                  pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(ngbid,r)*flx
+                  frac = pyDepo(ngbid,r)/pyDepoH(ngbid)
+                  sfrac = sfrac + frac
+                  sed(r) = pyCoeff(gid)*frac*flx
+                  tsed = tsed + sed(r)
                 enddo
+                if(sfrac>0.)then
+                  tfrac = 1./sfrac
+                  pyDiff(gid,:) = pyDiff(gid,:) + tfrac*sed(:)
+                  sumDiff(gid) = sumDiff(gid) + tfrac*tsed
+                endif
               endif
-            elseif(pyBord(gid)<1)then
-              if(pyDep(gid)>0 .and. pyZ(gid)>pyZ(ngbid))then
-                flx = pyCoeff(gid)*pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+            elseif(pyBord(ngbid)<1)then
+              if(pyDepoH(gid)>pymaxth .and. pyZ(gid)>pyZ(ngbid))then
+                sfrac = 0.
+                sed = 0.
+                tsed = 0.
+                flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
                 do r = 1, pyRockNb
-                  pyDiff(gid,r) = pyDiff(gid, r) + pyFrac(gid,r)*flx
+                  frac = pyDepo(gid,r)/pyDepoH(gid)
+                  sfrac = sfrac + frac
+                  sed(r) = pyCoeff(gid)*frac*flx
+                  tsed = tsed + sed(r)
                 enddo
+                if(sfrac>0.)then
+                  tfrac = 1./sfrac
+                  pyDiff(gid,:) = pyDiff(gid,:) + tfrac*sed(:)
+                  sumDiff(gid) = sumDiff(gid) + tfrac*tsed
+                endif
               endif
             endif
           enddo loop
@@ -385,7 +479,106 @@ contains
 
       return
 
-  end subroutine diffsediment
+  end subroutine diffsedmarine
+
+  subroutine diffsedhillslope(pyZ, pyBord, difflay, maxlayh, pyCoeff, pyNgbs, pyEdge, pyDist, pyGIDs,  &
+                           sumDiff, ero, depo, pylocalNb, pyglobalNb, pyRockNb)
+
+      integer :: pyglobalNb
+      integer :: pylocalNb
+      integer :: pyRockNb
+      integer,dimension(pylocalNb),intent(in) :: pyGIDs
+      integer,dimension(pyglobalNb),intent(in) :: pyBord
+      integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
+
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyZ
+      real(kind=8),dimension(pyglobalNb),intent(in) :: pyCoeff
+      real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyEdge
+      real(kind=8),dimension(pyglobalNb,20),intent(in) :: pyDist
+      real(kind=8),dimension(pyglobalNb),intent(in) :: maxlayh
+      real(kind=8),dimension(pyglobalNb,pyRockNb),intent(in) :: difflay
+
+      real(kind=8),dimension(pyglobalNb),intent(out) :: sumDiff
+      real(kind=8),dimension(pyglobalNb,pyRockNb),intent(out) :: depo
+      real(kind=8),dimension(pyglobalNb,pyRockNb),intent(out) :: ero
+
+      integer :: k, gid, ngbid, p, r
+      real(kind=8) :: flx, frac, sfrac, tfrac, sed(pyRockNb), tsed
+
+      ero = 0.
+      depo = 0.
+      sumDiff = 0.
+
+      do k = 1, pylocalNb
+        gid = pyGIDs(k)+1
+        if(pyBord(gid)>0)then
+          loop: do p =1,20
+            if(pyNgbs(gid,p)<0) exit loop
+            ngbid = pyNgbs(gid,p)+1
+            if(pyBord(ngbid)>0.)then
+              if(pyZ(gid)>pyZ(ngbid))then
+                flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                sfrac = 0.
+                sed = 0.
+                tsed = 0.
+                do r = 1, pyRockNb
+                  frac = difflay(gid,r)/maxlayh(gid)
+                  sfrac = sfrac + frac
+                  sed(r) = pyCoeff(gid)*frac*flx
+                  tsed = tsed + sed(r)
+                enddo
+                if(sfrac>0.)then
+                  tfrac = 1./sfrac
+                  if(tsed<0.) ero(gid,:) =  ero(gid,:) + tfrac*sed(:)
+                  if(tsed>0.) depo(gid,:) =  depo(gid,:) + tfrac*sed(:)
+                  sumDiff(gid) = sumDiff(gid) + tfrac*tsed
+                endif
+              elseif(pyZ(gid)<pyZ(ngbid))then
+                flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                sfrac = 0.
+                sed = 0.
+                tsed = 0.
+                do r = 1, pyRockNb
+                  frac = difflay(ngbid,r)/maxlayh(ngbid)
+                  sfrac = sfrac + frac
+                  sed(r) = pyCoeff(gid)*frac*flx
+                  tsed = tsed + sed(r)
+                enddo
+                if(sfrac>0.)then
+                  tfrac = 1./sfrac
+                  if(tsed<0.) ero(gid,:) =  ero(gid,:) + tfrac*sed(:)
+                  if(tsed>0.) depo(gid,:) =  depo(gid,:) + tfrac*sed(:)
+                  sumDiff(gid) = sumDiff(gid) + tfrac*tsed
+                endif
+              endif
+            elseif(pyBord(ngbid)<1)then
+              if(pyZ(gid)>pyZ(ngbid))then
+                flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
+                sfrac = 0.
+                sed = 0.
+                tsed = 0.
+                do r = 1, pyRockNb
+                  frac = difflay(gid,r)/maxlayh(gid)
+                  sfrac = sfrac + frac
+                  sed(r) = pyCoeff(gid)*frac*flx
+                  tsed = tsed + sed(r)
+                enddo
+                if(sfrac>0.)then
+                  tfrac = 1./sfrac
+                  if(tsed<0.) ero(gid,:) =  ero(gid,:) + tfrac*sed(:)
+                  if(tsed>0.) depo(gid,:) =  depo(gid,:) + tfrac*sed(:)
+                  sumDiff(gid) = sumDiff(gid) + tfrac*tsed
+                endif
+
+              endif
+            endif
+          enddo loop
+        endif
+      enddo
+
+      return
+
+  end subroutine diffsedhillslope
 
   subroutine streampower(pyStack, pyRcv, pitID, pitVol1, pitDrain, pyXY, pyArea, pyMaxH, &
       pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, actlay, perc_dep, slp_cr, sea, dt, &
@@ -900,11 +1093,14 @@ contains
         if(sumdep==0. .and. in == 0)then
           do s = 1, sedNb
             sumdep = sumdep+depo(p,s)
+            perc(p,s) = depo(p,s)/vol(p)
+            sumperc = sumperc+perc(p,s)
           enddo
         endif
         if(sumdep>0.)then
           newNb2 = newNb2+1
           ids2(newNb2) = p-1
+          if(sumperc>1.) perc(p,:) = perc(p,:)/sumperc
         endif
       endif
 
@@ -912,13 +1108,10 @@ contains
       if(elev(p)<=seal)then
         do s = 1, sedNb
           sumdep = sumdep+depo(p,s)
-          perc(p,s) = depo(p,s)/vol(p)
-          sumperc = sumperc+perc(p,s)
         enddo
         if(sumdep>0.)then
           newNb3 = newNb3+1
           ids3(newNb3) = p-1
-          if(sumperc>1.) perc(p,:) = perc(p,:)/sumperc
         endif
       endif
     enddo
