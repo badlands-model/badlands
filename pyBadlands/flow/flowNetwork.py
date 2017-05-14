@@ -145,7 +145,7 @@ class flowNetwork:
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
 
         return diff_flux
-        
+
     def compute_marine_diffusion(self, elev, depoH, neighbours, edges, distances, coeff,
                                  globalIDs, seal, maxth, tstep):
         """

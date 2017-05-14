@@ -791,7 +791,7 @@ class forceSim:
         # Based on new points build the triangulation
         newTIN = triangle.triangulate( dict(vertices=newXY),'Da'+str(area))
         # If some points have been added during the triangulation update the TIN
-        # and interpolate neighbouring paramters to these new points
+        # interpolate neighbouring parameters to these new points
         if len(newTIN['vertices'][:,0]) > len(newXY[:,0]):
             addPts = newTIN['vertices'][len(newXY[:,0]):,:2]
             dist, ids = tree.query(addPts, k=3)

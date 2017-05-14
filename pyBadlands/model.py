@@ -112,6 +112,13 @@ class Model(object):
             self.inGIDs, self.totPts = buildMesh.reconstruct_mesh(self.recGrid,
                                                                   self.input, verbose)
 
+        # Update edges elevation
+        tree1 = cKDTree(self.FVmesh.node_coords[self.fixIDs:,:2])
+        tmpelev = self.elevation[self.fixIDs:]
+        distances, indices = tree1.query(self.FVmesh.node_coords[:self.fixIDs,:2], k=1)
+        self.elevation[:self.fixIDs] = tmpelev[indices]
+        self.hillslope.ids = None
+
         # Reset TIN kdtree and rain
         self.force.update_force_TIN(self.FVmesh.node_coords[:,:2])
         self.rain = np.zeros(self.totPts, dtype=float)
@@ -267,6 +274,7 @@ class Model(object):
                             self.mapero.thickness = Th
                         # Rebuild the computational mesh
                         self.rebuild_mesh(verbose)
+
                         # Update the stratigraphic mesh
                         if self.input.laytime > 0 and self.strata is not None:
                             self.strata.move_mesh(regdX, regdY, scum, verbose)
