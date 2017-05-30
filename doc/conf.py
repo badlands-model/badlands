@@ -165,7 +165,7 @@ class Mock(MagicMock):
         return MagicMock()
 
 MOCK_MODULES = ['gflex', 'h5py', 'ipyparallel', 'matplotlib', 'mpi4py',
-    'mpi4py.MPI', 'numba', 'pandas', 'pyBadlands.libUtils',
+    'mpi4py.MPI', 'pandas', 'pyBadlands.libUtils',
     'pyBadlands.libUtils.sfd', 'scipy', 'scipy.interpolate', 'scipy.ndimage',
     'scipy.ndimage.filters', 'scipy.spatial', 'triangle']
 

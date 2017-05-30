@@ -16,7 +16,6 @@ import triangle
 from pyBadlands.libUtils import FASTloop
 import mpi4py.MPI as mpi
 
-from numba import jit
 from numpy import random
 
 def get_closest_factors(size):
@@ -36,7 +35,7 @@ def get_closest_factors(size):
 
     nb1
         Integers which specify the number of processors along each axis.
-    
+
     nb2
         Integers which specify the number of processors along each axis.
     """
@@ -59,7 +58,6 @@ def get_closest_factors(size):
 
     return nb1, nb2
 
-#@jit
 def simple(X, Y, Xdecomp=1, Ydecomp=1):
     """
     This function defines a simple partitioning of the computational domain based on
@@ -84,7 +82,7 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
         the number of processors used matches the proposed decomposition:
 
             >> nb CPUs = nbprocX x nbprocY
-    
+
     Ydecomp
         Integers which specify the number of processors along each axis. It is a requirement that
         the number of processors used matches the proposed decomposition:
@@ -98,7 +96,7 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
 
     nbprocX
         Integers which specify the number of processors along each axis.
-    
+
     nbprocY
         Integers which specify the number of processors along each axis.
     """
@@ -184,7 +182,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     ----------
     X
         Numpy arrays containing the X coordinates of the TIN vertices.
-        
+
     Y
         Numpy arrays containing the Y coordinates of the TIN vertices.
 
@@ -281,7 +279,6 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
 
     return globIDs, localTIN
 
-@jit
 def _robin_distribution(X,Y):
     """
     This function defines an initial distribution using round-robin algorithm.
@@ -289,7 +286,7 @@ def _robin_distribution(X,Y):
     Parameters
     ----------
     X: Numpy array containing the X coordinates of the TIN vertices.
-    
+
     Y: Numpy array containing the Y coordinates of the TIN vertices.
 
     Returns
@@ -299,7 +296,7 @@ def _robin_distribution(X,Y):
 
     Lx
         Numpy float-type array containing local nodes X coordinates.
-    
+
     Ly
         Numpy float-type array containing local nodes Y coordinates.
     """
@@ -334,7 +331,6 @@ def _robin_distribution(X,Y):
 
     return GIDs, Lx, Ly
 
-@jit
 def _compute_partition_ghosts(size, neighbours, partID):
     """
     This function find the ghosts (nodes) in the vicinity of each decomposition zone.
