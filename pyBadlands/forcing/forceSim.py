@@ -346,8 +346,11 @@ class forceSim:
             elev_vals = elev[indices][:,:,0]
         else:
             elev_vals = elev[indices]
-        oelev = numpy.average(elev_vals,weights=(1./distances), axis=1)
-        onIDs = numpy.where(distances[:,0] == 0)[0]
+
+        distances[distances<0.0001] = 0.0001
+        with numpy.errstate(divide='ignore'):
+            oelev = numpy.average(elev_vals,weights=(1./distances), axis=1)
+        onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
             oelev[onIDs] = elev[indices[onIDs,0]]
         oelev -= self.sealevel

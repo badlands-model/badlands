@@ -226,9 +226,12 @@ class isoFlex:
             elev_vals = elev[indices]
             cum_vals = cumdiff[indices]
 
-        felev = numpy.average(elev_vals,weights=(1./distances), axis=1)
-        fcum = numpy.average(cum_vals,weights=(1./distances), axis=1)
-        onIDs = numpy.where(distances[:,0] == 0)[0]
+        distances[distances<0.0001] = 0.0001
+        with numpy.errstate(divide='ignore'):
+            felev = numpy.average(elev_vals,weights=(1./distances), axis=1)
+            fcum = numpy.average(cum_vals,weights=(1./distances), axis=1)
+
+        onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
             felev[onIDs] = elev[indices[onIDs,0]]
             fcum[onIDs] = cumdiff[indices[onIDs,0]]

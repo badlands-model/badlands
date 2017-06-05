@@ -303,9 +303,10 @@ class raster2TIN:
             c_vals = c[indices]
             h_vals = h[indices]
 
-        elev = numpy.average(z_vals,weights=(1./distances), axis=1)
-        cum = numpy.average(c_vals,weights=(1./distances), axis=1)
-        hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
+        with numpy.errstate(divide='ignore'):
+            elev = numpy.average(z_vals,weights=(1./distances), axis=1)
+            cum = numpy.average(c_vals,weights=(1./distances), axis=1)
+            hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]
         if len(onIDs) > 0:
@@ -386,12 +387,14 @@ class raster2TIN:
             h_vals = h[indices]
             f_vals = f[indices]
 
-        elev = numpy.average(z_vals,weights=(1./distances), axis=1)
-        cum = numpy.average(c_vals,weights=(1./distances), axis=1)
-        hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
-        cumf = numpy.average(f_vals,weights=(1./distances), axis=1)
+        distances[distances<0.0001] = 0.0001
+        with numpy.errstate(divide='ignore'):
+            elev = numpy.average(z_vals,weights=(1./distances), axis=1)
+            cum = numpy.average(c_vals,weights=(1./distances), axis=1)
+            hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
+            cumf = numpy.average(f_vals,weights=(1./distances), axis=1)
 
-        onIDs = numpy.where(distances[:,0] == 0)[0]
+        onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
             elev[onIDs] = z[indices[onIDs,0]]
             cum[onIDs] = c[indices[onIDs,0]]

@@ -144,12 +144,14 @@ class visSurf:
             c_vals = c[indices]
             h_vals = h[indices]
 
-        zi = numpy.average(z_vals,weights=(1./distances), axis=1)
-        di = numpy.average(d_vals,weights=(1./distances), axis=1)
-        ci = numpy.average(c_vals,weights=(1./distances), axis=1)
-        hi = numpy.average(h_vals,weights=(1./distances), axis=1)
+        distances[distances<0.0001] = 0.0001
+        with numpy.errstate(divide='ignore'):
+            zi = numpy.average(z_vals,weights=(1./distances), axis=1)
+            di = numpy.average(d_vals,weights=(1./distances), axis=1)
+            ci = numpy.average(c_vals,weights=(1./distances), axis=1)
+            hi = numpy.average(h_vals,weights=(1./distances), axis=1)
 
-        onIDs = numpy.where(distances[:,0] == 0)[0]
+        onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
             zi[onIDs] = z[indices[onIDs,0]]
             di[onIDs] = d[indices[onIDs,0]]
