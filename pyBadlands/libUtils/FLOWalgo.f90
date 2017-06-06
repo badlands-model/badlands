@@ -336,7 +336,7 @@ contains
       integer :: pylocalNb
       integer,dimension(pylocalNb),intent(in) :: pyGIDs
       integer,dimension(pyglobalNb),intent(in) :: pyBord
-      integer,dimension(pylocalNb,20),intent(in) :: pyNgbs
+      integer,dimension(pyglobalNb,20),intent(in) :: pyNgbs
 
       real(kind=8),intent(in) :: slvl
       real(kind=8),intent(in) :: pymaxth
