@@ -698,6 +698,16 @@ contains
                   SPL(r) = -Cero(donor,r) * frck(r) * bedfrac * (pyDischarge(donor))**spl_m * (slp)**spl_n
                   totspl = totspl + SPL(r)
                 enddo
+                if(-totspl*dt>dh)then
+                  if(dh==0.)then
+                    SPL = 0.
+                    totspl = 0.
+                  else
+                    frac = dh/(-totspl*dt)
+                    SPL = SPL*frac
+                    totspl = -dh
+                  endif
+                endif
 
               ! Generalised undercapacity model (linear sedflux dependency)
               elseif(incisiontype==1)then
@@ -721,6 +731,16 @@ contains
                   SPL(r) = -Cero(donor,r) * frck(r) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
                   totspl = totspl + SPL(r)
                 enddo
+                if(-totspl*dt>dh)then
+                  if(dh==0.)then
+                    SPL = 0.
+                    totspl = 0.
+                  else
+                    frac = dh/(-totspl*dt)
+                    SPL = SPL*frac
+                    totspl = -dh
+                  endif
+                endif
 
               ! Almost parabolic sedflux dependency
               elseif(incisiontype==2)then
@@ -749,6 +769,16 @@ contains
                   SPL(r) = -Cero(donor,r) * frck(r) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
                   totspl = totspl + SPL(r)
                 enddo
+                if(-totspl*dt>dh)then
+                  if(dh==0.)then
+                    SPL = 0.
+                    totspl = 0.
+                  else
+                    frac = dh/(-totspl*dt)
+                    SPL = SPL*frac
+                    totspl = -dh
+                  endif
+                endif
 
               ! Almost parabolic sedflux dependency
               elseif(incisiontype==3)then
@@ -777,6 +807,16 @@ contains
                   SPL(r) = -Cero(donor,r) * frck(r) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
                   totspl = totspl + SPL(r)
                 enddo
+                if(-totspl*dt>dh)then
+                  if(dh==0.)then
+                    SPL = 0.
+                    totspl = 0.
+                  else
+                    frac = dh/(-totspl*dt)
+                    SPL = SPL*frac
+                    totspl = -dh
+                  endif
+                endif
 
               ! Saltation abrasion incision model
               elseif(incisiontype==4)then
