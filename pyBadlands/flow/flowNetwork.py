@@ -133,7 +133,7 @@ class flowNetwork:
             Numpy integer-type array containing for local nodes their global IDs.
 
         type
-            Falg to compute the diffusion when multiple rocks are used.
+            Flag to compute the diffusion when multiple rocks are used.
         """
 
         if type == 0:
@@ -433,6 +433,60 @@ class flowNetwork:
                                                         elev, self.discharge)
         self._comm.Allreduce(mpi.IN_PLACE, self.discharge, op=mpi.MAX)
         self._comm.Allreduce(mpi.IN_PLACE, self.activelay, op=mpi.MAX)
+
+
+    def view_receivers(self, fillH, elev, neighbours, edges, distances, globalIDs, sea):
+        """
+        Single Flow Direction function computes downslope flow directions by inspecting the neighborhood
+        elevations around each node. The SFD method assigns a unique flow direction towards the steepest
+        downslope neighbor.
+
+        Parameters
+        ----------
+        variable : fillH
+            Numpy array containing the filled elevations from Planchon & Darboux depression-less algorithm.
+
+        variable : elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        variable : neighbours
+            Numpy integer-type array with the neighbourhood IDs.
+
+        variable : edges
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+
+        variable : distances
+            Numpy real-type array with the distances between each connection in the TIN.
+
+        variable: globalIDs
+            Numpy integer-type array containing for local nodes their global IDs.
+
+        variable : sea
+            Current elevation of sea level.
+        """
+
+        # Call the SFD function from libUtils
+        base, receivers = sfd.dirview(fillH, elev, neighbours, edges, distances, globalIDs, sea)
+
+        # Send local base level globally
+        self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
+        bpos = numpy.where(base >= 0)[0]
+        self.base = base[bpos]
+        numpy.random.shuffle(self.base)
+
+        # Send local receivers globally
+        self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
+        self.receivers = receivers
+        self.localbase = numpy.array_split(self.base, self._size)[self._rank]
+        self.ordered_node_array_filled()
+
+        stackNbs = self._comm.allgather(len(self.localstack))
+        globalstack = numpy.zeros(sum(stackNbs), dtype=self.localstack.dtype)
+        self._comm.Allgatherv(sendbuf=[self.localstack, mpi.INT],
+                        recvbuf=[globalstack, (stackNbs, None), mpi.INT])
+        self.stack = globalstack
+
+        return
 
     def compute_parameters(self):
         """

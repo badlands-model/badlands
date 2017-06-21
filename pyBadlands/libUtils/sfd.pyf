@@ -1,5 +1,24 @@
 python module sfd
 interface
+  subroutine dirview(pyElev, pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, sealimit, pyBase, pyRcv, pylocalNb, pyglobalNb)
+    intent(c) dirview                    ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    double precision intent(in) :: sealimit
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyElev(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    integer intent(out) :: pyBase(pyglobalNb)
+    integer intent(out) :: pyRcv(pyglobalNb)
+  end subroutine dirview
+
   subroutine directions(pyElev, pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, pyBase, pyRcv, pyMaxh, pyMaxDep, pylocalNb, pyglobalNb)
     intent(c) directions                 ! directions is a C function
     intent(c)                            ! all foo arguments are

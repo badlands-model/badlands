@@ -18,7 +18,8 @@ from pyBadlands import (visualiseFlow, visualiseTIN, eroMesh)
 
 def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
                       tMesh, force, flow, rain, elevation, fillH, \
-                      cumdiff, cumhill, step, mapero=None, cumflex=None):
+                      cumdiff, cumhill, step, mapero=None, \
+                      cumflex=None):
     """
     Create the checkpoint files (used for HDF5 output).
     """
@@ -62,11 +63,14 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
     comm.Allreduce(mpi.IN_PLACE, fline, op=mpi.MAX)
 
     # Compute flow parameters
+    flow.view_receivers(fillH, elevation, FVmesh.neighbours, FVmesh.vor_edges,
+                        FVmesh.edge_length, lGIDs, force.sealevel)
     flow.compute_parameters()
     visdis = np.copy(flow.discharge)
     seaIDs = np.where(elevation<force.sealevel)[0]
     if len(seaIDs)>0:
         visdis[seaIDs] = 1.
+        flow.basinID[seaIDs] = -1
     visdis[visdis<1.] = 1.
 
     # Write HDF5 files
