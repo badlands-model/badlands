@@ -138,6 +138,16 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         flow.borders = np.zeros(len(FVmesh.control_volumes),dtype=int)
         flow.borders[flow.insideIDs] = 1
         flow.outsideIDs = np.where(flow.borders==0)[0]
+        xyMin2 = [recGrid.regX.min()+recGrid.resEdges, recGrid.regY.min()+recGrid.resEdges]
+        xyMax2 = [recGrid.regX.max()-recGrid.resEdges, recGrid.regY.max()-recGrid.resEdges]
+        xyMin2 = [recGrid.regX.min()+1, recGrid.regY.min()+1]
+        xyMax2 = [recGrid.regX.max()-1, recGrid.regY.max()-1]
+        domain = path.Path([(xyMin2[0],xyMin2[1]),(xyMax2[0],xyMin2[1]), (xyMax2[0],xyMax2[1]), (xyMin2[0],xyMax2[1])])
+        tmp3 = domain.contains_points(flow.xycoords)
+        flow.insideIDs2 = ids[tmp3]
+        flow.borders2 = np.zeros(len(FVmesh.control_volumes),dtype=int)
+        flow.borders2[flow.insideIDs2] = 1
+        flow.outsideIDs2 = np.where(flow.borders2==0)[0]
 
     # Compute CFL condition
     walltime = time.clock()
@@ -159,6 +169,9 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         print " -   Get CFL time step ", time.clock() - walltime
 
     # Compute sediment fluxes
+    if input.erolays >= 0:
+        oldelev = np.copy(elevation)
+
     # Initial cumulative elevation change
     walltime = time.clock()
     timestep, sedchange, erosion, deposition = flow.compute_sedflux(FVmesh.control_volumes, elevation, rain, fillH,
@@ -178,7 +191,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         # Initialise marine sediments diffusion array
         it = 0
         sumdep = np.sum(deposition,axis=1)
-        maxth = 0.5
+        maxth = 0.1
         diffstep = timestep
         diffcoeff = hillslope.sedfluxmarine(force.sealevel, elevation, FVmesh.control_volumes)
 
@@ -191,9 +204,10 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
                                             FVmesh.edge_length, diffcoeff, lGIDs, force.sealevel, maxth, maxstep)
             diffmarine[flow.outsideIDs] = 0.
             maxstep = min(mindt,maxstep)
-            #if maxstep < input.minDT:
+            # if maxstep < input.minDT:
             #    print 'WARNING: marine diffusion time step is smaller than minimum timestep:',maxstep
-            #    maxstep = input.minDT
+            #    print 'You will need to decrease your diffusion coefficient for criver'
+            #    stop
 
             # Update diffusion time step and total diffused thicknesses
             diffstep -= maxstep
@@ -230,10 +244,14 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     if straTIN is None:
         dtype = 0
     walltime = time.clock()
+    area = np.copy(FVmesh.control_volumes)
+    area[flow.outsideIDs2] = 0.
     diffcoeff = hillslope.sedflux(force.sealevel, elevation, FVmesh.control_volumes)
+    diffcoeff[flow.outsideIDs2] = 0.
     diff_flux = flow.compute_hillslope_diffusion(elevation, FVmesh.neighbours, FVmesh.vor_edges,
                        FVmesh.edge_length, lGIDs, dtype)
-    cdiff = diffcoeff * diff_flux * timestep
+    diff_flux[flow.outsideIDs2] = 0.
+    cdiff = diffcoeff*diff_flux*timestep
 
     if straTIN is None:
         if input.btype == 'outlet':
@@ -276,13 +294,13 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     if rank == 0 and verbose:
         print " -   Get hillslope fluxes ", time.clock() - walltime
 
-    if applyDisp:
-        elevation += disp * timestep
-
     # Update erodibility values
     if input.erolays >= 0:
-        mapero.getErodibility(diff)
+        mapero.getErodibility(elevation-oldelev)
         flow.erodibility = mapero.erodibility
+
+    if applyDisp:
+        elevation += disp * timestep
 
     tNow += timestep
 

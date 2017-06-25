@@ -171,11 +171,11 @@ void diffusion(double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS], double 
               if (ngbid < 0) {
                   break;
               }
-              if (pyBord[ngbid]>0){
+              if (pyBord[ngbid]>0 && pyDist[gid][p] > 0.){
                 pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
               }
               if (pyBord[ngbid]<1){
-                if (pyZ[ngbid] < pyZ[gid]){
+                if (pyZ[ngbid] < pyZ[gid] && pyDist[gid][p] > 0.){
                   pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
                 }
               }
@@ -203,11 +203,11 @@ void diffusionero(double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS], doub
               if (ngbid < 0) {
                   break;
               }
-              if (pyBord[ngbid]>0 && pyZ[gid] > pyZ[ngbid]){
+              if (pyBord[ngbid]>0 && pyZ[gid] > pyZ[ngbid] && pyDist[gid][p] > 0.){
                 pyEro[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
               }
               if (pyBord[ngbid]<1){
-                if (pyZ[ngbid] < pyZ[gid]){
+                if (pyZ[ngbid] < pyZ[gid] && pyDist[gid][p] > 0. ){
                   pyEro[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
                 }
               }
@@ -236,15 +236,15 @@ void diffusionmarine(double pyZ[], int pyBord[], int pyDep[], int pyNgbs[][MAX_N
                   break;
               }
               if (pyBord[ngbid]>0){
-                if(pyDep[gid] > 0 && pyZ[gid] > pyZ[ngbid]) {
+                if(pyDep[gid] > 0 && pyZ[gid] > pyZ[ngbid] && pyDist[gid][p] > 0.) {
                   pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
                 }
-                if(pyDep[ngbid] > 0 && pyZ[gid] < pyZ[ngbid]) {
+                if(pyDep[ngbid] > 0 && pyZ[gid] < pyZ[ngbid] && pyDist[gid][p] > 0.) {
                   pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
                 }
               }
               if (pyBord[ngbid]<1){
-                if (pyZ[ngbid] < pyZ[gid] && pyDep[gid] > 0){
+                if (pyZ[ngbid] < pyZ[gid] && pyDep[gid] > 0 && pyDist[gid][p] > 0.){
                   pyDiff[gid] += pyEdge[gid][p] * (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
                 }
               }

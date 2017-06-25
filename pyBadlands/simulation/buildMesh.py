@@ -117,7 +117,7 @@ def construct_mesh(input, filename, verbose=False):
 
     # Set default to no rain
     force.update_force_TIN(FVmesh.node_coords[:,:2])
-
+    
     # Flexural isostasy initialisation
     if input.flexure:
         flex, tinFlex, cumflex = _init_flexure(FVmesh, input, recGrid, force, elevation,

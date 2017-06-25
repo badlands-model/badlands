@@ -103,6 +103,9 @@ class flowNetwork:
         self.domain = None
         self.insideIDs = None
         self.outsideIDs = None
+        self.borders2 = None
+        self.insideIDs2 = None
+        self.outsideIDs2 = None
 
         FLOWalgo.flowcompute.eroparams(input.incisiontype,input.SPLm,input.SPLn,input.mt,
                                        input.nt,input.kt,input.kw,input.b,input.bedslptype)
@@ -137,9 +140,9 @@ class flowNetwork:
         """
 
         if type == 0:
-            diff_flux = sfd.diffusion(elev, self.borders, neighbours, edges, distances, globalIDs)
+            diff_flux = sfd.diffusion(elev, self.borders2, neighbours, edges, distances, globalIDs)
         else:
-            diff_flux = sfd.diffusionero(elev, self.borders, neighbours, edges, distances, globalIDs)
+            diff_flux = sfd.diffusionero(elev, self.borders2, neighbours, edges, distances, globalIDs)
 
         # Send local diffusion flux globally
         self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
@@ -746,6 +749,9 @@ class flowNetwork:
                             deposition[tmp,:] = (fillH[tmp]-elev[tmp])*perc[landIDs[p],:]
                         else:
                             deposition[tmp,:] = (fillH[tmp]-elev[tmp]).reshape(len(tmp),1)*perc[landIDs[p],:]
+                        tmpd = numpy.sum(deposition[tmp,:]*Acell[tmp].reshape(len(Acell[tmp]),1))
+                        dfrac = numpy.sum(depo[landIDs[p],:])/tmpd
+                        deposition[tmp,:] *= dfrac
                     depo[landIDs,:] = 0.
                     if rank==0 and verbose:
                         print "   - Compute land pit deposition ", time.clock() - time1

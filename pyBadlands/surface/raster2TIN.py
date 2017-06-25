@@ -102,6 +102,7 @@ class raster2TIN:
         self.regZ = None
         self.tinMesh = None
         self.bmask = None
+        self.resdx = None
 
         # TIN creation
         self._triangulate_raster_from_file()
@@ -120,6 +121,7 @@ class raster2TIN:
         self.rectY = data.values[:,1]
         self.rectZ = data.values[:,2]
         resDEM = self.rectX[1]-self.rectX[0]
+        self.resdx = resDEM
         minX = self.rectX.min()
         maxX = self.rectX.max()
         minY = self.rectY.min()

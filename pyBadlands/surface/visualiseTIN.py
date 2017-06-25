@@ -78,7 +78,7 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
     return lGIDs[allInside], outcell[localCell2] + 1
 
 def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
-               cumhill, cells, rank, rainOn, eroOn, erodibility):
+               cumhill, cells, rank, rainOn, eroOn, erodibility, area):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -158,8 +158,11 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
         f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumhill"][:,0] = cumhill
 
+        f.create_dataset('area',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["area"][:,0] = area
+
 def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
-                       cumhill, cumflex, cells, rank, rainOn, eroOn, erodibility):
+                       cumhill, cumflex, cells, rank, rainOn, eroOn, erodibility, area):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -241,6 +244,9 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
 
         f.create_dataset('cumflex',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumflex"][:,0] = cumflex
+
+        f.create_dataset('area',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["area"][:,0] = area
 
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """

@@ -354,7 +354,7 @@ contains
       real(kind=8) :: flx
 
       pyDiff = 0.
-      mindt = 1.e8
+      mindt = tstep
       do k = 1, pylocalNb
         gid = pyGIDs(k)+1
         if(pyBord(gid)>0 .and. pyZ(gid)<slvl)then
@@ -365,7 +365,7 @@ contains
               flx = pyEdge(gid,p)*(pyZ(ngbid)-pyZ(gid))/pyDist(gid,p)
               if(pyDepoH(gid)>pymaxth .and. pyZ(gid)>pyZ(ngbid))then
                 pyDiff(gid) = pyDiff(gid) + pyCoeff(gid)*flx
-              elseif(pyDepoH(ngbid)>pymaxth .and. pyZ(gid)<pyZ(ngbid))then
+              elseif(pyDepoH(ngbid)>pymaxth .and. pyZ(gid)<pyZ(ngbid) .and. pyZ(ngbid)<slvl)then
                 pyDiff(gid) = pyDiff(gid) + pyCoeff(gid)*flx
               endif
             elseif(pyBord(ngbid)<1)then
@@ -438,7 +438,7 @@ contains
                   pyDiff(gid,:) = pyDiff(gid,:) + tfrac*sed(:)
                   sumDiff(gid) = sumDiff(gid) + tfrac*tsed
                 endif
-              elseif(pyDepoH(ngbid)>pymaxth .and. pyZ(gid)<pyZ(ngbid))then
+              elseif(pyDepoH(ngbid)>pymaxth .and. pyZ(gid)<pyZ(ngbid) .and. pyZ(ngbid)<slvl)then
                 sfrac = 0.
                 sed = 0.
                 tsed = 0.

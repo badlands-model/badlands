@@ -944,6 +944,11 @@ class xmlParser:
                 self.CDm = float(element.text)
             else:
                 self.CDm = 0.
+            # self.CDm = self.CDa
+            # if self.CDm > self.CDa:
+            #     self.CDa = self.CDm
+            # else:
+            #     self.CDm = self.CDa
             element = None
             element = creep.find('criver')
             if element is not None:

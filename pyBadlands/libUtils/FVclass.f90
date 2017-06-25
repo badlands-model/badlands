@@ -553,7 +553,7 @@ contains
   ! =====================================================================================
   subroutine build_export_arrays_o(pyVarea,pyNgbs,pyVlenght,pyDlenght,pymaxNgbh)
 
-    integer :: cell,c,o,idd
+    integer :: cell,c,o,idd,o2
     integer :: pymaxNgbh
     real(kind=8),dimension(dnodes) :: pyVarea
     integer,dimension(dnodes,20) :: pyNgbs
@@ -575,6 +575,26 @@ contains
           endif
           pyVlenght(cell,o) = tri_voronoi_edge(cell,o)
           pyDlenght(cell,o) = tri_distance(cell,o)
+      enddo
+    enddo
+
+    do c = 1, gnodes
+      cell = gIDs(c)
+      do o = 1,tri_ngbNb(cell)
+        if(tri_ngbID(cell,o)>0)then
+            idd = pyNgbs(cell,o)+1
+            do o2 = 1,tri_ngbNb(idd)
+              if(pyNgbs(idd,o2) == cell-1)then
+                if(pyDlenght(cell,o).ne.pyDlenght(idd,o2))then
+                  if(pyDlenght(cell,o)==0.)pyDlenght(cell,o) = pyDlenght(idd,o2)
+                  if(pyDlenght(idd,o2)==0.)pyDlenght(idd,o2) = pyDlenght(cell,o)
+                endif
+                if(pyVlenght(cell,o).ne.pyVlenght(idd,o2))then
+                  pyVlenght(cell,o) = pyVlenght(idd,o2)
+                endif
+              endif
+            enddo
+        endif
       enddo
     enddo
 
