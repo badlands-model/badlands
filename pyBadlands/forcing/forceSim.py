@@ -175,7 +175,14 @@ class forceSim:
         self.next_display = None
         self.next_flexure = None
         self.next_layer = None
+        self.next_wave = None
         self.time_display = Tdisplay
+
+        self.wclim = 0
+        self.wavU = None
+        self.wavV = None
+        self.wavH = None
+        self.wavPerc = None
 
         if self.seafile != None:
             self._build_Sea_function()

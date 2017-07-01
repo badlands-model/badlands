@@ -13,6 +13,7 @@ import os
 import glob
 import numpy
 import shutil
+from decimal import *
 import xml.etree.ElementTree as ET
 
 class xmlParser:
@@ -152,6 +153,35 @@ class xmlParser:
         self.initlayers = 0
         self.layersData = None
         self.laytime = 0.
+
+        self.waveOn = False
+        self.tWave = None
+        self.resW = None
+        self.waveBase = 10000.
+        self.waveNb = 0
+        self.waveTime = None
+        self.wavePerc = None
+        self.waveWu = None
+        self.waveWd = None
+        self.wavelist = None
+        self.climlist = None
+
+        self.swanFile = None
+        self.swanInfo = None
+        self.swanBot = None
+        self.swanOut = None
+
+        self.carbonate = False
+        self.carbGrowth = 0.
+        self.carbEro = 0.
+        self.carbDepth = None
+        self.carbSed = None
+        self.carbWave = None
+
+        self.pelagic = False
+        self.pelGrowth = 0.
+        self.pelEro = 0.
+        self.pelDepth = None
 
         self._get_XmL_Data()
 
@@ -1187,3 +1217,219 @@ class xmlParser:
             os.makedirs(self.outDir+'/h5')
             os.makedirs(self.outDir+'/xmf')
             shutil.copy(self.inputfile,self.outDir)
+
+        # Extract global wave field parameters
+        wavefield = None
+        wavefield = root.find('waveglobal')
+        if wavefield is not None:
+            self.waveOn = True
+            element = None
+            element = wavefield.find('twave')
+            if element is not None:
+                self.tWave = float(element.text)
+            else:
+                raise ValueError('Error in the definition of the simulation time: wave interval is required')
+            if Decimal(self.tEnd - self.tStart) % Decimal(self.tWave) != 0.:
+                raise ValueError('Error in the definition of the simulation time: wave interval needs to be a multiple of simulation time.')
+            element = None
+            element = wavefield.find('wres')
+            if element is not None:
+                self.resW = float(element.text)
+            else:
+                raise ValueError('Error the wave grid resolution needs to be defined')
+            element = None
+            element = wavefield.find('base')
+            if element is not None:
+                self.waveBase = float(element.text)
+            else:
+                self.waveBase = 10000
+            element = None
+            element = wavefield.find('events')
+            if element is not None:
+                self.waveNb = int(element.text)
+            else:
+                raise ValueError('The number of wave temporal events needs to be defined.')
+        else:
+            self.waveNb = 0
+            self.tWave = self.tEnd - self.tStart + 10000.
+
+        # Extract wave field structure information
+        if self.waveNb > 0:
+            tmpNb = self.waveNb
+            self.waveWd = []
+            self.waveWu = []
+            self.wavePerc = []
+            self.waveTime = numpy.empty((tmpNb,2))
+            self.climNb = numpy.empty(tmpNb, dtype=int)
+            w = 0
+            for wavedata in root.iter('wave'):
+                if w >= tmpNb:
+                    raise ValueError('Wave event number above number defined in global wave structure.')
+                if wavedata is not None:
+                    element = None
+                    element = wavedata.find('start')
+                    if element is not None:
+                        self.waveTime[w,0] = float(element.text)
+                        if w > 0 and self.waveTime[w,0] != self.waveTime[w-1,1]:
+                            raise ValueError('The start time of the wave field %d needs to match the end time of previous wave data.'%w)
+                        if w == 0 and self.waveTime[w,0] != self.tStart:
+                            raise ValueError('The start time of the first wave field needs to match the simulation start time.')
+                    else:
+                        raise ValueError('Wave event %d is missing start time argument.'%w)
+                    element = None
+                    element = wavedata.find('end')
+                    if element is not None:
+                        self.waveTime[w,1] = float(element.text)
+                    else:
+                        raise ValueError('Wave event %d is missing end time argument.'%w)
+                    if self.waveTime[w,0] >= self.waveTime[w,1]:
+                        raise ValueError('Wave event %d start and end time values are not properly defined.'%w)
+                    element = None
+                    element = wavedata.find('climNb')
+                    if element is not None:
+                        self.climNb[w] = int(element.text)
+                    else:
+                        raise ValueError('Wave event %d is missing climatic wave number argument.'%w)
+
+                    if Decimal(self.waveTime[w,1]-self.waveTime[w,0]) % Decimal(self.tWave) != 0.:
+                        raise ValueError('Wave event %d duration need to be a multiple of the wave interval.'%w)
+
+                    listPerc = []
+                    listWu = []
+                    listWd = []
+                    listStorm = []
+                    listBreak = []
+                    id = 0
+                    sumPerc = 0.
+                    for clim in wavedata.iter('climate'):
+                        if id >= self.climNb[w]:
+                            raise ValueError('The number of climatic events does not match the number of defined climates.')
+                        element = None
+                        element = clim.find('perc')
+                        if element is not None:
+                            sumPerc += float(element.text)
+                            if sumPerc > 1:
+                                raise ValueError('Sum of wave event %d percentage is higher than 1.'%w)
+                            listPerc.append(float(element.text))
+                            if listPerc[id] < 0:
+                                raise ValueError('Wave event %d percentage cannot be negative.'%w)
+                        else:
+                            raise ValueError('Wave event %d is missing percentage argument.'%w)
+                        element = None
+                        element = clim.find('windv')
+                        if element is not None:
+                            listWu.append(float(element.text))
+                            if listWu[id] < 0:
+                                raise ValueError('Wave event %d wind velocity cannot be negative.'%w)
+                        else:
+                            raise ValueError('Wave event %d is missing wind velocity argument.'%w)
+                        element = None
+                        element = clim.find('dir')
+                        if element is not None:
+                            listWd.append(float(element.text))
+                            if listWd[id] < 0:
+                                raise ValueError('Wave event %d wind direction needs to be set between 0 and 360.'%w)
+                            if listWd[id] > 360:
+                                raise ValueError('Wave event %d wind direction needs to be set between 0 and 360.'%w)
+                        else:
+                            raise ValueError('Wave event %d is missing wind direction argument.'%w)
+                        id += 1
+                    w += 1
+                    self.wavePerc.append(listPerc)
+                    self.waveWu.append(listWu)
+                    self.waveWd.append(listWd)
+                else:
+                    raise ValueError('Wave event %d is missing.'%w)
+
+        # Construct a list of climatic events for swan model
+        self.wavelist = []
+        self.climlist = []
+        twsteps = numpy.arange(self.tStart,self.tEnd,self.tWave)
+        for t in range(len(twsteps)):
+            c = -1
+            # Find the wave field active during the time interval
+            for k in range(self.waveNb):
+                if self.waveTime[k,0] <= twsteps[t] and self.waveTime[k,1] >= twsteps[t]:
+                    c = k
+            # Extract the wave climate for the considered time interval
+            for p in range(self.climNb[c]):
+                self.wavelist.append(c)
+                self.climlist.append(p)
+
+        # Add a fake final wave field and climate
+        self.wavelist.append(self.wavelist[-1])
+        self.climlist.append(self.climlist[-1])
+
+        # Create swan model repository and files
+        if self.waveOn:
+            os.makedirs(self.outDir+'/swan')
+            self.swanFile = numpy.array(self.outDir+'/swan/swan.swn')
+            self.swanInfo = numpy.array(self.outDir+'/swan/swanInfo.swn')
+            self.swanBot = numpy.array(self.outDir+'/swan/swan.bot')
+            self.swanOut = numpy.array(self.outDir+'/swan/swan.csv')
+
+        # Carbonate class
+        carb = None
+        carb = root.find('carbonate')
+        if carb is not None:
+            self.carbonate = True
+            element = None
+            element = carb.find('growth')
+            if element is not None:
+                self.carbGrowth = float(element.text)
+            else:
+                self.carbGrowth = 0.
+            element = None
+            element = carb.find('erodibility')
+            if element is not None:
+                self.carbEro = float(element.text)
+            else:
+                self.carbEro = 0.
+            element = carb.find('depthControl')
+            if element is not None:
+                self.carbDepth = element.text
+                if not os.path.isfile(self.carbDepth):
+                    raise ValueError('Carbonate depth control file is missing or the given path is incorrect.')
+            else:
+                self.carbDepth = None
+            element = carb.find('waveControl')
+            if element is not None:
+                self.carbWave = element.text
+                if not os.path.isfile(self.carbWave):
+                    raise ValueError('Carbonate wave control file is missing or the given path is incorrect.')
+            else:
+                self.carbWave = None
+            element = carb.find('sedControl')
+            if element is not None:
+                self.carbSed = element.text
+                if not os.path.isfile(self.carbSed):
+                    raise ValueError('Carbonate sedimentation control file is missing or the given path is incorrect.')
+            else:
+                self.carbSed = None
+
+        # Pelagic class
+        pelagic = None
+        pelagic = root.find('pelagic')
+        if pelagic is not None:
+            self.pelagic = True
+            element = None
+            element = pelagic.find('growth')
+            if element is not None:
+                self.pelGrowth = float(element.text)
+            else:
+                self.pelGrowth = 0.
+            element = None
+            element = pelagic.find('erodibility')
+            if element is not None:
+                self.pelEro = float(element.text)
+            else:
+                self.pelEro = 0.
+            element = pelagic.find('depthControl')
+            if element is not None:
+                self.pelDepth = element.text
+                if not os.path.isfile(self.pelDepth):
+                    raise ValueError('Pelagic depth control file is missing or the given path is incorrect.')
+            else:
+                raise ValueError('Depth control file on pelagic deposition is required.')
+
+        return

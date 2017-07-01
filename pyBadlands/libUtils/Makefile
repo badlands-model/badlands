@@ -15,11 +15,26 @@ DIR=$(shell pwd)
 
 F90 = gfortran
 F2PY = f2py
-
 FFLAGS = -shared -O2 -fPIC
-
 LIBDIR = .
 INCDIR = .
+
+# SWAN compilation
+TOP=$(shell pwd)
+SWAN = simswan
+DIRMODS = WaveComp
+BUILDDIR = $(TOP)/WaveComp/build
+OBJDIR = $(BUILDDIR)/objects
+MODDIR = $(BUILDDIR)/modules
+LIBDIR2 = $(BUILDDIR)/lib
+FMPI = mpif90
+F2PYMPI = f2py --fcompiler=gfortran
+# Fortran optimisation flags
+FCFLAGS = -O3 -funroll-loops --param max-unroll-times=2 -cpp \
+    -ffree-form -ftree-vectorize -ffast-math -lstdc++ -ffree-line-length-none
+FFLAGS2 = $(FCFLAGS) -I$(MODDIR)
+F2PY_FLAGS = --f90exec=${FMPI} -I$(MODDIR)
+LDFLAGS = -L$(LIBDIR2)/
 
 # Depression filling algorithm using Planchon and Darboux
 PD_FMOD = PDclass
@@ -45,6 +60,16 @@ OR_LMOD = ORmodel
 
 all: ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
 
+	@echo "---------------------------------------------"
+	@echo ""
+	@echo ""
+	@echo "Ocean Plugin Makefile"
+	@echo "Build Swan libraries: "
+	for i in $(DIRMODS) ; do   \
+				( cd $$i ; make dist) ;       \
+	done
+	@$(if $(wildcard SimSwan.so),rm -f *.so,)
+	make libs
 	@echo ""
 	@echo ""
 	@echo "---------------------------------------------"
@@ -61,6 +86,14 @@ all: ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so
 	@echo "---------------------------------------------"
 	@echo ""
 	@echo ""
+
+libs :	${SWAN}.so
+
+${SWAN}.so: ${SWAN}.f90
+	${F2PYMPI} ${F2PY_FLAGS} $(LDFLAGS) -lWaveParam -c -m ${SWAN} $<
+
+%.o : %.f90
+	$(FMPI) $(FFLAGS2) -c $< -o $@
 
 ${PD_FMOD}.so: ${PD_FMOD}.f90
 	${F90} ${FFLAGS} -o lib${PD_FMOD}.so $<
@@ -96,5 +129,8 @@ sfd.so: sfd.c sfd.pyf
 	${F2PY} ${F2PY_FLAGS} -c -m sfd sfd.c sfd.pyf
 
 clean:
+	for i in $(DIRMODS) ; do   \
+    	( cd $$i ; make clobber) ;   \
+	done
 	rm -fv *~ *.bak *.o *.mod *.original *.so
-	rm -rfv *.dSYM
+	rm -rfv $(BUILDDIR) *.dSYM

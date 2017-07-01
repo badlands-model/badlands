@@ -3,7 +3,7 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from scipy.spatial import cKDTree
-from pyBadlands import (diffLinear, flowNetwork, buildMesh,
+from pyBadlands import (diffLinear, flowNetwork, buildMesh, oceanDyn,
                         checkPoints, buildFlux, xmlParser)
 
 # Profiling support
@@ -23,6 +23,7 @@ class Model(object):
 
         # Simulation state
         self.tNow = 0.
+        self.waveID = 0
         self.outputStep = 0
         self.disp = None
         self.applyDisp = False
@@ -69,7 +70,7 @@ class Model(object):
         # Construct Badlands mesh and grid to run simulation
         self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, parentIDs, \
             self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumhill, self.cumflex, self.strata, self.mapero, \
-            self.tinFlex, self.flex, self.straTIN = buildMesh.construct_mesh(self.input, filename, verbose)
+            self.tinFlex, self.flex, self.wave, self.straTIN = buildMesh.construct_mesh(self.input, filename, verbose)
 
         # Define hillslope parameters
         self.rain = np.zeros(self.totPts, dtype=float)
@@ -101,6 +102,14 @@ class Model(object):
 
         self.flow.parentIDs = parentIDs
 
+        # Define hydrodynamic conditions
+        if self.input.waveOn:
+            self.force.next_wave = self.input.tStart
+            self.wave.build_tree(self.FVmesh.node_coords[:,:2])
+            self.wave.swan_init(self.input, self.elevation, self.waveID, self.force.sealevel)
+        else:
+            self.force.next_wave = self.input.tEnd + 1.e5
+
     def rebuild_mesh(self, verbose=False):
         """
         Build TIN after 3D displacements.
@@ -128,6 +137,10 @@ class Model(object):
         if self.input.flexure:
             self.tinFlex = np.zeros(self.totPts, dtype=float)
             self.flex.update_flexure_parameters(self.FVmesh.node_coords[:,:2])
+
+        # Update SWAN mesh
+        if self.input.waveOn:
+            self.wave.build_tree(self.FVmesh.node_coords[:,:2])
 
         # Update stratigraphic mesh
         if self.input.stratdx > 0:
@@ -300,6 +313,14 @@ class Model(object):
                 if self._rank == 0:
                     print "   - Compute flexural isostasy ", time.clock() - flextime
 
+            # Update wave parameters
+            if self.input.waveOn:
+                if self.force.next_wave <= self.tNow:
+                    # Compute wave field and associated bottom current conditions
+                    self.waveID = self.wave.swan_run(self.input, self.force, self.elevation, self.waveID)
+                    # Update next wave time step
+                    self.force.next_wave += self.input.tWave
+
             # Create checkpoint files and write HDF5 output
             if self.tNow >= self.force.next_display:
                 if self.force.next_display > self.input.tStart:
@@ -315,7 +336,7 @@ class Model(object):
                 if self.straTIN is not None:
                     self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
                 # exit
-
+                stop
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
                 self.force.next_layer += self.input.laytime
@@ -328,7 +349,7 @@ class Model(object):
 
             # Get the maximum time before updating one of the above processes / components
             tStop = min([self.force.next_display, self.force.next_layer, self.force.next_flexure,
-                        tEnd, self.force.next_disp, self.force.next_rain])
+                        tEnd, self.force.next_wave, self.force.next_disp, self.force.next_rain])
 
             # Compute sediment transport up to tStop
             self.tNow, self.elevation, self.cumdiff, self.cumhill = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \

@@ -14,7 +14,7 @@ import time
 import numpy as np
 import mpi4py.MPI as mpi
 
-from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN,
+from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN, oceanDyn,
                         eroMesh, strataMesh, isoFlex, stratiWedge, forceSim)
 
 def construct_mesh(input, filename, verbose=False):
@@ -31,6 +31,7 @@ def construct_mesh(input, filename, verbose=False):
 
     cumflex = None
     flex = None
+    wave = None
     tinFlex = None
     strata = None
     mapero = None
@@ -117,11 +118,15 @@ def construct_mesh(input, filename, verbose=False):
 
     # Set default to no rain
     force.update_force_TIN(FVmesh.node_coords[:,:2])
-    
+
     # Flexural isostasy initialisation
     if input.flexure:
         flex, tinFlex, cumflex = _init_flexure(FVmesh, input, recGrid, force, elevation,
                                                 cumdiff, cumflex, totPts, rank, verbose)
+
+    # Wave grid initialisation
+    if input.waveOn:
+        wave = _init_wave(input, recGrid, force, rank, verbose)
 
     # Stratigraphic TIN initialisation
     if input.rockNb > 0:
@@ -142,7 +147,7 @@ def construct_mesh(input, filename, verbose=False):
 
     return recGrid, FVmesh, force, tMesh, lGIDs, fixIDs, \
         inIDs, parentIDs, inGIDs, totPts, elevation, cumdiff, \
-        cumhill, cumflex, strata, mapero, tinFlex, flex, straTIN
+        cumhill, cumflex, strata, mapero, tinFlex, flex, wave, straTIN
 
 def reconstruct_mesh(recGrid, input, verbose=False):
     """
@@ -366,3 +371,26 @@ def _init_flexure(FVmesh, input, recGrid, force, elevation, cumdiff,
         print "   - Initialise flexural isostasy ", time.clock() - walltime
 
     return flex, tinFlex, cumflex
+
+def _init_wave(input, recGrid, force, rank, verbose=False):
+    """
+    Initialise wave mesh.
+    """
+
+    # Initialise flexure parameters for gFlex library.
+    walltime = time.clock()
+
+    minX = recGrid.rectX.min()-input.resW
+    maxX = recGrid.rectX.max()+input.resW
+    minY = recGrid.rectY.min()-input.resW
+    maxY = recGrid.rectY.max()+input.resW
+    waveX = np.arange(minX,maxX+input.resW,input.resW)
+    waveY = np.arange(minY,maxY+input.resW,input.resW)
+
+    wave = oceanDyn.oceanDyn(input.resW,waveX,waveY)
+    force.getSea(input.tStart)
+
+    if rank == 0 and verbose:
+        print "   - Initialise wave grid ", time.clock() - walltime
+
+    return wave
