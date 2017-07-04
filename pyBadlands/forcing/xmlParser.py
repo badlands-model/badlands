@@ -159,6 +159,7 @@ class xmlParser:
         self.resW = None
         self.waveBase = 10000.
         self.waveNb = 0
+        self.climNb = 0
         self.waveTime = None
         self.wavePerc = None
         self.waveWu = None
