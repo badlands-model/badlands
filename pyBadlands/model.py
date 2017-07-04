@@ -336,7 +336,7 @@ class Model(object):
                 if self.straTIN is not None:
                     self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
                 # exit
-                stop
+                
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
                 self.force.next_layer += self.input.laytime
