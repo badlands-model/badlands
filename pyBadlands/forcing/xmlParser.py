@@ -1343,23 +1343,24 @@ class xmlParser:
                     raise ValueError('Wave event %d is missing.'%w)
 
         # Construct a list of climatic events for swan model
-        self.wavelist = []
-        self.climlist = []
-        twsteps = numpy.arange(self.tStart,self.tEnd,self.tWave)
-        for t in range(len(twsteps)):
-            c = -1
-            # Find the wave field active during the time interval
-            for k in range(self.waveNb):
-                if self.waveTime[k,0] <= twsteps[t] and self.waveTime[k,1] >= twsteps[t]:
-                    c = k
-            # Extract the wave climate for the considered time interval
-            for p in range(self.climNb[c]):
-                self.wavelist.append(c)
-                self.climlist.append(p)
+        if self.waveOn:
+            self.wavelist = []
+            self.climlist = []
+            twsteps = numpy.arange(self.tStart,self.tEnd,self.tWave)
+            for t in range(len(twsteps)):
+                c = -1
+                # Find the wave field active during the time interval
+                for k in range(self.waveNb):
+                    if self.waveTime[k,0] <= twsteps[t] and self.waveTime[k,1] >= twsteps[t]:
+                        c = k
+                # Extract the wave climate for the considered time interval
+                for p in range(self.climNb[c]):
+                    self.wavelist.append(c)
+                    self.climlist.append(p)
 
-        # Add a fake final wave field and climate
-        self.wavelist.append(self.wavelist[-1])
-        self.climlist.append(self.climlist[-1])
+            # Add a fake final wave field and climate
+            self.wavelist.append(self.wavelist[-1])
+            self.climlist.append(self.climlist[-1])
 
         # Create swan model repository and files
         if self.waveOn:
