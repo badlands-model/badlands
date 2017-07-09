@@ -17,6 +17,7 @@ from .simulation import oceanDyn
 from .underland import eroMesh
 from .underland import strataMesh
 from .underland import stratiWedge
+from .underland import carbMesh
 from .flow import visualiseFlow
 from .hillslope import diffLinear
 from .surface import elevationTIN
@@ -26,6 +27,8 @@ from .surface import visSurf
 from .forcing import xmlParser
 from .forcing import forceSim
 from .forcing import isoFlex
+from .forcing import carbGrowth
+from .forcing import pelagicGrowth
 from .simulation import buildMesh
 from .simulation import checkPoints
 from .simulation import buildFlux

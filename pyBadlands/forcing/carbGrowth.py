@@ -27,7 +27,6 @@ class carbGrowth:
     def __init__(self, input=None):
 
         self.growth = input.carbGrowth
-        self.ero = input.carbEro
         self.depthfile = input.carbDepth
         self.sedfile = input.carbSed
         self.wavefile = input.carbWave
@@ -122,7 +121,7 @@ class carbGrowth:
 
         self.waveFunc = interpolate.interp1d(self.waveval, self.wavefct, kind='linear')
 
-    def getWaveFct(self, wavefield):
+    def _getWaveFct(self, wavefield):
         """
         Computes for a given wave field to carbonate wave dependent growth function.
 
@@ -132,13 +131,13 @@ class carbGrowth:
         """
 
         if self.wavefile == None:
-            self.wavegrowth = np.ones(len(wavefield))
+            self.wavegrowth = numpy.ones(len(wavefield))
         else:
             self.wavegrowth = self.waveFunc(wavefield)
 
         return
 
-    def getSedFct(self, sedfield):
+    def _getSedFct(self, sedfield):
         """
         Computes for a given sedimentation rate dependent growth function.
 
@@ -148,13 +147,13 @@ class carbGrowth:
         """
 
         if self.sedfile == None:
-            self.sedgrowth = np.ones(len(sedfield))
+            self.sedgrowth = numpy.ones(len(sedfield))
         else:
             self.sedgrowth = self.sedFunc(sedfield)
 
         return
 
-    def getDepthFct(self, depthfield):
+    def _getDepthFct(self, depthfield):
         """
         Computes for a given depth field to carbonate wave dependent growth function.
 
@@ -164,24 +163,37 @@ class carbGrowth:
         """
 
         if self.depthfile == None:
-            self.depthgrowth = np.ones(len(depthfield))
+            self.depthgrowth = numpy.ones(len(depthfield))
         else:
             self.depthgrowth = self.depthFunc(-depthfield)
 
         return
 
-    def computeCarbonate(self, wavefield, sedfield, depthfield):
+    def computeCarbonate(self, wavefield, sedfield, depthfield, dt):
         """
         Computes carbonate growth.
         """
 
+        seaIds = numpy.where(depthfield<0.)[0]
+        growth = numpy.zeros(len(depthfield))
+        growth.fill(1.1e6)
+
         # Get each controlling function values
-        self.getSedFct(sedfield)
-        self.getWaveFct(wavefield)
-        self.getDepthFct(depthfield)
+        if self.depthfile != None:
+            self._getDepthFct(depthfield)
+            growth[seaIds] = numpy.minimum(growth[seaIds],self.depthgrowth[seaIds])
+        if self.sedfile != None:
+            self._getSedFct(sedfield)
+            growth[seaIds] = numpy.minimum(growth[seaIds],self.sedgrowth[seaIds])
+        if self.wavefile != None:
+            self._getWaveFct(wavefield)
+            growth[seaIds] = numpy.minimum(growth[seaIds],self.wavegrowth[seaIds])
+        growth[growth>1.e6] = 0.
 
         # Average growth function limitation
-        growth = self.growth*(self.depthgrowth + self.sedgrowth + self.wavegrowth)/3.
+        val = self.growth*growth*dt
+        val[val<0.] = 0.
+        val[seaIds] = numpy.minimum(val[seaIds],-depthfield[seaIds]*0.98)
+        tids = numpy.where(numpy.logical_and(depthfield<-20.,val>0.))[0]
 
-        
-        return
+        return val

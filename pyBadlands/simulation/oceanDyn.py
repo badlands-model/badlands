@@ -103,11 +103,12 @@ class oceanDyn():
         variable: sl
             Sealevel elevation.
         """
+
         # Interpolate TIN elevation on wave mesh
         distances, indices = self.tree.query(self.xyi, k=self.searchpts)
         z_vals = z[indices]
 
-        with numpy.errstate(divide='ignore'):
+        with numpy.errstate(invalid='ignore'):
             nz = numpy.average(z_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]
@@ -148,7 +149,7 @@ class oceanDyn():
          force.wavU = []
          force.wavV = []
          force.wavH = []
-         force.Perc = []
+         force.wavPerc = []
 
          # Interpolate TIN elevation on wave mesh
          distances, indices = self.tree.query(self.xyi, k=self.searchpts)
@@ -179,17 +180,17 @@ class oceanDyn():
                                         input.waveWd[wl][cl], force.sealevel)
 
             # Define velocity current
-            fU = gaussian_filter(wavU, sigma=1.)
+            #fU = gaussian_filter(wavU, sigma=1.)
             fH = gaussian_filter(H, sigma=1.)
-            U = fU * numpy.cos(wavD)
-            V = fU * numpy.sin(wavD)
+            #U = fU * numpy.cos(wavD)
+            #V = fU * numpy.sin(wavD)
 
             # Plot the wave dynamic using matplotlib
             #self._bottomCurrents(U, V, force.sealevel, rZ)
 
             # Convert velocity from wave mesh to TIN
-            cU = interpn( (self.wavX, self.wavY), U, (self.xyTIN), method='linear')
-            cV = interpn( (self.wavX, self.wavY), V, (self.xyTIN), method='linear')
+            #cU = interpn( (self.wavX, self.wavY), U, (self.xyTIN), method='linear')
+            #cV = interpn( (self.wavX, self.wavY), V, (self.xyTIN), method='linear')
             cH = interpn( (self.wavX, self.wavY), fH, (self.xyTIN), method='linear')
 
             if self.rank == 0:
@@ -197,18 +198,18 @@ class oceanDyn():
                 print 'took %0.02f seconds to run.' %(time.clock()-tw)
 
             landIDs = numpy.where(TINz>=force.sealevel)[0]
-            cU[landIDs] = 0.
-            cV[landIDs] = 0.
+            #cU[landIDs] = 0.
+            #cV[landIDs] = 0.
             cH[landIDs] = 0.
 
             # Save computed velocity for checking
-            self._dumpData(cU,cV,cH)
+            #self._dumpData(cU,cV,cH)
 
             # Store percentage of each climate and induced bottom currents velocity
-            force.wavU.append(cU)
-            force.wavV.append(cV)
+            #force.wavU.append(cU)
+            #force.wavV.append(cV)
             force.wavH.append(cH)
-            force.Perc.append(input.wavePerc[wl][cl])
+            force.wavPerc.append(input.wavePerc[wl][cl])
 
          return wID
 

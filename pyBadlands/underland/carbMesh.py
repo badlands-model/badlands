@@ -7,7 +7,8 @@
 ##                                                                                   ##
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 """
-This module defines the stratigraphic layers based on the irregular TIN grid.
+This module defines the stratigraphic layers based on the irregular TIN grid when the
+carbonate or pelagic functions are used.
 """
 import os
 import glob
@@ -19,14 +20,14 @@ import mpi4py.MPI as mpi
 from scipy import interpolate
 from scipy.spatial import cKDTree
 from scipy.interpolate import RegularGridInterpolator
-from pyBadlands.libUtils import FASTloop
 
 if 'READTHEDOCS' not in os.environ:
     from pyBadlands.libUtils import PDalgo
 
-class stratiWedge():
+class carbMesh():
     """
-    This class builds stratigraphic layers over time based on erosion/deposition values.
+    This class builds stratigraphic layers over time based on erosion/deposition values when the.
+    carbonate or pelagic functions are used.
 
     Parameters
     ----------
@@ -37,8 +38,8 @@ class stratiWedge():
         Numpy array containing the thickness of each stratigraphic layer for each type of sediment
     """
 
-    def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, activeh, folder, h5file, rockNb,
-                 regX, regY, elev, rockCk, cumdiff=0, rfolder=None, rstep=0):
+    def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, folder, h5file,
+                 regX, regY, elev, rfolder=None, rstep=0):
         """
         Constructor.
 
@@ -68,12 +69,6 @@ class stratiWedge():
         h5file
             First part of the hdf5 file name.
 
-        rockNb
-            Number of type of sedimentary rocks represented in the current simulation.
-
-        cumdiff
-            Numpy array containing cumulative erosion/deposition from previous simulation.
-
         regX
             Numpy array containing the X-coordinates of the regular input grid.
 
@@ -82,9 +77,6 @@ class stratiWedge():
 
         elev
             Numpy arrays containing the elevation of the TIN nodes.
-
-        rockCk
-            Numpy arrays containing the different rock erodibility values.
 
         rfolder
             Restart folder.
@@ -100,14 +92,9 @@ class stratiWedge():
 
         # Number of points on the TIN
         self.ptsNb = len(xyTIN)
-        self.oldload = None
         self.folder = folder
         self.h5file = h5file
-        self.rockNb = rockNb
         self.initlay = elay
-        self.alayR = None
-        self.activeh = activeh
-        self.rockCk = rockCk
 
         # In case we restart a simulation
         if rstep > 0:
@@ -134,12 +121,10 @@ class stratiWedge():
             self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             self.paleoDepth[:,:eroLay] = paleoDepth
             # Deposition thickness for each type of sediment
-            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,rockNb),order='F')
-            for r in range(rockNb):
+            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,3),order='F')
+            for r in range(3):
                 self.depoThick[:,:eroLay,r] = numpy.array((df['/depoThickRock'+str(r)]))
             self.layerThick[:,:eroLay] = numpy.sum(self.depoThick[:,:eroLay,:],axis=-1)
-            # Define cumulative deposition/erosion from previous simulation
-            self.oldload = cumdiff
         else:
             eroLay = elay+1
             self.step = eroLay
@@ -148,7 +133,7 @@ class stratiWedge():
             # Elevation at time of deposition (paleo-depth)
             self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             # Deposition thickness for each type of sediment
-            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,rockNb),order='F')
+            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,3),order='F')
             self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             # Rock type array
             rockType = -numpy.ones(self.ptsNb,dtype=int)
@@ -177,7 +162,7 @@ class stratiWedge():
                     # Linear interpolation to define underlying layers on the TIN
                     tmpTH.fill(0.)
                     tmpTH[bPts:] = interpolate.interpn( (regX, regY), tH, xyTIN[bPts:,:], method='linear')
-                    for r in range(rockNb):
+                    for r in range(3):
                         ids = numpy.where(numpy.logical_and(rockType==r,tmpTH>0.))
                         self.depoThick[ids,eroLay-l,r] = tmpTH[ids]
                         self.paleoDepth[ids,eroLay-l] = self.paleoDepth[ids,eroLay-l+1]-tmpTH[ids]
@@ -203,41 +188,11 @@ class stratiWedge():
                 self.paleoDepth[:,0] = elev
                 self.step = 1
 
-    def get_active_layer(self, actlay, verbose=False):
-        """
-        This function extracts the active layer based on the underlying stratigraphic architecture.
-
-        Parameters
-        ----------
-        actlay
-            Active layer elevation based on nodes elevation [m]
-        """
-
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
-        time0 = time.clock()
-        self.alayR = PDalgo.pdstack.getactlay(actlay, self.layerThick[:,:self.step+1],
-                                    self.depoThick[:,:self.step+1,:])
-        if rank==0 and verbose:
-            print "   - Get active layer composition ", time.clock() - time0
-            time0 = time.clock()
-
         return
 
-    def update_layers(self, erosion, deposition, elev, verbose=False):
+    def update_layers(self, clastic, carb, pel, elev, verbose=False):
         """
-        This function updates the stratigraphic layers based active layer composition.
-
-        Parameters
-        ----------
-        deposition
-            Value of the deposition for the given point [m]
-
-        erosion
-            Value of the erosion for the given points [m]
+        This function updates the stratigraphic layers.
         """
 
         # Initialise MPI communications
@@ -246,8 +201,8 @@ class stratiWedge():
         size = comm.Get_size()
 
         time0 = time.clock()
-        newH, newS = PDalgo.pdstack.updatestrati(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
-                                    erosion, deposition)
+        newH, newS = PDalgo.pdstack.stratcarb(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
+                                    clastic, carb, pel)
 
         self.depoThick[:,:self.step+1,:] = newS
         self.layerThick[:,:self.step+1] = newH
@@ -282,6 +237,6 @@ class stratiWedge():
             f["paleoDepth"][lGIDs,:self.step+1] = self.paleoDepth[lGIDs,:self.step+1]
 
             # Write stratal layers thicknesses per cells
-            for r in range(self.rockNb):
+            for r in range(3):
                 f.create_dataset('depoThickRock'+str(r),shape=(len(lGIDs),self.step+1), dtype='float32', compression='gzip')
                 f['depoThickRock'+str(r)][lGIDs,:self.step+1] = self.depoThick[lGIDs,:self.step+1,r]

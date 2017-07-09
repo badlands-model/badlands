@@ -18,8 +18,8 @@ from pyBadlands import (visualiseFlow, visualiseTIN, eroMesh)
 
 def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
                       tMesh, force, flow, rain, elevation, fillH, \
-                      cumdiff, cumhill, step, mapero=None, \
-                      cumflex=None):
+                      cumdiff, cumhill, step, prop, \
+                      mapero=None, cumflex=None):
     """
     Create the checkpoint files (used for HDF5 output).
     """
@@ -73,17 +73,28 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
         flow.basinID[seaIDs] = -1
     visdis[visdis<1.] = 1.
 
+    rockOn = False
+    if input.carbonate or input.pelagic:
+        rockOn = True
+
     # Write HDF5 files
+    if input.waveOn:
+        meanH = force.meanH[lGIDs]
+    else:
+        meanH = None
+
     if input.flexure:
         visualiseTIN.write_hdf5_flexure(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
                                     elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
                                     cumhill[lGIDs], cumflex[lGIDs], FVmesh.outCells, rank, input.oroRain,
-                                    eroOn, flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs])
+                                    eroOn, flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs],
+                                    input.waveOn, meanH, rockOn, prop[lGIDs])
     else:
         visualiseTIN.write_hdf5(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
                                 elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
                                 cumhill[lGIDs], FVmesh.outCells, rank, input.oroRain, eroOn,
-                                flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs])
+                                flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs],
+                                input.waveOn, meanH, rockOn, prop[lGIDs])
 
     if flow.sedload is not None:
         visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
@@ -95,9 +106,10 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
 
     # Combine HDF5 files and write time series
     if rank == 0:
-        visualiseTIN.write_xmf(input.outDir, input.txmffile, input.txdmffile, step, tNow,
-                           tcells, tnodes, input.th5file, force.sealevel, size,
-                           input.flexure, input.oroRain, eroOn)
+        visualiseTIN.write_xmf(input.outDir, input.txmffile, input.txdmffile, step, tNow, tcells,
+                           tnodes, input.th5file, force.sealevel, size, input.flexure,
+                           input.oroRain, eroOn, input.waveOn, rockOn)
+
         visualiseFlow.write_xmf(input.outDir, input.fxmffile, input.fxdmffile, step, tNow,
                             fline, fnodes, input.fh5file, size)
         print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, tNow)

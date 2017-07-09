@@ -73,7 +73,7 @@ class xmlParser:
         self.riverTime = None
         self.riverPos = None
         self.riverQws = None
-        self.riverRck = 0
+        self.riverRck = None
 
         self.rainNb = None
         self.rainVal = None
@@ -174,14 +174,12 @@ class xmlParser:
 
         self.carbonate = False
         self.carbGrowth = 0.
-        self.carbEro = 0.
         self.carbDepth = None
         self.carbSed = None
         self.carbWave = None
 
         self.pelagic = False
         self.pelGrowth = 0.
-        self.pelEro = 0.
         self.pelDepth = None
 
         self._get_XmL_Data()
@@ -468,6 +466,7 @@ class xmlParser:
             self.riverTime = numpy.empty((self.riverNb,2))
             self.riverPos = numpy.empty((self.riverNb,2))
             self.riverQws = numpy.empty((self.riverNb,2))
+            self.riverRck = numpy.empty((self.riverNb),int)
             id = 0
             for riv in rivers.iter('river'):
                 if id >= self.riverNb:
@@ -1362,13 +1361,13 @@ class xmlParser:
             self.wavelist.append(self.wavelist[-1])
             self.climlist.append(self.climlist[-1])
 
-        # Create swan model repository and files
-        if self.waveOn:
-            os.makedirs(self.outDir+'/swan')
-            self.swanFile = numpy.array(self.outDir+'/swan/swan.swn')
-            self.swanInfo = numpy.array(self.outDir+'/swan/swanInfo.swn')
-            self.swanBot = numpy.array(self.outDir+'/swan/swan.bot')
-            self.swanOut = numpy.array(self.outDir+'/swan/swan.csv')
+            # Create swan model repository and files
+            if self.waveOn:
+                os.makedirs(self.outDir+'/swan')
+                self.swanFile = numpy.array(self.outDir+'/swan/swan.swn')
+                self.swanInfo = numpy.array(self.outDir+'/swan/swanInfo.swn')
+                self.swanBot = numpy.array(self.outDir+'/swan/swan.bot')
+                self.swanOut = numpy.array(self.outDir+'/swan/swan.csv')
 
         # Carbonate class
         carb = None
@@ -1381,12 +1380,6 @@ class xmlParser:
                 self.carbGrowth = float(element.text)
             else:
                 self.carbGrowth = 0.
-            element = None
-            element = carb.find('erodibility')
-            if element is not None:
-                self.carbEro = float(element.text)
-            else:
-                self.carbEro = 0.
             element = carb.find('depthControl')
             if element is not None:
                 self.carbDepth = element.text
@@ -1420,12 +1413,6 @@ class xmlParser:
                 self.pelGrowth = float(element.text)
             else:
                 self.pelGrowth = 0.
-            element = None
-            element = pelagic.find('erodibility')
-            if element is not None:
-                self.pelEro = float(element.text)
-            else:
-                self.pelEro = 0.
             element = pelagic.find('depthControl')
             if element is not None:
                 self.pelDepth = element.text

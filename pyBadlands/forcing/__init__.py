@@ -14,3 +14,5 @@
 import xmlParser
 import forceSim
 import isoFlex
+import carbGrowth
+import pelagicGrowth

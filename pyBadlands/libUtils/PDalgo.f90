@@ -423,4 +423,65 @@ contains
 
   end subroutine updatestrati
 
+  subroutine stratcarb(layS,layH,clastic,carb,pel,newH,newS,nbPts,nbLay,nbSed)
+
+    integer :: nbPts
+    integer :: nbLay
+    integer :: nbSed
+    real(kind=8),dimension(nbPts),intent(in) :: pel
+    real(kind=8),dimension(nbPts),intent(in) :: carb
+    real(kind=8),dimension(nbPts),intent(in) :: clastic
+    real(kind=8),dimension(nbPts,nbLay),intent(in) :: layH
+    real(kind=8),dimension(nbPts,nbLay,nbSed),intent(in) :: layS
+
+    real(kind=8),dimension(nbPts,nbLay),intent(out) :: newH
+    real(kind=8),dimension(nbPts,nbLay,nbSed),intent(out) :: newS
+
+    integer :: n,k,s
+    real(kind=8) :: ero
+
+    newS = layS
+    newH = layH
+
+    do n = 1, nbPts
+      if(clastic(n)<0.)then
+        ero = -clastic(n)
+        lp: do k = nbLay,1,-1
+          if(newH(n,k)>ero)then
+            do s = 1, 3
+              if(newS(n,k,s)>=ero)then
+                newS(n,k,s) = newS(n,k,s) - ero
+                newH(n,k) = newH(n,k) - ero
+                exit lp
+              else
+                ero = ero - newS(n,k,s)
+                newH(n,k) = newH(n,k) - newS(n,k,s)
+                newS(n,k,s) = 0.
+              endif
+            enddo
+          else
+            ero = ero - newH(n,k)
+            newH(n,k) = 0.
+            newS(n,k,1:3) = 0.
+          endif
+        enddo lp
+      endif
+      if(clastic(n)>0.)then
+        newH(n,nbLay) = newH(n,nbLay) + clastic(n)
+        newS(n,nbLay,1) = newS(n,nbLay,1) + clastic(n)
+      endif
+      if(carb(n)>0.)then
+        newH(n,nbLay) = newH(n,nbLay) + carb(n)
+        newS(n,nbLay,2) = newS(n,nbLay,2) + carb(n)
+      endif
+      if(pel(n)>0.)then
+        newH(n,nbLay) = newH(n,nbLay) + pel(n)
+        newS(n,nbLay,3) = newS(n,nbLay,3) + pel(n)
+      endif
+    enddo
+
+    return
+
+  end subroutine stratcarb
+
 end module pdstack

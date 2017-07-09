@@ -15,7 +15,7 @@ import numpy as np
 import mpi4py.MPI as mpi
 
 from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN, oceanDyn,
-                        eroMesh, strataMesh, isoFlex, stratiWedge, forceSim)
+                        eroMesh, strataMesh, isoFlex, stratiWedge, carbMesh, forceSim)
 
 def construct_mesh(input, filename, verbose=False):
     """
@@ -145,9 +145,27 @@ def construct_mesh(input, filename, verbose=False):
     else:
         straTIN = None
 
+    # Stratigraphic grid in case of carbonate and/or pelagic growth functions
+    if input.carbonate or input.pelagic:
+        layNb = int((input.tEnd - input.tStart)/input.tDisplay)+2
+        bPts = recGrid.boundsPt
+        ePts = recGrid.edgesPt
+        if input.restart:
+            carbTIN = carbMesh.carbMesh(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
+                            ePts, input.layersData, input.outDir, input.strath5file,
+                            recGrid.regX, recGrid.regY, elevation,
+                            input.rfolder, input.rstep)
+        else:
+            carbTIN = carbMesh.carbMesh(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
+                            ePts, input.layersData, input.outDir, input.strath5file,
+                            recGrid.regX, recGrid.regY, elevation)
+    else:
+        carbTIN = None
+
     return recGrid, FVmesh, force, tMesh, lGIDs, fixIDs, \
         inIDs, parentIDs, inGIDs, totPts, elevation, cumdiff, \
-        cumhill, cumflex, strata, mapero, tinFlex, flex, wave, straTIN
+        cumhill, cumflex, strata, mapero, tinFlex, flex, wave, \
+        straTIN, carbTIN
 
 def reconstruct_mesh(recGrid, input, verbose=False):
     """
@@ -258,6 +276,7 @@ def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
             comm.Allreduce(mpi.IN_PLACE, local_cumflex, op=mpi.MAX)
             cumflex = local_cumflex
             cumflex[:recGrid.boundsPt] = 0.
+
     # Otherwise interpolate elevation from DEM to TIN
     else:
         local_elev[inIDs] = elevationTIN.getElevation(recGrid.regX, recGrid.regY,

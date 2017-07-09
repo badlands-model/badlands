@@ -261,7 +261,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         cumdiff[flow.insideIDs] += cdiff[flow.insideIDs]
         cumhill[flow.insideIDs] += cdiff[flow.insideIDs]
     else:
-        straTIN.update_layers(erosion, deposition, verbose)
+        straTIN.update_layers(erosion, deposition, elevation, verbose)
         # Get the active layer thickness to erode using diffusion
         maxlayh = -cdiff
         maxlayh[maxlayh<1.] = 1.
@@ -277,7 +277,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         cumdiff += tdiff
         cumhill += tdiff
         # Update active layer
-        straTIN.update_layers(erosion, deposition, verbose)
+        straTIN.update_layers(erosion, deposition, elevation, verbose)
 
     if input.btype == 'slope':
         elevation[:len(flow.parentIDs)] = elevation[flow.parentIDs]-0.1

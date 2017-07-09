@@ -77,8 +77,8 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
 
     return lGIDs[allInside], outcell[localCell2] + 1
 
-def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
-               cumhill, cells, rank, rainOn, eroOn, erodibility, area):
+def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill,
+               cells, rank, rainOn, eroOn, erodibility, area, waveOn, waveH, rockOn, prop):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -128,6 +128,12 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
 
     eroOn
         Boolean for erodibility values.
+
+    waveOn
+        Boolean for wave activity.
+
+    waveH
+        Average wave height.
     """
 
     h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
@@ -161,8 +167,20 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
         f.create_dataset('area',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["area"][:,0] = area
 
-def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff,
-                       cumhill, cumflex, cells, rank, rainOn, eroOn, erodibility, area):
+        if waveOn:
+            f.create_dataset('waveH',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["waveH"][:,0] = waveH
+
+        if rockOn:
+            f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depClastic"][:,0] = prop[:,0]
+            f.create_dataset('depCarbonate',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depCarbonate"][:,0] = prop[:,1]
+            f.create_dataset('depPelagic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depPelagic"][:,0] = prop[:,2]
+
+def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill,
+                       cumflex, cells, rank, rainOn, eroOn, erodibility, area, waveOn, waveH, rockOn, prop):
     """
     This function writes for each processor the HDF5 file containing surface information.
 
@@ -212,6 +230,12 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
 
     eroOn
         Boolean for erodibility values.
+
+    waveOn
+        Boolean for wave activity.
+
+    waveH
+        Average wave height.
     """
 
     h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
@@ -247,6 +271,18 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
 
         f.create_dataset('area',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["area"][:,0] = area
+
+        if waveOn:
+            f.create_dataset('waveH',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["waveH"][:,0] = waveH
+
+        if rockOn:
+            f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depClastic"][:,0] = prop[:,0]
+            f.create_dataset('depCarbonate',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depCarbonate"][:,0] = prop[:,1]
+            f.create_dataset('depPelagic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depPelagic"][:,0] = prop[:,2]
 
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """
@@ -287,7 +323,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
     return
 
 def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel, size,
-              flexOn, rainOn, eroOn):
+              flexOn, rainOn, eroOn, waveOn, rockOn):
     """
     This function writes the XmF file which is calling each HFD5 file.
 
@@ -328,6 +364,9 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
 
     eroOn
         Boolean for erodibility values.
+
+    waveOn
+        Boolean for wave activity.
     """
 
     xmf_file = folder+'/'+xmffile+str(step)+'.xmf'
@@ -384,6 +423,28 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
             f.write('         <Attribute Type="Scalar" Center="Node" Name="Ke">\n')
             f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
             f.write('Dimensions="%d 1">%s:/erodibility</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
+
+        if waveOn:
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="waveH">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/waveH</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
+
+        if rockOn:
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="depClastic">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/depClastic</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
+
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="depCarbonate">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/depCarbonate</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
+
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="depPelagic">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/depPelagic</DataItem>\n'%(nodes[p],pfile))
             f.write('         </Attribute>\n')
 
         f.write('         <Attribute Type="Scalar" Center="Node" Name="Sealevel">\n')

@@ -182,10 +182,22 @@ class forceSim:
         self.wavU = None
         self.wavV = None
         self.wavH = None
+        self.meanH = None
         self.wavPerc = None
 
         if self.seafile != None:
             self._build_Sea_function()
+
+    def average_wave(self):
+        """
+        Compute average wave height.
+        """
+
+        self.meanH = self.wavPerc[0]*self.wavH[0]
+        for k in range(1,len(self.wavPerc)):
+            self.meanH += self.wavPerc[k]*self.wavH[k]
+
+        return
 
     def _build_Sea_function(self):
         """
