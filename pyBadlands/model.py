@@ -391,7 +391,13 @@ class Model(object):
                 dh = self.elevation-self.force.sealevel
                 self.carbval = self.carb.computeCarbonate(self.force.meanH, self.cumdiff-oldsed, dh, self.tNow-oldtime)
             elif self.carbval is None:
+                if self.input.waveOn:
+                    self.force.average_wave()
                 self.carbval = np.zeros(self.totPts, dtype=float)
+            else:
+                if self.input.waveOn:
+                    self.force.average_wave()
+
 
             # Compute pelagic evolution
             if self.input.pelagic:
