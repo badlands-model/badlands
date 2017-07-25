@@ -58,18 +58,8 @@ FV_LMOD = FVframe
 OR_FMOD = ORclass
 OR_LMOD = ORmodel
 
-all: ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
+all: waves ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
 
-	@echo "---------------------------------------------"
-	@echo ""
-	@echo ""
-	@echo "Ocean Plugin Makefile"
-	@echo "Build Swan libraries: "
-	for i in $(DIRMODS) ; do   \
-				( cd $$i ; make dist) ;       \
-	done
-	@$(if $(wildcard SimSwan.so),rm -f *.so,)
-	make libs
 	@echo ""
 	@echo ""
 	@echo "---------------------------------------------"
@@ -86,6 +76,22 @@ all: ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so
 	@echo "---------------------------------------------"
 	@echo ""
 	@echo ""
+
+waves:
+	@echo "---------------------------------------------"
+	@echo ""
+	@echo ""
+	@echo "Ocean Plugin Makefile"
+	@echo "Build Swan libraries: "
+	for i in $(DIRMODS) ; do   \
+				( cd $$i ; make dist) ;       \
+	done
+	@$(if $(wildcard SimSwan.so),rm -f *.so,)
+	make libs
+	@echo "*************************************************"
+	@echo "Build Badlands other fortran modules"
+	@echo
+	@echo "*************************************************"
 
 libs :	${SWAN}.so
 

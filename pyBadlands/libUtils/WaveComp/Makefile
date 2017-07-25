@@ -33,19 +33,14 @@ FOB2 = $(SOURCE2:.f90=.o)
 
 .PHONY: dist module dust clobber
 
-dist : module
-
-module : $(FOB1)
+dist :
+	$(F90) WaveClass.f90 -c $(FFLAGS)
 	@mkdir -p $(BUILDDIR)
 	@mkdir -p $(OBJDIR)
 	@mkdir -p $(MODDIR)
 	@mkdir -p $(LIBDIR)
 	cp *.o $(OBJDIR)
-	for f in *.mod ; do   \
-			if [ -f $$f ]; then \
-				mv $$f $(MODDIR);       \
-		fi; 		\
-	done
+	cp *.mod $(MODDIR)
 	@echo
 	@echo "*************************************************"
 	@echo "Build modules and library for Ocean Waves"
@@ -54,9 +49,19 @@ module : $(FOB1)
 	for i in $(SRCDIRs) ; do   \
     	( cd $$i ; make dist) ;       \
 	done
+	make module
+
+module :
+	cp *.o $(OBJDIR)
+	for f in *.mod ; do   \
+			if [ -f $$f ]; then \
+				mv $$f $(MODDIR);       \
+		fi; 		\
+	done
 	make $(TARGETLIB)
 
-$(TARGETLIB): $(FOB2)
+$(TARGETLIB):
+	$(F90) SimWaves.f90 -c $(FFLAGS)
 	cp *.o $(OBJDIR)
 	for f in *.mod ; do   \
     	if [ -f $$f ]; then \
