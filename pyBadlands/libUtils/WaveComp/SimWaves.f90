@@ -104,12 +104,18 @@ contains
         call append_str(stg1,stg2)
         write(iu,*)trim(stg1)
         write(iu,'(a42)') "BOUNd SHAPESPEC JONSWAP 3.3 PEAK DSPR DEGR"
-        write(iu,'(a7)') 'DIFFRAC'
-        write(iu,'(a8)') 'FRICTION'
+        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE S CCW PAR ',forecast_param(1:3)
+        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE N CCW PAR ',forecast_param(1:3)
+        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE W CCW PAR ',forecast_param(1:3)
+        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE E CCW PAR ',forecast_param(1:3)
+        !write(iu,'(a7)') 'DIFFRAC'
+        !write(iu,'(a8)') 'FRICTION'
         !write(iu,'(a26)') 'BREAKING CONSTANT 1.1 0.73'
         !write(iu,'(a8)') 'WCAPPING'
         !write(iu,'(a8)') 'OFF QUAD'
         write(iu,'(a4)') 'GEN1'
+        write(iu,'(a26)') 'BREAKING CONSTANT 1.1 0.73'
+        write(iu,'(a8)') 'FRICTION'
         !write(iu,'(a4)') 'QUAD'
         !write(iu,'(a10)') 'GEN3 AGROW'
         !write(iu,'(a10)') 'OFF BNDCHK'
@@ -119,7 +125,7 @@ contains
         stg2="' XP YP DIR UBOT HS PER WLEN"
         call append_str(stg1,stg2)
         write(iu,*)trim(stg1)
-        write(iu,'(a5,2f12.3)') 'WIND ',forecast_param(1:2)
+        write(iu,'(a5,2f12.3)') 'WIND ',forecast_param(4:5)
         write(iu,'(a7)') 'COMPUTE'
         close(iu)
         open(iu,file=swanbot,status="replace",action="write",iostat=ios)
@@ -155,7 +161,7 @@ contains
       ! Define forcing waves parameters
       call import_bathymetry
 
-      hcast(1:2)=forecast_param(1:2)
+      hcast(1:5)=forecast_param(1:5)
       call swan_run(hcast)
       call exportSwanData
 

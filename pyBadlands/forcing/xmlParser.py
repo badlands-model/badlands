@@ -163,7 +163,11 @@ class xmlParser:
         self.waveTime = None
         self.wavePerc = None
         self.waveWu = None
+        self.waveWh = None
+        self.waveWp = None
         self.waveWd = None
+        self.waveWdd = None
+        self.waveWs = None
         self.wavelist = None
         self.climlist = None
 
@@ -1242,7 +1246,7 @@ class xmlParser:
             if element is not None:
                 self.waveBase = float(element.text)
             else:
-                self.waveBase = 10000
+                self.waveBase = 100000.
             element = None
             element = wavefield.find('events')
             if element is not None:
@@ -1258,6 +1262,10 @@ class xmlParser:
             tmpNb = self.waveNb
             self.waveWd = []
             self.waveWu = []
+            self.waveWh = []
+            self.waveWp = []
+            self.waveWdd = []
+            self.waveWs = []
             self.wavePerc = []
             self.waveTime = numpy.empty((tmpNb,2))
             self.climNb = numpy.empty(tmpNb, dtype=int)
@@ -1297,7 +1305,10 @@ class xmlParser:
                     listPerc = []
                     listWu = []
                     listWd = []
-                    listStorm = []
+                    listWh = []
+                    listWp = []
+                    listWs = []
+                    listWdd = []
                     listBreak = []
                     id = 0
                     sumPerc = 0.
@@ -1316,28 +1327,68 @@ class xmlParser:
                         else:
                             raise ValueError('Wave event %d is missing percentage argument.'%w)
                         element = None
+                        element = clim.find('hs')
+                        if element is not None:
+                            listWh.append(float(element.text))
+                            if listWh[id] < 0:
+                                raise ValueError('Wave event %d significant wave height cannot be negative.'%w)
+                        else:
+                            listWh.append(0.001)
+                        element = None
+                        element = clim.find('per')
+                        if element is not None:
+                            listWp.append(float(element.text))
+                            if listWp[id] <= 0:
+                                raise ValueError('Wave event %d wave period cannot be negative.'%w)
+                        else:
+                            listWp.append(30.)
+                        element = None
+                        element = clim.find('dir')
+                        if element is not None:
+                            listWd.append(float(element.text))
+                            if listWd[id] < 0:
+                                raise ValueError('Wave event %d wave direction needs to be set between 0 and 360.'%w)
+                            if listWd[id] > 360:
+                                raise ValueError('Wave event %d wave direction needs to be set between 0 and 360.'%w)
+                        else:
+                            listWd.append(0.)
+                        element = None
                         element = clim.find('windv')
                         if element is not None:
                             listWu.append(float(element.text))
                             if listWu[id] < 0:
                                 raise ValueError('Wave event %d wind velocity cannot be negative.'%w)
                         else:
-                            raise ValueError('Wave event %d is missing wind velocity argument.'%w)
+                            listWu.append(0.)
                         element = None
-                        element = clim.find('dir')
+                        element = clim.find('wdir')
                         if element is not None:
-                            listWd.append(float(element.text))
-                            if listWd[id] < 0:
+                            listWdd.append(float(element.text))
+                            if listWdd[id] < 0:
                                 raise ValueError('Wave event %d wind direction needs to be set between 0 and 360.'%w)
-                            if listWd[id] > 360:
+                            if listWdd[id] > 360:
                                 raise ValueError('Wave event %d wind direction needs to be set between 0 and 360.'%w)
                         else:
-                            raise ValueError('Wave event %d is missing wind direction argument.'%w)
+                            listWdd.append(0.)
+                        element = None
+                        element = clim.find('spread')
+                        if element is not None:
+                            listWs.append(float(element.text))
+                            if listWs[id] < 0:
+                                raise ValueError('Wave event %d spreading angle needs to be set between 0 and 360.'%w)
+                            if listWs[id] > 360:
+                                raise ValueError('Wave event %d spreading angle needs to be set between 0 and 360.'%w)
+                        else:
+                            listWs.append(0.)
                         id += 1
                     w += 1
                     self.wavePerc.append(listPerc)
                     self.waveWu.append(listWu)
                     self.waveWd.append(listWd)
+                    self.waveWdd.append(listWdd)
+                    self.waveWs.append(listWs)
+                    self.waveWh.append(listWh)
+                    self.waveWp.append(listWp)
                 else:
                     raise ValueError('Wave event %d is missing.'%w)
 

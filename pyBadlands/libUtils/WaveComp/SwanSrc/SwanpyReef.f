@@ -226,7 +226,7 @@
 
       IMPLICIT NONE
 !
-      REAL,  intent(in) :: hindcast( 2 )
+      REAL,  intent(in) :: hindcast( 5 )
       INTEGER   IUNIT
       INTEGER   IOSTAT, IT0, IT, SAVITE, ILEN
       INTEGER   INERR

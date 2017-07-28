@@ -183,6 +183,8 @@ class forceSim:
         self.wavV = None
         self.wavH = None
         self.meanH = None
+        self.meanU = None
+        self.meanV = None
         self.wavPerc = None
 
         if self.seafile != None:
@@ -194,8 +196,12 @@ class forceSim:
         """
 
         self.meanH = self.wavPerc[0]*self.wavH[0]
+        self.meanU = self.wavPerc[0]*self.wavU[0]
+        self.meanV = self.wavPerc[0]*self.wavV[0]
         for k in range(1,len(self.wavPerc)):
             self.meanH += self.wavPerc[k]*self.wavH[k]
+            self.meanU += self.wavPerc[k]*self.wavU[k]
+            self.meanV += self.wavPerc[k]*self.wavV[k]
 
         return
 

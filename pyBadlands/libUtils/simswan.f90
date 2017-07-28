@@ -20,8 +20,8 @@ module model
 
 contains
 
-  subroutine init(pyComm,pysFile,pysInfo,pysBot,pysOut,pyZ,pyWu, &
-                 pyWd,pyDx,pyWbase,pySL,pyNx,pyNy)
+  subroutine init(pyComm,pysFile,pysInfo,pysBot,pysOut,pyZ,pyWh,pyWp, &
+                 pyWd,pyWu,pyWdd,pyDx,pyWbase,pySL,pyNx,pyNy)
 
       integer,intent(in) :: pyNx
       integer,intent(in) :: pyNy
@@ -29,6 +29,9 @@ contains
       real,intent(in) :: pyWu
       real,intent(in) :: pyWd
       real,intent(in) :: pyDx
+      real,intent(in) :: pyWh
+      real,intent(in) :: pyWp
+      real,intent(in) :: pyWdd
       real,intent(in) :: pyWbase
       real,intent(in) :: pySL
       real,dimension(pyNx,pyNy),intent(in) :: pyZ
@@ -54,6 +57,9 @@ contains
       wave_base=pyWbase
       hindcast%wvel=pyWu
       hindcast%wdir=pyWd
+      hindcast%wh=pyWh
+      hindcast%wp=pyWp
+      hindcast%wddir=pyWdd
       sea_level = pySL
 
       ! if(allocated(wavU)) deallocate(wavU)
@@ -74,8 +80,11 @@ contains
       stratal_y=sp_m
 
       ! Define forecasts
-      forecast_param(1)=hindcast%wvel
-      forecast_param(2)=hindcast%wdir
+      forecast_param(1)=hindcast%wh
+      forecast_param(2)=hindcast%wp
+      forecast_param(3)=hindcast%wdir
+      forecast_param(4)=hindcast%wvel
+      forecast_param(5)=hindcast%wddir
 
       int_type=mpi_integer
       real_type=mpi_real
@@ -105,15 +114,16 @@ contains
 
   end subroutine init
 
-  ! subroutine run(pyComm, pyZ, pyWu, pyWd, pySL, pyWavU, pyWavV, &
-  !                  pyWavH, pyWavP, pyWavL, pyNx, pyNy)
-  subroutine run(pyComm, pyZ, pyWu, pyWd, pySL, pyWavU, pyDir, pyWavH, pyNx, pyNy)
+  subroutine run(pyComm, pyZ, pyWh, pyWp, pyWd, pyWu, pyWdd, pySL, pyWavU, pyDir, pyWavH, pyNx, pyNy)
 
       integer,intent(in) :: pyNx
       integer,intent(in) :: pyNy
       integer,intent(in) :: pyComm
       real,intent(in) :: pyWu
       real,intent(in) :: pyWd
+      real,intent(in) :: pyWh
+      real,intent(in) :: pyWp
+      real,intent(in) :: pyWdd
       real,intent(in) :: pySL
       real,dimension(pyNx,pyNy),intent(in) :: pyZ
       real,dimension(pyNx,pyNy),intent(out) :: pyWavU
@@ -134,8 +144,11 @@ contains
       enddo
 
       ! Update forecast based on next wave regime
-      forecast_param(1) = pyWu
-      forecast_param(2) = pyWd
+      forecast_param(1) = pyWh
+      forecast_param(2) = pyWp
+      forecast_param(3) = pyWd
+      forecast_param(4) = pyWu
+      forecast_param(5) = pyWdd
 
       ! Run Swan model
       call run_waves

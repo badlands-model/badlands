@@ -119,9 +119,19 @@ class oceanDyn():
 
         wl = input.wavelist[wID]
         cl = input.climlist[wID]
+
+        wD1 = 0
+        wD2 = 0
+        if self.rank == 0:
+            wD1 = input.waveWd[wl][cl] + 2.*input.waveWs[wl][cl]*(numpy.random.rand()-0.5)
+            wD2 = input.waveWdd[wl][cl] + 2.*input.waveWs[wl][cl]*(numpy.random.rand()-0.5)
+        wD1 = self.comm.bcast(wD1, root=0)
+        wD2 = self.comm.bcast(wD2, root=0)
+
         swan.model.init(self.fcomm, input.swanFile, input.swanInfo,
-                        input.swanBot, input.swanOut, rZ, input.waveWu[wl][cl],
-                        input.waveWd[wl][cl], self.res, input.waveBase, sl)
+                        input.swanBot, input.swanOut, rZ, input.waveWh[wl][cl],
+                        input.waveWp[wl][cl], wD1, input.waveWu[wl][cl],
+                        wD2, self.res, input.waveBase, sl)
 
         return
 
@@ -175,22 +185,30 @@ class oceanDyn():
             wl = input.wavelist[wID]
             cl = input.climlist[wID]
 
+            wD1 = 0
+            wD2 = 0
+            if self.rank == 0:
+                wD1 = input.waveWd[wl][cl] + 2.*input.waveWs[wl][cl]*(numpy.random.rand()-0.5)
+                wD2 = input.waveWdd[wl][cl] + 2.*input.waveWs[wl][cl]*(numpy.random.rand()-0.5)
+            wD1 = self.comm.bcast(wD1, root=0)
+            wD2 = self.comm.bcast(wD2, root=0)
+
             # Run SWAN model
-            wavU, wavD, H = swan.model.run(self.fcomm, rZ, input.waveWu[wl][cl],
-                                        input.waveWd[wl][cl], force.sealevel)
+            wavU, wavD, H = swan.model.run(self.fcomm, rZ, input.waveWh[wl][cl], input.waveWp[wl][cl], wD1,
+                                            input.waveWu[wl][cl], wD2, force.sealevel)
 
             # Define velocity current
-            #fU = gaussian_filter(wavU, sigma=1.)
+            fU = gaussian_filter(wavU, sigma=1.)
             fH = gaussian_filter(H, sigma=1.)
-            #U = fU * numpy.cos(wavD)
-            #V = fU * numpy.sin(wavD)
+            U = fU * numpy.cos(wavD)
+            V = fU * numpy.sin(wavD)
 
             # Plot the wave dynamic using matplotlib
             #self._bottomCurrents(U, V, force.sealevel, rZ)
 
             # Convert velocity from wave mesh to TIN
-            #cU = interpn( (self.wavX, self.wavY), U, (self.xyTIN), method='linear')
-            #cV = interpn( (self.wavX, self.wavY), V, (self.xyTIN), method='linear')
+            cU = interpn( (self.wavX, self.wavY), U, (self.xyTIN), method='linear')
+            cV = interpn( (self.wavX, self.wavY), V, (self.xyTIN), method='linear')
             cH = interpn( (self.wavX, self.wavY), fH, (self.xyTIN), method='linear')
 
             if self.rank == 0:
@@ -198,16 +216,16 @@ class oceanDyn():
                 print 'took %0.02f seconds to run.' %(time.clock()-tw)
 
             landIDs = numpy.where(TINz>=force.sealevel)[0]
-            #cU[landIDs] = 0.
-            #cV[landIDs] = 0.
+            cU[landIDs] = 0.
+            cV[landIDs] = 0.
             cH[landIDs] = 0.
 
             # Save computed velocity for checking
             #self._dumpData(cU,cV,cH)
 
             # Store percentage of each climate and induced bottom currents velocity
-            #force.wavU.append(cU)
-            #force.wavV.append(cV)
+            force.wavU.append(cU)
+            force.wavV.append(cV)
             force.wavH.append(cH)
             force.wavPerc.append(input.wavePerc[wl][cl])
 

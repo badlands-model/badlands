@@ -20,14 +20,20 @@ module classdata
 
   ! Forecast parameters
   real::wave_base
-  real,dimension(2)::forecast_param
+  real,dimension(5)::forecast_param
 
   ! Number of hindcast scenarios
   type hindcast_param
+    ! Wave height.
+    real::wh
+    ! Wave period.
+    real::wp
+    ! Wave/wind direction.
+    real::wdir
     ! Wind velocity at 10 m elevation (m/s).
     real::wvel
     ! Wind direction.
-    real::wdir
+    real::wddir
   end type hindcast_param
   type(hindcast_param)::hindcast
 

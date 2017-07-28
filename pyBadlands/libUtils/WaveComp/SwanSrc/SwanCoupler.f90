@@ -127,7 +127,7 @@ module swan_coupler_functions
     end type ImpSpecWa
 
     real, dimension(:,:), allocatable :: bathyfield, bathyHalo
-    real, dimension(2) :: hcasts
+    real, dimension(5) :: hcasts
 
 contains
 
@@ -387,6 +387,112 @@ contains
 
     end subroutine import_bathymetry
     !=======================================================================
+    subroutine swan_falsereadinput( COMPUT )
+
+        use TIMECOMM
+        use OCPCOMM1
+        use OCPCOMM2
+        use OCPCOMM3
+        use OCPCOMM4
+        use SWCOMM1
+        use SWCOMM2
+        use SWCOMM3
+        use SWCOMM4
+        use OUTP_DATA
+        use M_SNL4
+        use M_GENARR
+        use M_OBSTA
+        use M_PARALL
+        use SwanGriddata
+
+        integer, parameter :: MXINCL = 10
+        integer, parameter :: NVOTP  = 15
+        integer, save     :: INCNUM(1:MXINCL) = 0
+        integer, save     :: INCLEV = 1
+
+        integer           :: IOSTAT = 0
+        integer           :: ICNL4, ILAMBDA
+        integer           :: ITMP1, ITMP2, ITMP3, ITMP4
+
+        logical           :: MORE
+        logical, save     :: LOBST = .false.
+
+        integer        :: LREF, LREFDIFF, LRFRD
+        real           :: POWN, DUM
+        real           :: FD1, FD2, FD3, FD4
+        real, allocatable :: RLAMBDA(:)
+
+        character*6  QOVSNM
+        character*40 QOVLNM
+        real         QR(9)
+
+        type(OBSTDAT), pointer :: OBSTMP
+        type(OBSTDAT), save, pointer :: COBST
+
+        type(OPSDAT), pointer :: OPSTMP
+
+        type XYPT
+            real                :: X, Y
+            type(XYPT), pointer :: NEXTXY
+        end type XYPT
+
+        type(XYPT), target  :: FRST
+        type(XYPT), pointer :: CURR, TMP
+
+        type AUXT
+            integer             :: I
+            type(AUXT), pointer :: NEXTI
+        end type AUXT
+        type(AUXT), target  :: FRSTQ
+        type(AUXT), pointer :: CURRQ, TMPQ
+
+        type VEGPT
+            integer              :: N
+            real                 :: H, D, C
+            type(VEGPT), pointer :: NEXTV
+        end type VEGPT
+
+        type(VEGPT), target  :: FRSTV
+        type(VEGPT), pointer :: CURRV, TMPV
+
+        logical :: found
+        logical, save :: RUNMADE = .false.
+        logical, save :: LOGCOM(1:6) = .false.
+
+        integer   TIMARR(6)
+        character PSNAME *8, PNAME *8, COMPUT *(*), PTYPE *1, DTTIWR *18
+        integer, save :: IENT = 0       ! number of entries to this subr
+        integer, allocatable :: IARR(:)
+        integer IVOTP(NVOTP), INDX(1)
+        data IVOTP /10, 11, 13, 15, 16, 17, 18, 19,          &
+            28, 32, 33, 42, 43, 47, 48    /
+
+        call swan_falseinitinput( AC2, SPCSIG, SPCDIR, KGRPNT )
+
+        ! Read fake next compute
+        COMPUT = 'COMP'
+        RUNMADE = .true.
+        NSTATM = 0
+        TFINC = TINIC
+        TIMCO = TINIC
+        DT = 1.E10
+        RDTIM = 0.
+        NSTATC = 0
+        MTC = 1
+        NCOMPT = NCOMPT + 1
+        if( NCOMPT > 50000 ) call MSGERR (2,   &
+            'No more than 50000 COMPUTE commands are allowed')
+        RCOMPT(NCOMPT,1) = REAL(NSTATC)
+        RCOMPT(NCOMPT,2) = REAL(MTC)
+        RCOMPT(NCOMPT,3) = TFINC
+        RCOMPT(NCOMPT,4) = TINIC
+        RCOMPT(NCOMPT,5) = DT
+        ITERMX = MXITST
+
+        return
+
+    end subroutine swan_falsereadinput
+    !=======================================================================
     subroutine swan_falsereadwind( COMPUT )
 
         use TIMECOMM
@@ -538,6 +644,107 @@ contains
 
     end subroutine swan_falseinitwind
     !=======================================================================
+    subroutine swan_falseinitinput( AC2, SPCSIG, SPCDIR, KGRPNT )
+
+        use OCPCOMM1
+        use OCPCOMM2
+        use OCPCOMM3
+        use OCPCOMM4
+        use SWCOMM1
+        use SWCOMM2
+        use SWCOMM3
+        use SWCOMM4
+        use TIMECOMM
+        use M_PARALL
+        use SwanGriddata
+
+        ! Initva parameters
+        real SPCDIR(MDC,6), SPCSIG(MSC)
+        logical :: STPNOW, EQCSTR
+        integer    KGRPNT(MXC,MYC)
+        integer JXMAX, JYMAX, NPTOT
+        real       AC2(MDC,MSC,MCGRD)
+        logical SINGLEHOT, PTNSUBGRD
+        logical    KEYWIS, LERR
+        character  RLINE *80
+        integer IID, IUNITAC
+        real    ACTMP(MDC), DIRTMP(MDC)
+        logical EQREAL
+
+        save       IENT
+        data       IENT /0/
+
+        ! Read fake new initial values for borders
+        call IGNORE ('COND')
+        LERR =  .false.
+        if (MXC <= 0 .and. OPTG /= 5)then
+            call MSGERR (2, 'command fake INIT should follow CGRID')
+            LERR = .true.
+        endif
+        if (MCGRD <= 1 .and. nverts <= 0) then
+            call MSGERR (2,'command fake INIT should follow READ BOT or READ UNSTRUC')
+            LERR = .true.
+        endif
+        ICOND = 2
+        ! Hsign
+        SPPARM(1)= hcasts( 1 )
+        if (KEYWIS('MEAN')) then
+            if (FSHAPE > 0) FSHAPE=-FSHAPE
+        elseif (KEYWIS('PEAK')) then
+            if (FSHAPE < 0) FSHAPE=-FSHAPE
+        endif
+        ! Period
+        SPPARM(2) = hcasts( 2 )
+        if (SPPARM(2) <= 0.) call MSGERR (2, 'Period must be >0')
+        if (SPPARM(2) > PI2/SPCSIG(1)) then
+            call MSGERR (2,'Inc. freq. lower than lowest spectral freq.')
+            write(PRINTF,11) 1./SPPARM(2),' < ',SPCSIG(1)/PI2,' lowest'
+        endif
+        if (SPPARM(2) < PI2/SPCSIG(MSC)) then
+            call MSGERR (2,'Inc. freq. higher than highest spectral freq.')
+            write(PRINTF,11) 1./SPPARM(2),' > ',SPCSIG(MSC)/PI2,'highest'
+        endif
+11      format(' Inc. freq. = ',F9.5, A3, F9.5, '=',A7,' freq')
+        ! Dir
+        SPPARM( 3 ) = hcasts( 3 )
+
+        ! Give boundaries of region where the initial condition applies
+        IX1 = 0
+        IX2 = MXC-1
+        IY1 = 0
+        IY2 = MYC-1
+        if (.not.LERR)then
+            call SSHAPE (AC2(1,1,1), SPCSIG, SPCDIR, FSHAPE, DSHAPE)
+            do IX = IX1+1, IX2+1
+                do IY = IY1+1, IY2+1
+                    INDX = KGRPNT(IX,IY)
+                    if (INDX.GT.1)call SINTRP (1., 0., AC2(1,1,1), AC2(1,1,1), &
+                        AC2(1,1,INDX),SPCDIR,SPCSIG)
+                enddo
+            enddo
+            ! Reset action density AC2(*,*,1) to 0
+            do ID = 1, MDC
+                do IS = 1, MSC
+                    AC2(ID,IS,1) = 0.
+                enddo
+            enddo
+        endif
+
+        U10 = hcasts( 4 )
+        WDIP = hcasts( 5 )
+
+        ! Convert (if necessary) WDIP from nautical degrees
+        ! to cartesian degrees
+        WDIP = DEGCNV (WDIP)
+
+        if( IWIND == 0) IWIND = 4
+        ALTMP = WDIP / 360.
+        WDIP = PI2 * (ALTMP - NINT(ALTMP))
+
+        return
+
+    end subroutine swan_falseinitinput
+    !=======================================================================
     subroutine swan_reinitialise
 
         use OCPCOMM2
@@ -552,16 +759,20 @@ contains
         use M_PARALL
         use SwanGriddata
         use swan_coupler_parallel
+        USE M_BNDSPEC
 
         logical STPNOW
         integer ILEN, ISTAT, IF1, IL1
         character COMPUT *4
         character*20 NUMSTR, CHARS(1)
         character*80 MSGSTR
+        TYPE(BSDAT) , POINTER :: CURRBS
 
         call swan_initialisezero
 
-        call swan_falsereadwind( COMPUT )
+        !call swan_falsereadwind( COMPUT )
+
+        call swan_falsereadinput( COMPUT )
 
         ! Allocate some arrays meant for computation
         if( NUMOBS > 0 )then
@@ -578,6 +789,16 @@ contains
         endif
         if (.not.allocated(BSPECS)) allocate(BSPECS(MDC,MSC,NBSPEC,2))
         if (.not.allocated(BGRIDP)) allocate(BGRIDP(6*NBGRPT))
+
+        CURRBS => FBS
+        do
+          NBS = CURRBS%NBS
+          IF (NBS.EQ.-999) EXIT
+          CURRBS%SPPARM(1:3) = hcasts(1:3) !SPPARM(1:4) = CURRBS%SPPARM(1:4)
+          !CALL SSHAPE (BSPECS(1,1,NBS,1), SPCSIG, SPCDIR,  FSHAPE, DSHAPE)
+          IF (.NOT.ASSOCIATED(CURRBS%NEXTBS)) EXIT
+          CURRBS => CURRBS%NEXTBS
+        enddo
 
         ! Do some preparations before computation
         call SWPREP ( BSPECS, BGRIDP, CROSS , XCGRID, YCGRID, KGRPNT, &

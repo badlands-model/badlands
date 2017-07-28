@@ -13,6 +13,7 @@ import os
 import pstats
 import StringIO
 
+from pyBadlands.libUtils  import simswan as swan
 
 class Model(object):
     """State object for the pyBadlands model."""
@@ -34,6 +35,7 @@ class Model(object):
         self._rank = mpi.COMM_WORLD.rank
         self._size = mpi.COMM_WORLD.size
         self._comm = mpi.COMM_WORLD
+        self.fcomm = mpi.COMM_WORLD.py2f()
 
     def load_xml(self, filename, verbose=False):
         """
@@ -452,6 +454,10 @@ class Model(object):
             if self.carbTIN is not None:
                 self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
                 self.carbTIN.step += 1
+
+        # Finalise SWAN model run
+        if self.input.waveOn and self.tNow == self.input.tEnd:
+            swan.model.final(self.fcomm)
 
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
