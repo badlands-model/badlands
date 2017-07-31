@@ -3,6 +3,7 @@
 *.so
 pyBadlands.egg-info/
 *.mod
+*.o
 Examples/.ipynb_checkpoints/
 *.swp
 *.hdf5
