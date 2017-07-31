@@ -198,6 +198,7 @@ class forceSim:
         self.meanH = self.wavPerc[0]*self.wavH[0]
         self.meanU = self.wavPerc[0]*self.wavU[0]
         self.meanV = self.wavPerc[0]*self.wavV[0]
+        
         for k in range(1,len(self.wavPerc)):
             self.meanH += self.wavPerc[k]*self.wavH[k]
             self.meanU += self.wavPerc[k]*self.wavU[k]
@@ -486,7 +487,7 @@ class forceSim:
                 raise ValueError('Problem computing the displacements rate for event %d.'%event)
             tinDisp = tinDisp / dt
         else:
-            tinDisp = numpy.zeros(len(self.tXY[:,0]), dtype=float)
+            tinDisp = numpy.zeros(len(self.tXY[inIDs,0]), dtype=float)
 
         return tinDisp
 
