@@ -5,6 +5,7 @@ pyBadlands.egg-info/
 *.mod
 *.o
 Examples/.ipynb_checkpoints/
+libUtils/WaveComp/SwanSrc/*.o
 *.swp
 *.hdf5
 *.xmf

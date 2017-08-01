@@ -168,6 +168,7 @@ class xmlParser:
         self.waveWd = None
         self.waveWdd = None
         self.waveWs = None
+        self.waveSide = None
         self.wavelist = None
         self.climlist = None
 
@@ -1266,6 +1267,7 @@ class xmlParser:
             self.waveWp = []
             self.waveWdd = []
             self.waveWs = []
+            self.waveSide = []
             self.wavePerc = []
             self.waveTime = numpy.empty((tmpNb,2))
             self.climNb = numpy.empty(tmpNb, dtype=int)
@@ -1309,6 +1311,7 @@ class xmlParser:
                     listWp = []
                     listWs = []
                     listWdd = []
+                    listWside = []
                     listBreak = []
                     id = 0
                     sumPerc = 0.
@@ -1380,6 +1383,14 @@ class xmlParser:
                                 raise ValueError('Wave event %d spreading angle needs to be set between 0 and 360.'%w)
                         else:
                             listWs.append(0.)
+                        element = None
+                        element = clim.find('side')
+                        if element is not None:
+                            listWside.append(int(element.text))
+                            if listWside[id] > 8:
+                                raise ValueError('Wave boundary side is between 1 and 8.')
+                        else:
+                            listWside[id]=1
                         id += 1
                     w += 1
                     self.wavePerc.append(listPerc)
@@ -1389,6 +1400,7 @@ class xmlParser:
                     self.waveWs.append(listWs)
                     self.waveWh.append(listWh)
                     self.waveWp.append(listWp)
+                    self.waveSide.append(listWside)
                 else:
                     raise ValueError('Wave event %d is missing.'%w)
 

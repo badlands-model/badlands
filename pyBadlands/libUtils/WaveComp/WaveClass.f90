@@ -20,7 +20,7 @@ module classdata
 
   ! Forecast parameters
   real::wave_base
-  real,dimension(5)::forecast_param
+  real,dimension(6)::forecast_param
 
   ! Number of hindcast scenarios
   type hindcast_param

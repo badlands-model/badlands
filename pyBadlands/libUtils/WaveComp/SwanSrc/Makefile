@@ -4,6 +4,8 @@ FCFLAGS=-O3 -funroll-loops --param max-unroll-times=2 -cpp \
     -ffree-form -ftree-vectorize -ffast-math -lstdc++ -ffree-line-length-none \
 		-shared -fPIC
 
+#F77FLAGS = -m64 -w -fno-second-underscore -shared  -fPIC -g -Wall -Wextra -Warray-temporaries -Wconversion -fbacktrace -ffree-line-length-0 -ffpe-trap=zero,overflow,underflow
+#FCFLAGS= -m64 -w -fno-second-underscore -shared  -fPIC -g -Wall -Wextra -Warray-temporaries -Wconversion -fbacktrace -ffree-line-length-0  -ffpe-trap=zero,overflow,underflow
 
 BUILDDIR=../build
 OBJDIR=$(BUILDDIR)/objects

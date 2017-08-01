@@ -104,10 +104,29 @@ contains
         call append_str(stg1,stg2)
         write(iu,*)trim(stg1)
         write(iu,'(a42)') "BOUNd SHAPESPEC JONSWAP 3.3 PEAK DSPR DEGR"
-        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE S CCW PAR ',forecast_param(1:3)
-        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE N CCW PAR ',forecast_param(1:3)
-        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE W CCW PAR ',forecast_param(1:3)
-        write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE E CCW PAR ',forecast_param(1:3)
+
+        if(forecast_param(6)==1)then
+          write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE N CCW PAR ',forecast_param(1:3)
+        elseif(forecast_param(6)==2)then
+          write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE S CCW PAR ',forecast_param(1:3)
+        elseif(forecast_param(6)==3)then
+          write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE W CCW PAR ',forecast_param(1:3)
+        elseif(forecast_param(6)==4)then
+          write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE E CCW PAR ',forecast_param(1:3)
+        elseif(forecast_param(6)==5)then
+          write(iu,'(a26,3f12.3)') 'BOUNdspec SIDE NW CCW PAR ',forecast_param(1:3)
+        elseif(forecast_param(6)==6)then
+          write(iu,'(a26,3f12.3)') 'BOUNdspec SIDE NE CCW PAR ',forecast_param(1:3)
+        elseif(forecast_param(6)==7)then
+          write(iu,'(a26,3f12.3)') 'BOUNdspec SIDE SW CCW PAR ',forecast_param(1:3)
+        else
+          write(iu,'(a26,3f12.3)') 'BOUNdspec SIDE SE CCW PAR ',forecast_param(1:3)
+        endif
+
+        !write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE S CCW PAR ',forecast_param(1:3)
+        !write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE N CCW PAR ',forecast_param(1:3)
+        !write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE W CCW PAR ',forecast_param(1:3)
+        !write(iu,'(a25,3f12.3)') 'BOUNdspec SIDE NE CCW PAR ',forecast_param(1:3)
         !write(iu,'(a7)') 'DIFFRAC'
         !write(iu,'(a8)') 'FRICTION'
         !write(iu,'(a26)') 'BREAKING CONSTANT 1.1 0.73'
@@ -161,7 +180,7 @@ contains
       ! Define forcing waves parameters
       call import_bathymetry
 
-      hcast(1:5)=forecast_param(1:5)
+      hcast(1:6)=forecast_param(1:6)
       call swan_run(hcast)
       call exportSwanData
 
@@ -301,6 +320,8 @@ contains
     subroutine wave_final
 
       call swan_finalize
+      if(allocated(bathyfield)) deallocate(bathyfield)
+      if(allocated(bathyHalo)) deallocate(bathyHalo)
       if(allocated(l_Uw)) deallocate(l_Uw)
       if(allocated(g_Uw)) deallocate(g_Uw)
       if(allocated(l_Hs)) deallocate(l_Hs)
@@ -310,6 +331,7 @@ contains
       if(allocated(g_Dw)) deallocate(g_Dw)
       if(allocated(glob_Dw)) deallocate(glob_Dw)
       if(allocated(exportSWANfields)) deallocate(exportSWANfields)
+      call mpi_finalize(ierr)
 
       return
 

@@ -131,7 +131,7 @@ class oceanDyn():
         swan.model.init(self.fcomm, input.swanFile, input.swanInfo,
                         input.swanBot, input.swanOut, rZ, input.waveWh[wl][cl],
                         input.waveWp[wl][cl], wD1, input.waveWu[wl][cl],
-                        wD2, self.res, input.waveBase, sl)
+                        wD2, input.waveSide[wl][cl], self.res, input.waveBase, sl)
 
         return
 
@@ -195,7 +195,7 @@ class oceanDyn():
 
             # Run SWAN model
             wavU, wavD, H = swan.model.run(self.fcomm, rZ, input.waveWh[wl][cl], input.waveWp[wl][cl], wD1,
-                                            input.waveWu[wl][cl], wD2, force.sealevel)
+                                            input.waveWu[wl][cl], wD2, input.waveSide[wl][cl], force.sealevel)
 
             # Define velocity current
             fU = gaussian_filter(wavU, sigma=1.)
@@ -229,7 +229,7 @@ class oceanDyn():
             force.wavH.append(cH)
             force.wavPerc.append(input.wavePerc[wl][cl])
 
-         return wID
+         return int(wID)
 
     def _dumpData(self, U, V, H):
         """

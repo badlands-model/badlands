@@ -21,11 +21,12 @@ module model
 contains
 
   subroutine init(pyComm,pysFile,pysInfo,pysBot,pysOut,pyZ,pyWh,pyWp, &
-                 pyWd,pyWu,pyWdd,pyDx,pyWbase,pySL,pyNx,pyNy)
+                 pyWd,pyWu,pyWdd,pySide,pyDx,pyWbase,pySL,pyNx,pyNy)
 
       integer,intent(in) :: pyNx
       integer,intent(in) :: pyNy
       integer,intent(in) :: pyComm
+      integer,intent(in) :: pySide
       real,intent(in) :: pyWu
       real,intent(in) :: pyWd
       real,intent(in) :: pyDx
@@ -85,6 +86,7 @@ contains
       forecast_param(3)=hindcast%wdir
       forecast_param(4)=hindcast%wvel
       forecast_param(5)=hindcast%wddir
+      forecast_param(6) = pySide
 
       int_type=mpi_integer
       real_type=mpi_real
@@ -114,11 +116,13 @@ contains
 
   end subroutine init
 
-  subroutine run(pyComm, pyZ, pyWh, pyWp, pyWd, pyWu, pyWdd, pySL, pyWavU, pyDir, pyWavH, pyNx, pyNy)
+  subroutine run(pyComm, pyZ, pyWh, pyWp, pyWd, pyWu, pyWdd, pySide, pySL, pyWavU, &
+                 pyDir, pyWavH, pyNx, pyNy)
 
       integer,intent(in) :: pyNx
       integer,intent(in) :: pyNy
       integer,intent(in) :: pyComm
+      integer,intent(in) :: pySide
       real,intent(in) :: pyWu
       real,intent(in) :: pyWd
       real,intent(in) :: pyWh
@@ -149,6 +153,7 @@ contains
       forecast_param(3) = pyWd
       forecast_param(4) = pyWu
       forecast_param(5) = pyWdd
+      forecast_param(6) = pySide
 
       ! Run Swan model
       call run_waves

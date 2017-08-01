@@ -2160,6 +2160,266 @@
   40  RETURN
 !     end of subroutine SVARTP *
       END
+      !************************************************************************
+      !
+      SUBROUTINE SWBOUN2(ANGLE,VAL,XCGRID,YCGRID,KGRPNT,XYTST,KGRBND)
+      !
+      !************************************************************************
+      !
+          use OCPCOMM2
+          use OCPCOMM4
+          use SWCOMM1
+          use SWCOMM2
+          use SWCOMM3
+          use M_BNDSPEC
+          use SwanGriddata
+          use SwanGridobjects
+          use SwanCompdata
+          use swan_coupler_parallel
+
+
+          REAL    XCGRID(MXC,MYC),    YCGRID(MXC,MYC)
+          REAL    ANGLE
+          REAL    VAL(6)
+
+          INTEGER KGRPNT(MXC,MYC)
+          INTEGER XYTST(*),  KGRBND(*)
+
+          INTEGER   IX,IY,ISIDM,ISIDE,KC2,KC1,KOUNTR, IKO
+          INTEGER   IX1,IY1,IX2,IY2,IX3,IY3,MP,IP,NBSPSS
+
+          INTEGER   NUMP
+
+          REAL      CRDP, CRDM, SOMX, SOMY, RR
+          REAL      DIRSI,COSDIR,SINDIR,DIRSID,DIRREF
+          LOGICAL   CCW
+          LOGICAL, SAVE :: LBS    = .FALSE.
+          LOGICAL, SAVE :: LBGP   = .FALSE.
+
+          TYPE XYPT
+            INTEGER             :: JX, JY
+            TYPE(XYPT), POINTER :: NEXTXY
+          END TYPE XYPT
+
+          TYPE(BSDAT), POINTER :: BSTMP                                       40.31
+          TYPE(BSDAT), SAVE, POINTER :: CUBS
+          TYPE(BGPDAT), POINTER :: BGPTMP
+
+          TYPE(XYPT), TARGET  :: FRST
+          TYPE(XYPT), POINTER :: CURR, TMP
+
+          TYPE(verttype), DIMENSION(:), POINTER :: vert                       40.80
+          TYPE(facetype), DIMENSION(:), POINTER :: face                       40.80
+
+          NBSPEC = 0
+
+          IF (ASSOCIATED(CUBGP)) DEALLOCATE(CUBGP)
+          IF (ASSOCIATED(BGPTMP)) DEALLOCATE(BGPTMP)
+          IF (ASSOCIATED(CURR)) DEALLOCATE(CURR)
+          IF (ASSOCIATED(BSTMP)) DEALLOCATE(BSTMP)
+          !
+          !     point to vertex and face objects
+          !
+          vert => gridobject%vert_grid                                        40.80
+          face => gridobject%face_grid                                        40.80
+
+          CALL SwanBndStruc ( XCGRID, YCGRID )
+          FSHAPE = 2
+          DSHAPE = 1
+
+          KOUNTR  = 0
+          FRST%JX = 0
+          FRST%JY = 0
+          NULLIFY(FRST%NEXTXY)
+          CURR => FRST
+
+          DIRSI = ANGLE
+          CCW = .TRUE.
+          CRDM   = -1.E10
+          ISIDM  = 0
+          DO ISIDE = 1, 4
+            SOMX = 0.
+            SOMY = 0.
+            NUMP = 0
+            IF (ISIDE.EQ.1) THEN
+              DO IX = 1, MXC
+                KC2 = KGRPNT(IX,1)
+                IF (IX.GT.1) THEN
+                  IF (KC1.GT.1 .AND. KC2.GT.1) THEN
+                    SOMX = SOMX + XCGRID(IX,1)-XCGRID(IX-1,1)
+                    SOMY = SOMY + YCGRID(IX,1)-YCGRID(IX-1,1)
+                    NUMP = NUMP + 1
+                  ENDIF
+                ENDIF
+                KC1 = KC2
+              ENDDO
+            ELSE IF (ISIDE.EQ.2) THEN
+              DO IY = 1, MYC
+                KC2 = KGRPNT(MXC,IY)
+                IF (IY.GT.1) THEN
+                  IF (KC1.GT.1 .AND. KC2.GT.1) THEN
+                    SOMX = SOMX + XCGRID(MXC,IY)-XCGRID(MXC,IY-1)
+                    SOMY = SOMY + YCGRID(MXC,IY)-YCGRID(MXC,IY-1)
+                    NUMP = NUMP + 1
+                  ENDIF
+                ENDIF
+                KC1 = KC2
+              ENDDO
+            ELSE IF (ISIDE.EQ.3) THEN
+              DO IX = 1, MXC
+                KC2 = KGRPNT(IX,MYC)
+                IF (IX.GT.1) THEN
+                  IF (KC1.GT.1 .AND. KC2.GT.1) THEN
+                    SOMX = SOMX + XCGRID(IX-1,MYC)-XCGRID(IX,MYC)
+                    SOMY = SOMY + YCGRID(IX-1,MYC)-YCGRID(IX,MYC)
+                    NUMP = NUMP + 1
+                  ENDIF
+                ENDIF
+                KC1 = KC2
+              ENDDO
+            ELSE IF (ISIDE.EQ.4) THEN
+              DO IY = 1, MYC
+                KC2 = KGRPNT(1,IY)
+                IF (IY.GT.1) THEN
+                  IF (KC1.GT.1 .AND. KC2.GT.1) THEN
+                    SOMX = SOMX + XCGRID(1,IY-1)-XCGRID(1,IY)
+                    SOMY = SOMY + YCGRID(1,IY-1)-YCGRID(1,IY)
+                    NUMP = NUMP + 1
+                  ENDIF
+                ENDIF
+                KC1 = KC2
+              ENDDO
+            ENDIF
+
+            IF (NUMP.GT.0) THEN
+              DIRSID = ATAN2(SOMY,SOMX)
+              DIRREF = PI*(DNORTH+DIRSI)/180.
+              IF (CVLEFT) THEN
+                CRDP = COS(DIRSID - 0.5*PI - DIRREF)
+              ELSE
+                CRDP = COS(DIRSID + 0.5*PI - DIRREF)
+              ENDIF
+              IF (CRDP.GT.CRDM) THEN
+                CRDM = CRDP
+                ISIDM = ISIDE
+              ENDIF
+            ENDIF
+          ENDDO
+
+
+          IF (ISIDM.EQ.1) THEN
+              IX1 = 1
+              IY1 = 1
+              IX2 = MXC
+              IY2 = 1
+          ELSE IF (ISIDM.EQ.2) THEN
+              IX1 = MXC
+              IY1 = 1
+              IX2 = MXC
+              IY2 = MYC
+          ELSE IF (ISIDM.EQ.3) THEN
+              IX1 = MXC
+              IY1 = MYC
+              IX2 = 1
+              IY2 = MYC
+          ELSE IF (ISIDM.EQ.4) THEN
+              IX1 = 1
+              IY1 = MYC
+              IX2 = 1
+              IY2 = 1
+          ENDIF
+
+          IF (.NOT.CCW .EQV. CVLEFT) THEN
+              IX3 = IX1
+              IY3 = IY1
+              IX1 = IX2
+              IY1 = IY2
+              IX2 = IX3
+              IY2 = IY3
+          ENDIF
+
+          MP = MAX(ABS(IX2-IX1),ABS(IY2-IY1))
+
+          DO IP = 0, MP
+            IF (MP.EQ.0) THEN
+              RR = 0.
+            ELSE
+              RR = REAL(IP) / REAL(MP)
+            ENDIF
+            IX = IX1 + NINT(RR*REAL(IX2-IX1))
+            IY = IY1 + NINT(RR*REAL(IY2-IY1))
+            IF (KGRPNT(IX,IY) .GT. 1) THEN
+              KOUNTR = KOUNTR + 1
+              ALLOCATE(TMP)
+              TMP%JX = IX
+              TMP%JY = IY
+              NULLIFY(TMP%NEXTXY)
+              CURR%NEXTXY => TMP
+              CURR => TMP
+            ENDIF
+          ENDDO
+!
+!       *** boundary condition from file, 1-d or 2-d spectrum
+!
+          CURR => FRST%NEXTXY                                               40.31
+          LBS = .FALSE.
+          SPPARM(1) = VAL(1)
+          SPPARM(2) = VAL(2)
+          SPPARM(3) = VAL(3)
+          IF (DSHAPE.EQ.1) THEN
+            SPPARM(4) = 30.
+          ELSE
+            SPPARM(4) = 2.
+          ENDIF
+          NBSPEC = NBSPEC + 1
+          NBSPSS = NBSPEC
+          IF (ASSOCIATED(BSTMP)) DEALLOCATE(BSTMP)
+          ALLOCATE(BSTMP)                                                       40.31
+          BSTMP%NBS    = NBSPEC                                                 40.31
+          BSTMP%FSHAPE = FSHAPE                                                 40.31
+          BSTMP%DSHAPE = DSHAPE                                                 40.31
+          BSTMP%SPPARM(1:4) = SPPARM(1:4)                                       40.31
+          NULLIFY(BSTMP%NEXTBS)                                                 40.31
+          IF ( .NOT.LBS ) THEN                                                  40.31
+             FBS = BSTMP                                                        40.31
+             CUBS => FBS                                                        40.31
+             LBS = .TRUE.                                                       40.31
+          ELSE                                                                  40.31
+             CUBS%NEXTBS => BSTMP                                               40.31
+             CUBS => BSTMP                                                      40.31
+          END IF
+          NBGRPT = 0
+          LBGP = .FALSE.
+          DO IKO = 1, KOUNTR
+            IX = CURR%JX                                                  40.31
+            IF (OPTG.NE.5) IY = CURR%JY
+            CURR => CURR%NEXTXY                                           40.31
+            ALLOCATE(BGPTMP)                                              40.31
+            IF (OPTG.NE.5) THEN                                           40.80
+               BGPTMP%BGP(1) = KGRPNT(IX,IY)                              40.31
+            ELSE                                                          40.80
+               BGPTMP%BGP(1) = IX                                         40.80
+            ENDIF
+            BGPTMP%BGP(2) = 1                                             40.31
+            BGPTMP%BGP(3) = 1000                                          40.31
+            BGPTMP%BGP(4) = NBSPSS                                        40.31
+            BGPTMP%BGP(5) = 0                                             40.31
+            BGPTMP%BGP(6) = 1                                             40.31
+            NULLIFY(BGPTMP%NEXTBGP)                                       40.31
+            IF ( .NOT.LBGP ) THEN                                         40.31
+               FBGP = BGPTMP                                              40.31
+               CUBGP => FBGP                                              40.31
+               LBGP = .TRUE.                                              40.31
+            ELSE                                                          40.31
+               !IF (.NOT.ASSOCIATED(CUBGP%NEXTBGP)) EXIT
+               CUBGP%NEXTBGP => BGPTMP                                    40.31
+               CUBGP => BGPTMP                                            40.31
+            END IF
+          ENDDO
+          NBGRPT = NBGRPT + KOUNTR
+          IF (ASSOCIATED(TMP)) DEALLOCATE(TMP)
+          RETURN
+      END
 !************************************************************************
 !                                                                       *
       SUBROUTINE SWBOUN ( XCGRID, YCGRID, KGRPNT, XYTST, KGRBND )         40.31
@@ -2904,9 +3164,11 @@
           ELSE                                                            40.80
              CALL ININTG ('K', VM, 'REQ', 0)                              40.80
           ENDIF                                                           40.80
+
 !
 !         --- go along boundary clockwise or counterclockwise (default)
 !
+
           CALL INKEYW ('STA', 'CCW')
           IF (KEYWIS('CLOCKW')) THEN
             CCW = .FALSE.
@@ -3021,6 +3283,7 @@
                      ISIDM = ISIDE
                    ENDIF
                  ENDIF
+
                  IF (ITEST.GE.60) WRITE (PRTEST, 151) ISIDE, NUMP,
      &           SOMX, SOMY, DIRSID*180/PI, DIRREF*180/PI, CRDP, CVLEFT   40.13
  151             FORMAT (' side ', 2I4, 2(1X,E11.4), 2(1X,F5.0), 2X,
@@ -3060,13 +3323,16 @@
                IY1 = IY2
                IX2 = IX3
                IY2 = IY3
+               print *,'grgrrgrgrggr'
              ENDIF
+
              IF (ITEST.GE.50) WRITE (PRINTF, 112) ISIDM,
      &       IX1-1, IY1-1, XCGRID(IX1,IY1)+XOFFS, YCGRID(IX1,IY1)+YOFFS,  40.00
      &       IX2-1, IY2-1, XCGRID(IX2,IY2)+XOFFS, YCGRID(IX2,IY2)+YOFFS   40.00
  112         FORMAT (' Selected side:', I2, ' from ', 2I4, 2F9.0,         40.00
      &       ' to ', 2I4, 2F9.0)                                          40.00
              MP = MAX(ABS(IX2-IX1),ABS(IY2-IY1))
+
              DO IP = 0, MP
                IF (MP.EQ.0) THEN                                          40.00
                  RR = 0.
@@ -3151,6 +3417,7 @@
 !       *** boundary condition from file, 1-d or 2-d spectrum
 !
         CURR => FRST%NEXTXY                                               40.31
+
         CALL INKEYW ('REQ',' ')
         IF (KEYWIS('UNIF') .OR. KEYWIS('CON') .OR. KEYWIS('PAR')) THEN
           CALL INKEYW('STA', 'PAR')
@@ -3220,6 +3487,7 @@
             CALL ININTG('SEQ', NFSEQ, 'STA', 1)
             NBSPSS = NBSPSS + NFSEQ
           ENDIF
+
           DO IKO = 1, KOUNTR
             IX = CURR%JX                                                  40.31
             IF (OPTG.NE.5) IY = CURR%JY                                   40.80 40.31

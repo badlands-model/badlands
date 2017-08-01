@@ -351,17 +351,23 @@ class Model(object):
                                             self.FVmesh, self.tMesh, self.force, self.flow, self.rain,
                                             self.elevation, self.fillH, self.cumdiff, self.cumhill,
                                             self.outputStep, self.prop, self.mapero, self.cumflex)
+
                 # Update next display time
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
                 last_output = time.clock()
                 if self.straTIN is not None:
+                    meshtime = time.clock()
                     self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
+                    if self._rank == 0:
+                        print "   - Write sediment mesh output", time.clock() - meshtime
 
                 if self.carbTIN is not None:
+                    meshtime = time.clock()
                     self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
                     self.carbTIN.step += 1
-                # exit
+                    if self._rank == 0:
+                        print "   - Write carbonate mesh output", time.clock() - meshtime
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
@@ -399,7 +405,6 @@ class Model(object):
             else:
                 if self.input.waveOn:
                     self.force.average_wave()
-
 
             # Compute pelagic evolution
             if self.input.pelagic:
@@ -455,15 +460,15 @@ class Model(object):
                 self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
                 self.carbTIN.step += 1
 
-        # Finalise SWAN model run
-        if self.input.waveOn and self.tNow == self.input.tEnd:
-            swan.model.final(self.fcomm)
-
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += self.input.laytime
             self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
                                     self._rank, 1, self.outputStep-1)
+
+        # Finalise SWAN model run
+        if self.input.waveOn and self.tNow == self.input.tEnd:
+            swan.model.final(self.fcomm)
 
         if profile:
             pr.disable()

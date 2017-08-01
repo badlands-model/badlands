@@ -36,7 +36,6 @@
       USE OCPCOMM4                                                        40.41
       USE M_PARALL                                                        40.31
 !
-      
       IMPLICIT NONE
 
       include 'mpif.h'

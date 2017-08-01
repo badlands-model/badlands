@@ -226,7 +226,7 @@
 
       IMPLICIT NONE
 !
-      REAL,  intent(in) :: hindcast( 5 )
+      REAL,  intent(in) :: hindcast( 6 )
       INTEGER   IUNIT
       INTEGER   IOSTAT, IT0, IT, SAVITE, ILEN
       INTEGER   INERR
@@ -247,6 +247,17 @@
           CALL SWSYNC                                                     40.30
           IF (STPNOW()) RETURN                                            40.30
 
+C          OPEN(UNIT=19485, FILE='ac2.txt', STATUS='NEW')
+C          WRITE(UNIT=19485,FMT=*) AC2
+C          CLOSE(UNIT=19485)
+C          OPEN(UNIT=19487, FILE='BSPECS.txt', STATUS='NEW')
+C          WRITE(UNIT=19487,FMT=*) BSPECS
+C          CLOSE(UNIT=19487)
+C          OPEN(UNIT=19488, FILE='COMPDA.txt', STATUS='NEW')
+C          WRITE(UNIT=19488,FMT=*) COMPDA(1,JHSIBC)
+C          CLOSE(UNIT=19488)
+
+          IT0 = 1
 !          --- loop over time steps                                        40.00
           DO 500 IT = IT0, MTC                                            40.00
 
@@ -339,8 +350,7 @@
 
  500      CONTINUE
 
-            call swan_reinitialise
-!      call swan_initialisezero !( AC2, SPCSIG, SPCDIR, KGRPNT )
+          call swan_reinitialise2(int(hcasts(6)))
 
       RETURN
       END SUBROUTINE SWAN_RUN
@@ -383,20 +393,20 @@
 !         output requests in case of parallel computation                 40.30
 
       CALL SWSYNC                                                         40.30
-!      IF ( PARLL ) THEN                                                   40.30
-!         ALLOCATE (BLKND(MXC*MYC))                                        40.51 40.41
-!         BLKND = REAL(INODE)                                              40.41
-!         IF ( IAMMASTER ) THEN                                            40.95
-!            ALLOCATE(BLKNDC(MXCGL*MYCGL))                                 40.51 40.41
-!            BLKNDC = 0.                                                   40.96
-!         END IF
-!         CALL SWCOLLECT ( BLKNDC, BLKND, .TRUE. )                         40.51 40.41
-!         IF (STPNOW()) RETURN                                             40.41
-!         IF ( IAMMASTER ) THEN                                            40.95 40.30
-!            CALL SWCOLOUT ( OURQT, BLKNDC )                               40.51 40.41 40.30
-!            DEALLOCATE(BLKNDC)                                            40.41 40.30
-!         END IF                                                           40.30
-!      END IF                                                              40.30
+      IF ( PARLL ) THEN                                                   40.30
+         ALLOCATE (BLKND(MXC*MYC))                                        40.51 40.41
+         BLKND = REAL(INODE)                                              40.41
+         IF ( IAMMASTER ) THEN                                            40.95
+            ALLOCATE(BLKNDC(MXCGL*MYCGL))                                 40.51 40.41
+            BLKNDC = 0.                                                   40.96
+         END IF
+         CALL SWCOLLECT ( BLKNDC, BLKND, .TRUE. )                         40.51 40.41
+         IF (STPNOW()) RETURN                                             40.41
+         IF ( IAMMASTER ) THEN                                            40.95 40.30
+            CALL SWCOLOUT ( OURQT, BLKNDC )                               40.51 40.41 40.30
+            DEALLOCATE(BLKNDC)                                            40.41 40.30
+         END IF                                                           40.30
+      END IF                                                              40.30
 
       INQUIRE(UNIT=PRINTF,OPENED=LOPEN)                                   40.30
       IF (LOPEN) CLOSE(PRINTF)                                            40.30
@@ -411,8 +421,8 @@
       IF (ALLOCATED(BLKND )) DEALLOCATE(BLKND )                           40.41
 
       CALL SWCLME                                                         40.31
-
-      CALL SWEXITMPI                                                      40.30
+C
+C      CALL SWEXITMPI                                                      40.30
 
 ! THIS IS WHERE WE INITIALIZE ESFM COUPLING
 
@@ -608,6 +618,9 @@
 !     Set the defaults for the MDIA:                                      40.17
 
       MDIA  = 6                                                           40.17
+      IF(ALLOCATED(LAMBDA)) DEALLOCATE(LAMBDA)
+      IF(ALLOCATED(CNL4_1)) DEALLOCATE(CNL4_1)
+      IF(ALLOCATED(CNL4_2)) DEALLOCATE(CNL4_2)
       ALLOCATE(LAMBDA(MDIA),CNL4_1(MDIA),CNL4_2(MDIA))                    40.17
       LAMBDA = (/0.08,0.09,0.11,0.15,0.16,0.29/)                          40.17
       CNL4_1 = (/8.77,-13.82,10.02,-15.92,14.41,0.65/)                    40.17
