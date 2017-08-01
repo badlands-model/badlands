@@ -352,22 +352,23 @@ class Model(object):
                                             self.elevation, self.fillH, self.cumdiff, self.cumhill,
                                             self.outputStep, self.prop, self.mapero, self.cumflex)
 
-                # Update next display time
-                self.force.next_display += self.input.tDisplay
-                self.outputStep += 1
-                last_output = time.clock()
-                if self.straTIN is not None:
+                if self.straTIN is not None and self.outputStep % self.input.tmesh==0:
                     meshtime = time.clock()
-                    self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
+                    self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep,self._rank)
                     if self._rank == 0:
                         print "   - Write sediment mesh output", time.clock() - meshtime
 
-                if self.carbTIN is not None:
+                if self.carbTIN is not None and self.outputStep % self.input.tmesh==0:
                     meshtime = time.clock()
-                    self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
+                    self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep,self._rank)
                     self.carbTIN.step += 1
                     if self._rank == 0:
                         print "   - Write carbonate mesh output", time.clock() - meshtime
+
+                # Update next display time
+                last_output = time.clock()
+                self.force.next_display += self.input.tDisplay
+                self.outputStep += 1
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:

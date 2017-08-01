@@ -53,6 +53,8 @@ class xmlParser:
         self.tStart = None
         self.tEnd = None
         self.tDisplay = None
+        self.tmesh = 1
+        self.mesh = None
         self.minDT = 1.
         self.maxDT = 1.e6
 
@@ -291,6 +293,12 @@ class xmlParser:
                 raise ValueError('Error in the definition of the simulation time: display time declaration is required')
             if (self.tEnd - self.tStart) % self.tDisplay != 0:
                 raise ValueError('Error in the definition of the simulation time: display time needs to be a multiple of simulation time.')
+            element = None
+            element = time.find('meshout')
+            if element is not None:
+                self.tmesh = int(element.text)
+            else:
+                self.tmesh = 1
             element = None
             element = time.find('mindt')
             if element is not None:
