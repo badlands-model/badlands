@@ -74,7 +74,11 @@ class Model(object):
 
         # Initialise carbonate evolution if any
         if self.input.carbonate:
-            self.carb = carbGrowth.carbGrowth(self.input)
+            self.carb = carbGrowth.carbGrowth(self.input, self.recGrid.regX, self.recGrid.regY, self.recGrid.boundsPt)
+            if self.input.coastdist>0.:
+                self.carb.buildReg(self.FVmesh.node_coords[:,:2])
+            if self.carb.baseMap is not None:
+                self.carb.build_basement(self.FVmesh.node_coords[:,:2])
 
         # Initialise pelagic evolution if any
         if self.input.pelagic:
@@ -168,6 +172,13 @@ class Model(object):
         else:
             self.flow.erodibility = self.mapero.erodibility
 
+        # Update Carbonate mesh
+        if self.input.carbonate:
+            if self.input.coastdist>0.:
+                self.carb.buildReg(self.FVmesh.node_coords[:,:2])
+            if self.carb.baseMap is not None:
+                self.carb.build_basement(self.FVmesh.node_coords[:,:2])
+
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
         self.flow.xgrid = None
         self.flow.sedload = None
@@ -177,6 +188,7 @@ class Model(object):
         self.carbval = None
         self.pelaval = None
         self.prop = np.zeros((self.totPts,3))
+
 
     def run_to_time(self, tEnd, profile=False, verbose=False):
         """

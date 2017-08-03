@@ -184,6 +184,9 @@ class xmlParser:
         self.carbDepth = None
         self.carbSed = None
         self.carbWave = None
+        self.islandPerim = 0.
+        self.coastdist = 0.
+        self.baseMap = None
 
         self.pelagic = False
         self.pelGrowth = 0.
@@ -1472,6 +1475,23 @@ class xmlParser:
                     raise ValueError('Carbonate sedimentation control file is missing or the given path is incorrect.')
             else:
                 self.carbSed = None
+            element = carb.find('isld')
+            if element is not None:
+                self.islandPerim = float(element.text)
+            else:
+                self.islandPerim = 0.
+            element = carb.find('dist')
+            if element is not None:
+                self.coastdist = float(element.text)
+            else:
+                self.coastdist = 0.
+            element = carb.find('bedMap')
+            if element is not None:
+                self.baseMap = element.text
+                if not os.path.isfile(self.baseMap):
+                    raise ValueError('Basement map file for carbonate growth is missing or the given path is incorrect.')
+            else:
+                self.baseMap = None
 
         # Pelagic class
         pelagic = None

@@ -212,7 +212,7 @@ class oceanDyn():
             cH = interpn( (self.wavX, self.wavY), fH, (self.xyTIN), method='linear')
 
             if self.rank == 0:
-                print 'Swan model of waves field %d and climatic conditions %d:' %(wl,cl)
+                print 'Swan model of waves field %d and climatic conditions %d:' %(wl,clim)
                 print 'took %0.02f seconds to run.' %(time.clock()-tw)
 
             landIDs = numpy.where(TINz>=force.sealevel)[0]
