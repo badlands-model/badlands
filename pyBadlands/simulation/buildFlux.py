@@ -103,6 +103,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     """
     Compute sediment fluxes.
     """
+    
     rank = mpi.COMM_WORLD.rank
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD
@@ -154,8 +155,9 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     if input.Hillslope and hillslope.updatedt == 0:
         hillslope.dt_stability(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
         hillslope.dt_stability_ms(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
-    else:
+    elif hillslope.CFL is None:
         hillslope.CFL = tEnd-tNow
+
     flow.dt_stability(fillH, inGIDs)
     CFLtime = min(flow.CFL, hillslope.CFL)
     if CFLtime>1.:

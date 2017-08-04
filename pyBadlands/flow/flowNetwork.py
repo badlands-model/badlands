@@ -647,7 +647,7 @@ class flowNetwork:
                     eroCoeff = self.erodibility.reshape((len(elev),1))
             if actlay is None:
                 actlay = numpy.zeros((len(elev),1))
-
+                
             cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
                      elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,self.borders)

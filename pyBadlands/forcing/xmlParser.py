@@ -1485,7 +1485,7 @@ class xmlParser:
                 self.coastdist = float(element.text)
             else:
                 self.coastdist = 0.
-            element = carb.find('bedMap')
+            element = carb.find('baseMap')
             if element is not None:
                 self.baseMap = element.text
                 if not os.path.isfile(self.baseMap):
