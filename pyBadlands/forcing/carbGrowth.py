@@ -39,6 +39,11 @@ class carbGrowth:
         self.sedfile = input.carbSed
         self.wavefile = input.carbWave
 
+        self.growth2 = input.carbGrowth2
+        self.depthfile2 = input.carbDepth2
+        self.sedfile2 = input.carbSed2
+        self.wavefile2 = input.carbWave2
+
         self.depthval = None
         self.depthfct = None
         self.depthFunc = None
@@ -49,12 +54,30 @@ class carbGrowth:
         self.wavefct = None
         self.waveFunc = None
 
+        self.depthval2 = None
+        self.depthfct2 = None
+        self.depthFunc2 = None
+        self.sedval2 = None
+        self.sedfct2 = None
+        self.sedFunc2 = None
+        self.waveval2 = None
+        self.wavefct2 = None
+        self.waveFunc2 = None
+
         self.sedgrowth = None
         self.depthgrowth = None
         self.wavegrowth = None
 
+        self.sedgrowth2 = None
+        self.depthgrowth2 = None
+        self.wavegrowth2 = None
+
         self.mlen = input.islandPerim
         self.mdist = input.coastdist
+
+        self.mlen2 = input.islandPerim2
+        self.mdist2 = input.coastdist2
+
         self.Afactor = input.Afactor
         self.tree = None
         self.dx = None
@@ -68,101 +91,174 @@ class carbGrowth:
         self.tinBase1 = None
         self.baseMap = input.baseMap
 
-        if self.depthfile != None:
-            self._build_depth_function()
-        if self.sedfile != None:
-            self._build_sed_function()
-        if self.wavefile != None:
-            self._build_wave_function()
+        self.tinBase2 = None
+        self.baseMap2 = input.baseMap2
 
-    def build_basement(self,tXY):
+        if self.depthfile != None:
+            self._build_depth_function(1)
+        if self.sedfile != None:
+            self._build_sed_function(1)
+        if self.wavefile != None:
+            self._build_wave_function(1)
+
+        if self.depthfile2 != None:
+            self._build_depth_function(2)
+        if self.sedfile2 != None:
+            self._build_sed_function(2)
+        if self.wavefile2 != None:
+            self._build_wave_function(2)
+
+    def build_basement(self,tXY,id):
         """
         Using Pandas library to read the basement map file and define consolidated and
         soft sediment region.
         """
         self.tXY = tXY
-        self.tinBase1 = numpy.ones(len(tXY))
 
         # Read basement file
-        Bmap = pandas.read_csv(str(self.baseMap), sep=r'\s+', engine='c',
-                    header=None, na_filter=False, dtype=numpy.float, low_memory=False)
+        if id == 1:
+            self.tinBase1 = numpy.ones(len(tXY))
+            Bmap = pandas.read_csv(str(self.baseMap), sep=r'\s+', engine='c',
+                        header=None, na_filter=False, dtype=numpy.float, low_memory=False)
 
-        rectBase = numpy.reshape(Bmap.values,(len(self.regX), len(self.regY)),order='F')
-        self.tinBase1[self.boundsPt:] = interpolate.interpn( (self.regX, self.regY), rectBase,
-                                                    tXY[self.boundsPt:,:], method='linear')
+            rectBase = numpy.reshape(Bmap.values,(len(self.regX), len(self.regY)),order='F')
+            self.tinBase1[self.boundsPt:] = interpolate.interpn( (self.regX, self.regY), rectBase,
+                                                        tXY[self.boundsPt:,:], method='linear')
+        elif id == 2:
+            self.tinBase2 = numpy.ones(len(tXY))
+            Bmap = pandas.read_csv(str(self.baseMap2), sep=r'\s+', engine='c',
+                        header=None, na_filter=False, dtype=numpy.float, low_memory=False)
+
+            rectBase = numpy.reshape(Bmap.values,(len(self.regX), len(self.regY)),order='F')
+            self.tinBase2[self.boundsPt:] = interpolate.interpn( (self.regX, self.regY), rectBase,
+                                                        tXY[self.boundsPt:,:], method='linear')
 
         return
 
-    def _build_depth_function(self):
+    def _build_depth_function(self,id):
         """
         Using Pandas library to read the depth control file and define depth interpolation
         function based on Scipy 1D linear function.
         """
 
         # Read depth control file
-        depthdata = pandas.read_csv(self.depthfile, sep=r'\s+', engine='c',
-                               header=None, na_filter=False,
-                               dtype=numpy.float, low_memory=False)
+        if id == 1:
+            depthdata = pandas.read_csv(self.depthfile, sep=r'\s+', engine='c',
+                                   header=None, na_filter=False,
+                                   dtype=numpy.float, low_memory=False)
 
-        self.depthval = numpy.zeros(len(depthdata.values[:,0])+2)
-        self.depthfct = numpy.zeros(len(self.depthval))
+            self.depthval = numpy.zeros(len(depthdata.values[:,0])+2)
+            self.depthfct = numpy.zeros(len(self.depthval))
 
-        self.depthval[1:-1] = depthdata.values[:,0]
-        self.depthfct[1:-1] = depthdata.values[:,1]
-        self.depthval[0] = -1.0e7
-        self.depthfct[0] = self.depthfct[1]
-        self.depthval[-1] = 1.e7
-        self.depthfct[-1] = self.depthfct[-2]
+            self.depthval[1:-1] = depthdata.values[:,0]
+            self.depthfct[1:-1] = depthdata.values[:,1]
+            self.depthval[0] = -1.0e7
+            self.depthfct[0] = self.depthfct[1]
+            self.depthval[-1] = 1.e7
+            self.depthfct[-1] = self.depthfct[-2]
 
-        self.depthFunc = interpolate.interp1d(self.depthval, self.depthfct, kind='linear')
+            self.depthFunc = interpolate.interp1d(self.depthval, self.depthfct, kind='linear')
 
-    def _build_sed_function(self):
+        if id == 2:
+            depthdata = pandas.read_csv(self.depthfile2, sep=r'\s+', engine='c',
+                                   header=None, na_filter=False,
+                                   dtype=numpy.float, low_memory=False)
+
+            self.depthval2 = numpy.zeros(len(depthdata.values[:,0])+2)
+            self.depthfct2 = numpy.zeros(len(self.depthval))
+
+            self.depthval2[1:-1] = depthdata.values[:,0]
+            self.depthfct2[1:-1] = depthdata.values[:,1]
+            self.depthval2[0] = -1.0e7
+            self.depthfct2[0] = self.depthfct2[1]
+            self.depthval2[-1] = 1.e7
+            self.depthfct2[-1] = self.depthfct2[-2]
+
+            self.depthFunc2 = interpolate.interp1d(self.depthval2, self.depthfct2, kind='linear')
+
+    def _build_sed_function(self,id):
         """
         Using Pandas library to read the sedimentation control file and define sedimentation interpolation
         function based on Scipy 1D linear function.
         """
 
         # Read sedimentation rate file
-        seddata = pandas.read_csv(self.sedfile, sep=r'\s+', engine='c',
-                               header=None, na_filter=False,
-                               dtype=numpy.float, low_memory=False)
+        if id == 1:
+            seddata = pandas.read_csv(self.sedfile, sep=r'\s+', engine='c',
+                                   header=None, na_filter=False,
+                                   dtype=numpy.float, low_memory=False)
 
-        self.sedval = numpy.zeros(len(seddata.values[:,0])+2)
-        self.sedfct = numpy.zeros(len(self.sedval))
+            self.sedval = numpy.zeros(len(seddata.values[:,0])+2)
+            self.sedfct = numpy.zeros(len(self.sedval))
 
-        self.sedval[1:-1] = seddata.values[:,0]
-        self.sedfct[1:-1] = seddata.values[:,1]
-        self.sedval[0] = -1.0e7
-        self.sedfct[0] = self.sedfct[1]
-        self.sedval[-1] = 1.e7
-        self.sedfct[-1] = self.sedfct[-2]
+            self.sedval[1:-1] = seddata.values[:,0]
+            self.sedfct[1:-1] = seddata.values[:,1]
+            self.sedval[0] = -1.0e7
+            self.sedfct[0] = self.sedfct[1]
+            self.sedval[-1] = 1.e7
+            self.sedfct[-1] = self.sedfct[-2]
 
-        self.sedFunc = interpolate.interp1d(self.sedval, self.sedfct, kind='linear')
+            self.sedFunc = interpolate.interp1d(self.sedval, self.sedfct, kind='linear')
 
-    def _build_wave_function(self):
+            if id == 2:
+                seddata = pandas.read_csv(self.sedfile2, sep=r'\s+', engine='c',
+                                       header=None, na_filter=False,
+                                       dtype=numpy.float, low_memory=False)
+
+                self.sedval2 = numpy.zeros(len(seddata.values[:,0])+2)
+                self.sedfct2 = numpy.zeros(len(self.sedval))
+
+                self.sedval2[1:-1] = seddata.values[:,0]
+                self.sedfct2[1:-1] = seddata.values[:,1]
+                self.sedval2[0] = -1.0e7
+                self.sedfct2[0] = self.sedfct2[1]
+                self.sedval2[-1] = 1.e7
+                self.sedfct2[-1] = self.sedfct2[-2]
+
+                self.sedFunc2 = interpolate.interp1d(self.sedval2, self.sedfct2, kind='linear')
+
+    def _build_wave_function(self, id):
         """
         Using Pandas library to read the wave control file and define wave interpolation
         function based on Scipy 1D linear function.
         """
 
         # Read wave control file
-        wavedata = pandas.read_csv(self.wavefile, sep=r'\s+', engine='c',
-                               header=None, na_filter=False,
-                               dtype=numpy.float, low_memory=False)
+        if id == 1:
+            wavedata = pandas.read_csv(self.wavefile, sep=r'\s+', engine='c',
+                                   header=None, na_filter=False,
+                                   dtype=numpy.float, low_memory=False)
 
-        self.waveval = numpy.zeros(len(wavedata.values[:,0])+2)
-        self.wavefct = numpy.zeros(len(self.waveval))
+            self.waveval = numpy.zeros(len(wavedata.values[:,0])+2)
+            self.wavefct = numpy.zeros(len(self.waveval))
 
-        self.waveval[1:-1] = wavedata.values[:,0]
-        self.wavefct[1:-1] = wavedata.values[:,1]
-        self.waveval[0] = -1.0e7
-        self.wavefct[0] = self.wavefct[1]
-        self.waveval[-1] = 1.e7
-        self.wavefct[-1] = self.wavefct[-2]
+            self.waveval[1:-1] = wavedata.values[:,0]
+            self.wavefct[1:-1] = wavedata.values[:,1]
+            self.waveval[0] = -1.0e7
+            self.wavefct[0] = self.wavefct[1]
+            self.waveval[-1] = 1.e7
+            self.wavefct[-1] = self.wavefct[-2]
 
-        self.waveFunc = interpolate.interp1d(self.waveval, self.wavefct, kind='linear')
+            self.waveFunc = interpolate.interp1d(self.waveval, self.wavefct, kind='linear')
 
-    def _getWaveFct(self, wavefield):
+        if id == 2:
+            wavedata = pandas.read_csv(self.wavefile2, sep=r'\s+', engine='c',
+                                   header=None, na_filter=False,
+                                   dtype=numpy.float, low_memory=False)
+
+            self.waveval2 = numpy.zeros(len(wavedata.values[:,0])+2)
+            self.wavefct2 = numpy.zeros(len(self.waveval2))
+
+            self.waveval2[1:-1] = wavedata.values[:,0]
+            self.wavefct2[1:-1] = wavedata.values[:,1]
+            self.waveval2[0] = -1.0e7
+            self.wavefct2[0] = self.wavefct2[1]
+            self.waveval2[-1] = 1.e7
+            self.wavefct2[-1] = self.wavefct2[-2]
+
+            self.waveFunc2 = interpolate.interp1d(self.waveval2, self.wavefct2, kind='linear')
+
+    def _getWaveFct(self, wavefield, id):
         """
         Computes for a given wave field to carbonate wave dependent growth function.
 
@@ -171,14 +267,21 @@ class carbGrowth:
         wavefield : numpy array containing wave height.
         """
 
-        if self.wavefile == None:
-            self.wavegrowth = numpy.ones(len(wavefield))
-        else:
-            self.wavegrowth = self.waveFunc(wavefield)
+        if id == 1:
+            if self.wavefile == None:
+                self.wavegrowth = numpy.ones(len(wavefield))
+            else:
+                self.wavegrowth = self.waveFunc(wavefield)
+
+        if id == 2:
+            if self.wavefile2 == None:
+                self.wavegrowth2 = numpy.ones(len(wavefield))
+            else:
+                self.wavegrowth2 = self.waveFunc2(wavefield)
 
         return
 
-    def _getSedFct(self, sedfield):
+    def _getSedFct(self, sedfield, id):
         """
         Computes for a given sedimentation rate dependent growth function.
 
@@ -187,14 +290,21 @@ class carbGrowth:
         wavefield : numpy array containing sedimentation rate.
         """
 
-        if self.sedfile == None:
-            self.sedgrowth = numpy.ones(len(sedfield))
-        else:
-            self.sedgrowth = self.sedFunc(sedfield)
+        if id == 1:
+            if self.sedfile == None:
+                self.sedgrowth = numpy.ones(len(sedfield))
+            else:
+                self.sedgrowth = self.sedFunc(sedfield)
+
+        if id == 2:
+            if self.sedfile2 == None:
+                self.sedgrowth2 = numpy.ones(len(sedfield))
+            else:
+                self.sedgrowth2 = self.sedFunc2(sedfield)
 
         return
 
-    def _getDepthFct(self, depthfield):
+    def _getDepthFct(self, depthfield, id):
         """
         Computes for a given depth field to carbonate wave dependent growth function.
 
@@ -203,10 +313,17 @@ class carbGrowth:
         depthfield : numpy array containing depth.
         """
 
-        if self.depthfile == None:
-            self.depthgrowth = numpy.ones(len(depthfield))
-        else:
-            self.depthgrowth = self.depthFunc(-depthfield)
+        if id == 1:
+            if self.depthfile == None:
+                self.depthgrowth = numpy.ones(len(depthfield))
+            else:
+                self.depthgrowth = self.depthFunc(-depthfield)
+
+        if id == 2:
+            if self.depthfile2 == None:
+                self.depthgrowth2 = numpy.ones(len(depthfield))
+            else:
+                self.depthgrowth2 = self.depthFunc2(-depthfield)
 
         return
 
@@ -325,31 +442,80 @@ class carbGrowth:
 
         if self.mdist == 0.:
             if self.baseMap is not None:
+                tmpids = numpy.where(depthfield<0.)[0]
                 seaIds = numpy.where(numpy.logical_and(self.tinBase1==0,depthfield<0.))[0]
             else:
                 seaIds = numpy.where(depthfield<0.)[0]
+
+            if self.growth2 > 0.:
+                if self.baseMap2 is not None:
+                    tmpids = numpy.where(depthfield<0.)[0]
+                    seaIds2 = numpy.where(numpy.logical_and(self.tinBase2==0,depthfield<0.))[0]
+                else:
+                    seaIds2 = numpy.where(depthfield<0.)[0]
         else:
             seaIds = self.getDistanceShore(depthfield)
+            seaIds2 = self.getDistanceShore(depthfield)
 
         growth = numpy.zeros(len(depthfield))
         growth.fill(1.1e6)
 
+        if self.growth2 > 0.:
+            growth2 = numpy.zeros(len(depthfield))
+            growth2.fill(1.1e6)
+
         # Get each controlling function values
         if self.depthfile != None:
-            self._getDepthFct(depthfield)
+            self._getDepthFct(depthfield,1)
             growth[seaIds] = numpy.minimum(growth[seaIds],self.depthgrowth[seaIds])
         if self.sedfile != None:
-            self._getSedFct(sedfield)
+            self._getSedFct(sedfield,1)
             growth[seaIds] = numpy.minimum(growth[seaIds],self.sedgrowth[seaIds])
         if self.wavefile != None:
-            self._getWaveFct(wavefield)
+            self._getWaveFct(wavefield,1)
             growth[seaIds] = numpy.minimum(growth[seaIds],self.wavegrowth[seaIds])
         growth[growth>1.e6] = 0.
+
+        if self.growth2 > 0.:
+            if self.depthfile2 != None:
+                self._getDepthFct(depthfield,2)
+                growth2[seaIds2] = numpy.minimum(growth2[seaIds2],self.depthgrowth2[seaIds2])
+            if self.sedfile2 != None:
+                self._getSedFct(sedfield,2)
+                growth2[seaIds2] = numpy.minimum(growth2[seaIds2],self.sedgrowth2[seaIds2])
+            if self.wavefile2 != None:
+                self._getWaveFct(wavefield,2)
+                growth2[seaIds2] = numpy.minimum(growth2[seaIds2],self.wavegrowth2[seaIds2])
+            growth2[growth2>1.e6] = 0.
 
         # Average growth function limitation
         val = self.growth*growth*dt
         val[val<0.] = 0.
         val[seaIds] = numpy.minimum(val[seaIds],-depthfield[seaIds]*0.98)
-        #tids = numpy.where(numpy.logical_and(depthfield<-20.,val>0.))[0]
+        tmpid = numpy.where(numpy.logical_and(val==val.max(),val>0))[0]
+        # if len(tmpid)>0:
+        #     print 'carb1',self.growth,growth.max(),dt,val.max()
+        #     print 'depth1',-depthfield[tmpid]
+        #     print 'wave1',wavefield[tmpid]
+        #     print 'depthgrowth1',self.depthgrowth[tmpid]
+        #     print 'wavegrowth1',self.wavegrowth[tmpid]
+        # else:
+        #     print 'carb1',self.growth,growth.max(),dt,val.max()
+        if self.growth2 > 0.:
+            val2 = self.growth2*growth2*dt
+            val2[val2<0.] = 0.
+            val2[seaIds2] = numpy.minimum(val2[seaIds2],-depthfield[seaIds2]*0.98)
+        else:
+            val2 = None
 
-        return val
+        # tmpid = numpy.where(numpy.logical_and(val2==val2.max(),val2>0))[0]
+        # if len(tmpid)>0:
+        #     print 'carb2',self.growth2,growth2.max(),dt,val2.max()
+        #     print 'depth2',-depthfield[tmpid]
+        #     print 'wave2',wavefield[tmpid]
+        #     print 'depthgrowth2',self.depthgrowth2[tmpid]
+        #     print 'wavegrowth2',self.wavegrowth2[tmpid]
+        # else:
+        #     print 'carb2',self.growth2,growth2.max(),dt,val2.max()
+
+        return val, val2

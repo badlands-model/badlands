@@ -29,6 +29,7 @@ class Model(object):
         self.outputStep = 0
         self.disp = None
         self.carbval = None
+        self.carbval2 = None
         self.pelaval = None
         self.applyDisp = False
         self.simStarted = False
@@ -78,13 +79,15 @@ class Model(object):
             if self.input.coastdist>0.:
                 self.carb.buildReg(self.FVmesh.node_coords[:,:2])
             if self.carb.baseMap is not None:
-                self.carb.build_basement(self.FVmesh.node_coords[:,:2])
+                self.carb.build_basement(self.FVmesh.node_coords[:,:2],1)
+            if self.carb.baseMap2 is not None:
+                self.carb.build_basement(self.FVmesh.node_coords[:,:2],2)
 
         # Initialise pelagic evolution if any
         if self.input.pelagic:
             self.pelagic = pelagicGrowth.pelagicGrowth(self.input)
 
-        self.prop = np.zeros((self.totPts,3))
+        self.prop = np.zeros((self.totPts,4))
 
     def build_mesh(self, filename, verbose):
         # Construct Badlands mesh and grid to run simulation
@@ -177,7 +180,9 @@ class Model(object):
             if self.input.coastdist>0.:
                 self.carb.buildReg(self.FVmesh.node_coords[:,:2])
             if self.carb.baseMap is not None:
-                self.carb.build_basement(self.FVmesh.node_coords[:,:2])
+                self.carb.build_basement(self.FVmesh.node_coords[:,:2],1)
+            if self.carb.baseMap2 is not None:
+                self.carb.build_basement(self.FVmesh.node_coords[:,:2],2)
 
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
         self.flow.xgrid = None
@@ -186,9 +191,9 @@ class Model(object):
         self.hillslope.updatedt = 0
 
         self.carbval = None
+        self.carbval2 = None
         self.pelaval = None
-        self.prop = np.zeros((self.totPts,3))
-
+        self.prop = np.zeros((self.totPts,4))
 
     def run_to_time(self, tEnd, profile=False, verbose=False):
         """
@@ -373,7 +378,6 @@ class Model(object):
                 if self.carbTIN is not None and self.outputStep % self.input.tmesh==0:
                     meshtime = time.clock()
                     self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep,self._rank)
-                    self.carbTIN.step += 1
                     if self._rank == 0:
                         print "   - Write carbonate mesh output", time.clock() - meshtime
 
@@ -381,6 +385,7 @@ class Model(object):
                 last_output = time.clock()
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
+                self.carbTIN.step += 1
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
@@ -410,11 +415,15 @@ class Model(object):
                 if self.input.waveOn:
                     self.force.average_wave()
                 dh = self.elevation-self.force.sealevel
-                self.carbval = self.carb.computeCarbonate(self.force.meanH, self.cumdiff-oldsed, dh, self.tNow-oldtime)
+                self.carbval, self.carbval2 = self.carb.computeCarbonate(self.force.meanH, self.cumdiff-oldsed, dh, self.tNow-oldtime)
+                if self.carbval2 is None:
+                    self.carbval2 = np.zeros(self.totPts, dtype=float)
             elif self.carbval is None:
                 if self.input.waveOn:
                     self.force.average_wave()
                 self.carbval = np.zeros(self.totPts, dtype=float)
+                if self.carbval2 is None:
+                    self.carbval2 = np.zeros(self.totPts, dtype=float)
             else:
                 if self.input.waveOn:
                     self.force.average_wave()
@@ -428,15 +437,17 @@ class Model(object):
             # Update carbonate/pelagic stratigraphic layers
             if self.input.carbonate or self.input.pelagic:
                 self.prop.fill(0.)
-                self.carbTIN.update_layers(self.cumdiff-oldsed,self.carbval,self.pelaval,self.elevation)
+                self.carbTIN.update_layers(self.cumdiff-oldsed,self.carbval,self.carbval2,self.pelaval,self.elevation)
                 ids = np.where(self.cumdiff>oldsed)[0]
-                tmpsum = self.carbval+self.pelaval
+                tmpsum = self.carbval+self.carbval2+self.pelaval
                 tmpsum[ids] += self.cumdiff[ids]-oldsed[ids]
                 ids2 = np.where(tmpsum>0.)[0]
                 self.prop[ids,0] = (self.cumdiff[ids]-oldsed[ids]) / tmpsum[ids]
                 self.prop[ids2,1] = self.carbval[ids2] / tmpsum[ids2]
-                self.prop[ids2,2] = self.pelaval[ids2] / tmpsum[ids2]
-                self.cumdiff += self.pelaval + self.carbval
+                self.prop[ids2,2] = self.carbval2[ids2] / tmpsum[ids2]
+                self.prop[ids2,3] = self.pelaval[ids2] / tmpsum[ids2]
+                self.cumdiff += self.pelaval + self.carbval + self.carbval2
+                self.elevation += self.pelaval + self.carbval + self.carbval2
 
         tloop = time.clock() - last_time
         if self._rank == 0:

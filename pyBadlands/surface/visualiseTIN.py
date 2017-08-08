@@ -182,10 +182,12 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
         if rockOn:
             f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
             f["depClastic"][:,0] = prop[:,0]
-            f.create_dataset('depCarbonate',shape=(len(discharge), 1), dtype='float32', compression='gzip')
-            f["depCarbonate"][:,0] = prop[:,1]
+            f.create_dataset('depSpecies1',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depSpecies1"][:,0] = prop[:,1]
+            f.create_dataset('depSpecies2',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depSpecies2"][:,0] = prop[:,2]
             f.create_dataset('depPelagic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
-            f["depPelagic"][:,0] = prop[:,2]
+            f["depPelagic"][:,0] = prop[:,3]
 
 def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill,
                        cumflex, cells, rank, rainOn, eroOn, erodibility, area, waveOn, waveH,  waveU, waveV,
@@ -295,10 +297,12 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
         if rockOn:
             f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
             f["depClastic"][:,0] = prop[:,0]
-            f.create_dataset('depCarbonate',shape=(len(discharge), 1), dtype='float32', compression='gzip')
-            f["depCarbonate"][:,0] = prop[:,1]
+            f.create_dataset('depSpecies1',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depSpecies1"][:,0] = prop[:,1]
+            f.create_dataset('depSpecies2',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f["depSpecies2"][:,0] = prop[:,2]
             f.create_dataset('depPelagic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
-            f["depPelagic"][:,0] = prop[:,2]
+            f["depPelagic"][:,0] = prop[:,3]
 
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """
@@ -463,9 +467,14 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
             f.write('Dimensions="%d 1">%s:/depClastic</DataItem>\n'%(nodes[p],pfile))
             f.write('         </Attribute>\n')
 
-            f.write('         <Attribute Type="Scalar" Center="Node" Name="depCarbonate">\n')
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="depSpecies1">\n')
             f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
-            f.write('Dimensions="%d 1">%s:/depCarbonate</DataItem>\n'%(nodes[p],pfile))
+            f.write('Dimensions="%d 1">%s:/depSpecies1</DataItem>\n'%(nodes[p],pfile))
+            f.write('         </Attribute>\n')
+
+            f.write('         <Attribute Type="Scalar" Center="Node" Name="depSpecies2">\n')
+            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            f.write('Dimensions="%d 1">%s:/depSpecies2</DataItem>\n'%(nodes[p],pfile))
             f.write('         </Attribute>\n')
 
             f.write('         <Attribute Type="Scalar" Center="Node" Name="depPelagic">\n')

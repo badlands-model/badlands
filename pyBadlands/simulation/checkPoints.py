@@ -92,13 +92,13 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
                                     elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
                                     cumhill[lGIDs], cumflex[lGIDs], FVmesh.outCells, rank, input.oroRain,
                                     eroOn, flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs],
-                                    input.waveOn, meanH, meanU, meanV, rockOn, prop[lGIDs])
+                                    input.waveOn, meanH, meanU, meanV, rockOn, prop[lGIDs,:])
     else:
         visualiseTIN.write_hdf5(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
                                 elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
                                 cumhill[lGIDs], FVmesh.outCells, rank, input.oroRain, eroOn,
                                 flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs],
-                                input.waveOn, meanH, meanU, meanV, rockOn, prop[lGIDs])
+                                input.waveOn, meanH, meanU, meanV, rockOn, prop[lGIDs,:])
 
     if flow.sedload is not None:
         visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],

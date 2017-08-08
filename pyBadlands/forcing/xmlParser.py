@@ -188,6 +188,15 @@ class xmlParser:
         self.coastdist = 0.
         self.baseMap = None
 
+        self.carbonate2 = False
+        self.carbGrowth2 = 0.
+        self.carbDepth2 = None
+        self.carbSed2 = None
+        self.carbWave2 = None
+        self.islandPerim2 = 0.
+        self.coastdist2 = 0.
+        self.baseMap2 = None
+
         self.pelagic = False
         self.pelGrowth = 0.
         self.pelDepth = None
@@ -1443,9 +1452,9 @@ class xmlParser:
                 self.swanBot = numpy.array(self.outDir+'/swan/swan.bot')
                 self.swanOut = numpy.array(self.outDir+'/swan/swan.csv')
 
-        # Carbonate class
+        # Species 1 class
         carb = None
-        carb = root.find('carbonate')
+        carb = root.find('species1')
         if carb is not None:
             self.carbonate = True
             element = None
@@ -1458,21 +1467,21 @@ class xmlParser:
             if element is not None:
                 self.carbDepth = element.text
                 if not os.path.isfile(self.carbDepth):
-                    raise ValueError('Carbonate depth control file is missing or the given path is incorrect.')
+                    raise ValueError('Species1 depth control file is missing or the given path is incorrect.')
             else:
                 self.carbDepth = None
             element = carb.find('waveControl')
             if element is not None:
                 self.carbWave = element.text
                 if not os.path.isfile(self.carbWave):
-                    raise ValueError('Carbonate wave control file is missing or the given path is incorrect.')
+                    raise ValueError('Species1 wave control file is missing or the given path is incorrect.')
             else:
                 self.carbWave = None
             element = carb.find('sedControl')
             if element is not None:
                 self.carbSed = element.text
                 if not os.path.isfile(self.carbSed):
-                    raise ValueError('Carbonate sedimentation control file is missing or the given path is incorrect.')
+                    raise ValueError('Species1 sedimentation control file is missing or the given path is incorrect.')
             else:
                 self.carbSed = None
             element = carb.find('isld')
@@ -1485,13 +1494,63 @@ class xmlParser:
                 self.coastdist = float(element.text)
             else:
                 self.coastdist = 0.
-            element = carb.find('baseMap')
+            element = carb.find('bedMap')
             if element is not None:
                 self.baseMap = element.text
                 if not os.path.isfile(self.baseMap):
-                    raise ValueError('Basement map file for carbonate growth is missing or the given path is incorrect.')
+                    raise ValueError('Basement map file for species1 growth is missing or the given path is incorrect.')
             else:
                 self.baseMap = None
+
+        # Species 2 class
+        carb2 = None
+        carb2 = root.find('species2')
+        if carb2 is not None:
+            self.carbonate2 = True
+            element = None
+            element = carb2.find('growth')
+            if element is not None:
+                self.carbGrowth2 = float(element.text)
+            else:
+                self.carbGrowth2 = 0.
+            element = carb2.find('depthControl')
+            if element is not None:
+                self.carbDepth2 = element.text
+                if not os.path.isfile(self.carbDepth2):
+                    raise ValueError('Species2 depth control file is missing or the given path is incorrect.')
+            else:
+                self.carbDepth2 = None
+            element = carb2.find('waveControl')
+            if element is not None:
+                self.carbWave2 = element.text
+                if not os.path.isfile(self.carbWave2):
+                    raise ValueError('Species2 wave control file is missing or the given path is incorrect.')
+            else:
+                self.carbWave2 = None
+            element = carb2.find('sedControl')
+            if element is not None:
+                self.carbSed2 = element.text
+                if not os.path.isfile(self.carbSed2):
+                    raise ValueError('Species2 sedimentation control file is missing or the given path is incorrect.')
+            else:
+                self.carbSed2 = None
+            element = carb2.find('isld')
+            if element is not None:
+                self.islandPerim2 = float(element.text)
+            else:
+                self.islandPerim2 = 0.
+            element = carb2.find('dist')
+            if element is not None:
+                self.coastdist2 = float(element.text)
+            else:
+                self.coastdist2 = 0.
+            element = carb2.find('bedMap')
+            if element is not None:
+                self.baseMap2 = element.text
+                if not os.path.isfile(self.baseMap2):
+                    raise ValueError('Basement map file for species2 growth is missing or the given path is incorrect.')
+            else:
+                self.baseMap2 = None
 
         # Pelagic class
         pelagic = None

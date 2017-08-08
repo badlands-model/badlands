@@ -423,13 +423,14 @@ contains
 
   end subroutine updatestrati
 
-  subroutine stratcarb(layS,layH,clastic,carb,pel,newH,newS,nbPts,nbLay,nbSed)
+  subroutine stratcarb(layS,layH,clastic,carb,carb2,pel,newH,newS,nbPts,nbLay,nbSed)
 
     integer :: nbPts
     integer :: nbLay
     integer :: nbSed
     real(kind=8),dimension(nbPts),intent(in) :: pel
     real(kind=8),dimension(nbPts),intent(in) :: carb
+    real(kind=8),dimension(nbPts),intent(in) :: carb2
     real(kind=8),dimension(nbPts),intent(in) :: clastic
     real(kind=8),dimension(nbPts,nbLay),intent(in) :: layH
     real(kind=8),dimension(nbPts,nbLay,nbSed),intent(in) :: layS
@@ -474,9 +475,13 @@ contains
         newH(n,nbLay) = newH(n,nbLay) + carb(n)
         newS(n,nbLay,2) = newS(n,nbLay,2) + carb(n)
       endif
+      if(carb2(n)>0.)then
+        newH(n,nbLay) = newH(n,nbLay) + carb2(n)
+        newS(n,nbLay,3) = newS(n,nbLay,3) + carb2(n)
+      endif
       if(pel(n)>0.)then
         newH(n,nbLay) = newH(n,nbLay) + pel(n)
-        newS(n,nbLay,3) = newS(n,nbLay,3) + pel(n)
+        newS(n,nbLay,4) = newS(n,nbLay,4) + pel(n)
       endif
     enddo
 
