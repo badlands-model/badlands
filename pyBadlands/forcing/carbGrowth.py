@@ -200,22 +200,22 @@ class carbGrowth:
 
             self.sedFunc = interpolate.interp1d(self.sedval, self.sedfct, kind='linear')
 
-            if id == 2:
-                seddata = pandas.read_csv(self.sedfile2, sep=r'\s+', engine='c',
-                                       header=None, na_filter=False,
-                                       dtype=numpy.float, low_memory=False)
+        if id == 2:
+            seddata = pandas.read_csv(self.sedfile2, sep=r'\s+', engine='c',
+                                   header=None, na_filter=False,
+                                   dtype=numpy.float, low_memory=False)
 
-                self.sedval2 = numpy.zeros(len(seddata.values[:,0])+2)
-                self.sedfct2 = numpy.zeros(len(self.sedval))
+            self.sedval2 = numpy.zeros(len(seddata.values[:,0])+2)
+            self.sedfct2 = numpy.zeros(len(self.sedval))
 
-                self.sedval2[1:-1] = seddata.values[:,0]
-                self.sedfct2[1:-1] = seddata.values[:,1]
-                self.sedval2[0] = -1.0e7
-                self.sedfct2[0] = self.sedfct2[1]
-                self.sedval2[-1] = 1.e7
-                self.sedfct2[-1] = self.sedfct2[-2]
+            self.sedval2[1:-1] = seddata.values[:,0]
+            self.sedfct2[1:-1] = seddata.values[:,1]
+            self.sedval2[0] = -1.0e7
+            self.sedfct2[0] = self.sedfct2[1]
+            self.sedval2[-1] = 1.e7
+            self.sedfct2[-1] = self.sedfct2[-2]
 
-                self.sedFunc2 = interpolate.interp1d(self.sedval2, self.sedfct2, kind='linear')
+            self.sedFunc2 = interpolate.interp1d(self.sedval2, self.sedfct2, kind='linear')
 
     def _build_wave_function(self, id):
         """
@@ -493,29 +493,11 @@ class carbGrowth:
         val[val<0.] = 0.
         val[seaIds] = numpy.minimum(val[seaIds],-depthfield[seaIds]*0.98)
         tmpid = numpy.where(numpy.logical_and(val==val.max(),val>0))[0]
-        # if len(tmpid)>0:
-        #     print 'carb1',self.growth,growth.max(),dt,val.max()
-        #     print 'depth1',-depthfield[tmpid]
-        #     print 'wave1',wavefield[tmpid]
-        #     print 'depthgrowth1',self.depthgrowth[tmpid]
-        #     print 'wavegrowth1',self.wavegrowth[tmpid]
-        # else:
-        #     print 'carb1',self.growth,growth.max(),dt,val.max()
         if self.growth2 > 0.:
             val2 = self.growth2*growth2*dt
             val2[val2<0.] = 0.
             val2[seaIds2] = numpy.minimum(val2[seaIds2],-depthfield[seaIds2]*0.98)
         else:
             val2 = None
-
-        # tmpid = numpy.where(numpy.logical_and(val2==val2.max(),val2>0))[0]
-        # if len(tmpid)>0:
-        #     print 'carb2',self.growth2,growth2.max(),dt,val2.max()
-        #     print 'depth2',-depthfield[tmpid]
-        #     print 'wave2',wavefield[tmpid]
-        #     print 'depthgrowth2',self.depthgrowth2[tmpid]
-        #     print 'wavegrowth2',self.wavegrowth2[tmpid]
-        # else:
-        #     print 'carb2',self.growth2,growth2.max(),dt,val2.max()
 
         return val, val2

@@ -385,7 +385,8 @@ class Model(object):
                 last_output = time.clock()
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
-                self.carbTIN.step += 1
+                if self.carbTIN is not None:
+                    self.carbTIN.step += 1
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
