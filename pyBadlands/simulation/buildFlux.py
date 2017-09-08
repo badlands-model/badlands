@@ -103,7 +103,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     """
     Compute sediment fluxes.
     """
-    
+
     rank = mpi.COMM_WORLD.rank
     size = mpi.COMM_WORLD.size
     comm = mpi.COMM_WORLD

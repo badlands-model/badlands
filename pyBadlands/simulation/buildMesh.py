@@ -144,7 +144,7 @@ def construct_mesh(input, filename, verbose=False):
                                     input.rockNb, recGrid.regX, recGrid.regY, elevation, input.rockCk)
     else:
         straTIN = None
-
+        
     # Stratigraphic grid in case of carbonate and/or pelagic growth functions
     if input.carbonate or input.pelagic:
         layNb = int((input.tEnd - input.tStart)/input.tDisplay)+2

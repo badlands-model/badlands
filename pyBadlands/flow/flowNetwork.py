@@ -647,7 +647,7 @@ class flowNetwork:
                     eroCoeff = self.erodibility.reshape((len(elev),1))
             if actlay is None:
                 actlay = numpy.zeros((len(elev),1))
-                
+
             cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
                      self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
                      elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,self.borders)
@@ -730,8 +730,9 @@ class flowNetwork:
                 deposition = numpy.zeros(depo.shape)
 
                 # Compute alluvial plain deposition
-                plainid,landid,seaid,perc,nplain,nland,nsea = FLOWalgo.flowcompute.getids(fillH,elev,depo,
+                plainid,landid,seaid,perc,nplain,nland,nsea,ndepo = FLOWalgo.flowcompute.getids(fillH,elev,depo,
                                                                     self.pitVolume,sealevel)
+                depo = ndepo
                 if nplain > 0:
                     plainID = plainid[:nplain]
                     deposition[plainID,:] = depo[plainID,:]/Acell[plainID].reshape(len(plainID),1)
@@ -745,6 +746,7 @@ class flowNetwork:
                     landIDs = landid[:nland]
                     for p in range(len(landIDs)):
                         tmp = numpy.where(self.pitID==landIDs[p])[0]
+
                         if len(tmp) == 1:
                             deposition[tmp,:] = (fillH[tmp]-elev[tmp])*perc[landIDs[p],:]
                         else:
@@ -752,6 +754,7 @@ class flowNetwork:
                         tmpd = numpy.sum(deposition[tmp,:]*Acell[tmp].reshape(len(Acell[tmp]),1))
                         dfrac = numpy.sum(depo[landIDs[p],:])/tmpd
                         deposition[tmp,:] *= dfrac
+
                     depo[landIDs,:] = 0.
                     if rank==0 and verbose:
                         print "   - Compute land pit deposition ", time.clock() - time1

@@ -641,7 +641,7 @@ contains
 
         ! Compute stream power law
         slpdh = 0.
-        bedfrac = 1.
+        bedfrac = 0.02
         totspl = 0
         totdist = 0.
         if( recvr /= donor .and. dh > 0.)then
@@ -673,6 +673,10 @@ contains
               elseif(bedslptype == 3)then
                 bedfrac = (0.8499389 - 1./(1. + abs((upperslp+0.0323)/0.08)**(1.912)))*1.181 + 0.02
               endif
+            elseif(bedslptype > 0 .and. updist(donor) == 0.)then
+              bedfrac = 0.02
+            elseif(bedslptype == 0)then
+              bedfrac = 1.
             endif
 
             ! Compute the stream power law expressed in m/y
@@ -1082,7 +1086,7 @@ contains
   end subroutine getid1
 
 
-  subroutine getids(fillH,elev,depo,vol,seal,ids,ids2,ids3,perc,newNb,newNb2,newNb3,ptsNb,sedNb)
+  subroutine getids(fillH,elev,depo,vol,seal,ids,ids2,ids3,perc,newNb,newNb2,newNb3,ndepo,ptsNb,sedNb)
 
     integer :: ptsNb
     integer :: sedNb
@@ -1100,9 +1104,10 @@ contains
     integer,dimension(ptsNb), intent(out) :: ids2
     integer,dimension(ptsNb), intent(out) :: ids3
     real(kind=8),dimension(ptsNb,sedNb), intent(out) :: perc
+    real(kind=8),dimension(ptsNb,sedNb), intent(out) :: ndepo
 
     integer :: p,s,in
-    real(kind=8) :: sumdep, sumperc
+    real(kind=8) :: sumdep, sumperc, nvol
 
     newNb = 0
     newNb2 = 0
@@ -1111,6 +1116,7 @@ contains
     ids2 = 0
     ids3 = 0
     perc = 0.
+    ndepo = depo
 
     do p = 1, ptsNb
       in = 0
@@ -1131,16 +1137,29 @@ contains
       ! Get land pit deposition ID
       if(elev(p)>seal .and. fillH(p)>seal .and. vol(p)>0.)then
         if(sumdep==0. .and. in == 0)then
+
+          nvol = 0.
           do s = 1, sedNb
-            sumdep = sumdep+depo(p,s)
-            perc(p,s) = depo(p,s)/vol(p)
-            sumperc = sumperc+perc(p,s)
+            if(depo(p,s)/vol(p)>1.e-8)then
+              nvol = nvol+depo(p,s)
+            endif
+          enddo
+          do s = 1, sedNb
+            if(depo(p,s)/vol(p)>1.e-8)then
+              perc(p,s) = depo(p,s)/nvol
+              sumperc = sumperc+perc(p,s)
+            else
+              ndepo(p,s) = 0.
+              perc(p,s) = 0.
+            endif
           enddo
         endif
-        if(sumdep>0.)then
+        if(sumperc>0.)then
           newNb2 = newNb2+1
           ids2(newNb2) = p-1
-          if(sumperc>1.) perc(p,:) = perc(p,:)/sumperc
+          if(abs(sumperc-1.)>1.e-8)then
+            perc(p,:) = perc(p,:)/sumperc
+          endif
         endif
       endif
 

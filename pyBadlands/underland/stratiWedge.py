@@ -273,7 +273,7 @@ class stratiWedge():
         rank
             ID of the local partition.
         """
-
+        
         sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p'+str(rank)+'.hdf5'
         with h5py.File(sh5file, "w") as f:
 
