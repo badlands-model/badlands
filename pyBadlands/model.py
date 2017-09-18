@@ -329,10 +329,6 @@ class Model(object):
                         if self.input.laytime > 0 and self.strata is not None:
                             self.strata.move_mesh(regdX, regdY, scum, verbose)
 
-            # Compute stream network
-            self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
-                                              self.flow, self.elevation, self.lGIDs, self.rain, self.tNow, verbose)
-
             # Compute isostatic flexure
             if self.tNow >= self.force.next_flexure:
                 flextime = time.clock()
@@ -359,6 +355,10 @@ class Model(object):
                     self.force.next_wave += self.input.tWave
                     if self.tNow == self.input.tStart:
                         self.force.average_wave()
+
+            # Compute stream network
+            self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
+                                              self.flow, self.elevation, self.lGIDs, self.rain, self.tNow, verbose)
 
             # Create checkpoint files and write HDF5 output
             if self.tNow >= self.force.next_display:
@@ -410,7 +410,6 @@ class Model(object):
             self.tNow, self.elevation, self.cumdiff, self.cumhill = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
                               self.FVmesh, self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.straTIN, self.mapero,  \
                               self.cumdiff, self.cumhill, self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
-
             # Compute carbonate evolution
             if self.input.carbonate:
                 if self.input.waveOn:
