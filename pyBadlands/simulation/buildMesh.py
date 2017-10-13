@@ -14,7 +14,7 @@ import time
 import numpy as np
 import mpi4py.MPI as mpi
 
-from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN, oceanDyn,
+from pyBadlands import (partitionTIN, FVmethod, elevationTIN, raster2TIN, waveSed,  #oceanDyn
                         eroMesh, strataMesh, isoFlex, stratiWedge, carbMesh, forceSim)
 
 def construct_mesh(input, filename, verbose=False):
@@ -128,6 +128,11 @@ def construct_mesh(input, filename, verbose=False):
     if input.waveOn:
         wave = _init_wave(input, recGrid, force, rank, verbose)
 
+    # Wavesed grid initialisation
+    if input.waveSed:
+        wave = _init_wavesed(input, recGrid, force, rank, verbose)
+        wave.build_tree(FVmesh.node_coords[:,:2])
+
     # Stratigraphic TIN initialisation
     if input.rockNb > 0:
         layNb = int((input.tEnd - input.tStart)/input.laytime)+2
@@ -144,20 +149,23 @@ def construct_mesh(input, filename, verbose=False):
                                     input.rockNb, recGrid.regX, recGrid.regY, elevation, input.rockCk)
     else:
         straTIN = None
-        
+
     # Stratigraphic grid in case of carbonate and/or pelagic growth functions
-    if input.carbonate or input.pelagic:
+    if input.carbonate:
         layNb = int((input.tEnd - input.tStart)/input.tDisplay)+2
         bPts = recGrid.boundsPt
         ePts = recGrid.edgesPt
+        if input.carbonate2:
+            nbSed = 3
+        else:
+            nbSed = 2
         if input.restart:
             carbTIN = carbMesh.carbMesh(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
-                            ePts, input.layersData, input.outDir, input.strath5file,
-                            recGrid.regX, recGrid.regY, elevation,
-                            input.rfolder, input.rstep)
+                            ePts, input.layersData, input.outDir, input.strath5file, input.baseMap, nbSed,
+                            recGrid.regX, recGrid.regY, elevation, input.rfolder, input.rstep)
         else:
             carbTIN = carbMesh.carbMesh(layNb, input.initlayers, FVmesh.node_coords[:, :2], bPts,
-                            ePts, input.layersData, input.outDir, input.strath5file,
+                            ePts, input.layersData, input.outDir, input.strath5file, input.baseMap, nbSed,
                             recGrid.regX, recGrid.regY, elevation)
     else:
         carbTIN = None
@@ -396,7 +404,7 @@ def _init_wave(input, recGrid, force, rank, verbose=False):
     Initialise wave mesh.
     """
 
-    # Initialise flexure parameters for gFlex library.
+    # Initialise SWAN wave parameters.
     walltime = time.clock()
 
     minX = recGrid.rectX.min()-input.resW
@@ -411,5 +419,21 @@ def _init_wave(input, recGrid, force, rank, verbose=False):
 
     if rank == 0 and verbose:
         print "   - Initialise wave grid ", time.clock() - walltime
+
+    return wave
+
+def _init_wavesed(input, recGrid, force, rank, verbose=False):
+    """
+    Initialise wavesed mesh.
+    """
+
+    # Initialise wavesed parameters.
+    walltime = time.clock()
+
+    wave = waveSed.waveSed(input, recGrid, Ce=input.wCe, Cd=50.)
+    force.getSea(input.tStart)
+
+    if rank == 0 and verbose:
+        print "   - Initialise wavesed grid ", time.clock() - walltime
 
     return wave

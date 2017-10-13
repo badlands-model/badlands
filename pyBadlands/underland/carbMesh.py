@@ -38,7 +38,7 @@ class carbMesh():
         Numpy array containing the thickness of each stratigraphic layer for each type of sediment
     """
 
-    def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, folder, h5file,
+    def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, folder, h5file, baseMap, nbSed,
                  regX, regY, elev, rfolder=None, rstep=0):
         """
         Constructor.
@@ -95,6 +95,14 @@ class carbMesh():
         self.folder = folder
         self.h5file = h5file
         self.initlay = elay
+        self.alay = None
+
+        self.baseMap = baseMap
+        self.tinBase = None
+        self.nbSed = nbSed
+
+        if self.baseMap is not None:
+            self._build_basement(xyTIN,bPts,regX,regY)
 
         # In case we restart a simulation
         if rstep > 0:
@@ -121,7 +129,7 @@ class carbMesh():
             self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             self.paleoDepth[:,:eroLay] = paleoDepth
             # Deposition thickness for each type of sediment
-            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,4),order='F')
+            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,self.nbSed),order='F')
             for r in range(4):
                 self.depoThick[:,:eroLay,r] = numpy.array((df['/depoThickRock'+str(r)]))
             self.layerThick[:,:eroLay] = numpy.sum(self.depoThick[:,:eroLay,:],axis=-1)
@@ -133,7 +141,7 @@ class carbMesh():
             # Elevation at time of deposition (paleo-depth)
             self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             # Deposition thickness for each type of sediment
-            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,4),order='F')
+            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,self.nbSed),order='F')
             self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
             # Rock type array
             rockType = -numpy.ones(self.ptsNb,dtype=int)
@@ -162,7 +170,7 @@ class carbMesh():
                     # Linear interpolation to define underlying layers on the TIN
                     tmpTH.fill(0.)
                     tmpTH[bPts:] = interpolate.interpn( (regX, regY), tH, xyTIN[bPts:,:], method='linear')
-                    for r in range(4):
+                    for r in range(self.nbSed):
                         ids = numpy.where(numpy.logical_and(rockType==r,tmpTH>0.))
                         self.depoThick[ids,eroLay-l,r] = tmpTH[ids]
                         self.paleoDepth[ids,eroLay-l] = self.paleoDepth[ids,eroLay-l+1]-tmpTH[ids]
@@ -184,13 +192,92 @@ class carbMesh():
             else:
                 # Add an infinite rock layer with the same characteristics as the deepest one
                 self.depoThick[:,0,0] = 1.e6
-                self.layerThick[:,0] = self.depoThick[:,0,0]
+                self.layerThick[:,0] = 1.e6
                 self.paleoDepth[:,0] = elev
                 self.step = 1
+                seaIds = numpy.where(self.tinBase==0)[0]
+                self.depoThick[seaIds,0,0] = 0.
+                self.depoThick[seaIds,0,1] = 1.e6
 
         return
 
-    def update_layers(self, clastic, carb, carb2, pel, elev, verbose=False):
+    def _build_basement(self,tXY,bPts,regX,regY):
+        """
+        Using Pandas library to read the basement map file and define consolidated and
+        soft sediment region.
+        """
+        self.tXY = tXY
+
+        # Read basement file
+        self.tinBase = numpy.ones(len(tXY))
+        Bmap = pandas.read_csv(str(self.baseMap), sep=r'\s+', engine='c',
+                    header=None, na_filter=False, dtype=numpy.float, low_memory=False)
+
+        rectBase = numpy.reshape(Bmap.values,(len(regX), len(regY)),order='F')
+        self.tinBase[bPts:] = interpolate.interpn( (regX, regY), rectBase,
+                                                        tXY[bPts:,:], method='linear')
+
+        return
+
+    def get_active_layer(self, actlay, verbose=False):
+        """
+        This function extracts the active layer based on the underlying stratigraphic architecture.
+
+        Parameters
+        ----------
+        actlay
+            Active layer elevation based on nodes elevation [m]
+        """
+
+        # Initialise MPI communications
+        comm = mpi.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        time0 = time.clock()
+        self.alay = PDalgo.pdstack.getactlay2(actlay, self.layerThick[:,:self.step+1],
+                                    self.depoThick[:,:self.step+1,:])
+        if rank==0 and verbose:
+            print "   - Get active layer composition ", time.clock() - time0
+            time0 = time.clock()
+            
+        return
+
+    def update_active_layer(self, actlayer, elev, verbose=False):
+        """
+        This function updates the stratigraphic layers based active layer composition.
+
+        Parameters
+        ----------
+        deposition
+            Value of the deposition for the given point [m]
+
+        erosion
+            Value of the erosion for the given points [m]
+        """
+
+        # Initialise MPI communications
+        comm = mpi.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        time0 = time.clock()
+        ero = actlayer[:,0]-self.alay[:,0]
+        ero[ero>0.] = 0.
+        depo = actlayer[:,0]-self.alay[:,0]
+        depo[depo<0.] = 0.
+        newH, newS = PDalgo.pdstack.updatecstrati(self.depoThick[:,:self.step+1,:],
+                                    self.layerThick[:,:self.step+1], ero, depo)
+        self.depoThick[:,:self.step+1,0] = newS
+        self.layerThick[:,:self.step+1] = newH
+        self.paleoDepth[:,self.step] = elev
+
+        if rank==0 and verbose:
+            print "   - Update active layer due to wave-induced erosion/deposition ", time.clock() - time0
+
+        return
+
+    def update_layers(self, clastic, elev, verbose=False):
         """
         This function updates the stratigraphic layers.
         """
@@ -202,11 +289,9 @@ class carbMesh():
 
         time0 = time.clock()
         newH, newS = PDalgo.pdstack.stratcarb(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
-                                    clastic, carb, carb2, pel)
-
-        # print 'newHS-prpout',self.step,newH[:,1:].min(),newH[:,1:].max(),newS[:,:,1].min(),newS[:,:,1].max(),newS[:,:,2].min(),newS[:,:,2].max()
-        self.depoThick[:,:self.step+1,:] = newS
-        self.layerThick[:,:self.step+1] = newH
+                                    clastic)
+        self.depoThick[:,:self.step+1,:] = newS[:,:self.step+1,:]
+        self.layerThick[:,:self.step+1] = newH[:,:self.step+1]
         self.paleoDepth[:,self.step] = elev
 
         if rank==0 and verbose:
@@ -238,6 +323,6 @@ class carbMesh():
             f["paleoDepth"][lGIDs,:self.step+1] = self.paleoDepth[lGIDs,:self.step+1]
 
             # Write stratal layers thicknesses per cells
-            for r in range(4):
+            for r in range(self.nbSed):
                 f.create_dataset('depoThickRock'+str(r),shape=(len(lGIDs),self.step+1), dtype='float32', compression='gzip')
                 f['depoThickRock'+str(r)][lGIDs,:self.step+1] = self.depoThick[lGIDs,:self.step+1,r]

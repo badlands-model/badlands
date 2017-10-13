@@ -82,7 +82,6 @@
          The current wrapper limits the functionnality of the gFlex algorithm and only uses
          the direct solver of the 2D finite difference method with the van Wees and Cloetingh
          plate solution. -->
-    <?ignore
     <flexure>
         <!-- Time step used to compute the isostatic flexure. -->
         <ftime>20000.0</ftime>
@@ -104,7 +103,7 @@
         <!-- The lithospheric elastic thickness (Te) can be expressed as a scalar if you assume
              a uniform thickness for the model area in this case the value is given in the next
              parameter [m] - (optional) -->
-        <elasticH>8000.</elasticH>
+        <!--elasticH>8000.</elasticH-->
         <!-- In case where the lithospheric elastic thickness (Te) varies on the simulated region
              you might want to use a grid defining for each points on the flexural grid the estimate
              Te value [m]. You will need to ensure that the grid dimensions match the number of
@@ -132,7 +131,6 @@
         <boundary_S>Mirror</boundary_S>
         <boundary_N>Mirror</boundary_N>
     </flexure>
-    ?>
 
     <!-- Output folder path -->
     <outfolder>output</outfolder>

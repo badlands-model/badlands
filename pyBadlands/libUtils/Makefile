@@ -21,23 +21,35 @@ INCDIR = .
 
 # SWAN compilation
 TOP=$(shell pwd)
-SWAN = simswan
-DIRMODS = WaveComp
-BUILDDIR = $(TOP)/WaveComp/build
-OBJDIR = $(BUILDDIR)/objects
-MODDIR = $(BUILDDIR)/modules
-LIBDIR2 = $(BUILDDIR)/lib
+
+#WAVE = SWANSED
+WAVE = WAVESED
+
+ifeq ($(WAVE),SWANSED)
+	SWAN = simswan
+	DIRMODS = WaveComp
+	BUILDDIR = $(TOP)/WaveComp/build
+	OBJDIR = $(BUILDDIR)/objects
+	MODDIR = $(BUILDDIR)/modules
+	LIBDIR2 = $(BUILDDIR)/lib
+endif
+
 FMPI = mpif90
 F2PYMPI = f2py --fcompiler=gfortran
 # Fortran optimisation flags
 FCFLAGS = -O3 -funroll-loops --param max-unroll-times=2 -cpp \
     -ffree-form -ftree-vectorize -ffast-math -lstdc++ -ffree-line-length-none
+# Debug optimisation
+#FCFLAGS= -O0 -w -fno-second-underscore -shared  -fPIC -g -Wall \
+#		-Wextra -Warray-temporaries -Wconversion -fbacktrace -fbounds-check -ffree-line-length-0  -ffpe-trap=zero,overflow,underflow
 
-#FCFLAGS= -m64 -w -fno-second-underscore -shared  -fPIC -g -Wall -Wextra -Warray-temporaries -Wconversion -fbacktrace -ffree-line-length-0  -ffpe-trap=zero,overflow,underflow
+# F2PY optimisation flags
+F2PY_FLAGS = --f90exec=${FMPI} --opt='-O3 -ftree-vectorize' #-I$(MODDIR)
+# Debug optimisation
+#F2PY_FLAGS = --f90exec=${FMPI} --debug-capi --debug  --opt='-O0 -w -fno-second-underscore -g -Wall -Wextra -Warray-temporaries -Wconversion -fbacktrace -fbounds-check' #-I$(MODDIR)
+LDFLAGS = #-L$(LIBDIR2)/
 
-FFLAGS2 = $(FCFLAGS) -I$(MODDIR)
-F2PY_FLAGS = --f90exec=${FMPI} -I$(MODDIR)
-LDFLAGS = -L$(LIBDIR2)/
+FFLAGS2 = $(FCFLAGS) #-I$(MODDIR)
 
 # Depression filling algorithm using Planchon and Darboux
 PD_FMOD = PDclass
@@ -61,8 +73,22 @@ FV_LMOD = FVframe
 OR_FMOD = ORclass
 OR_LMOD = ORmodel
 
-all: waves ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
+# Wave sedimentation computation
+WAVE_LMOD = WAVEsed
 
+ifeq ($(WAVE),SWANSED)
+	OBJECTS = waves ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
+else
+	OBJECTS = ${PD_FMOD}.so ${PD_LMOD}.so ${WAVE_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
+endif
+
+ifeq ($(WAVE),SWANSED)
+	DEL = clean1
+else
+	DEL = clean2
+endif
+
+all: $(OBJECTS)
 	@echo ""
 	@echo ""
 	@echo "---------------------------------------------"
@@ -113,6 +139,9 @@ ${PD_LMOD}.so: ${PD_LMOD}.f90
 ${FLOW_LMOD}.so: ${FLOW_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -m ${FLOW_LMOD} $<
 
+${WAVE_LMOD}.so: ${WAVE_LMOD}.f90
+	${F2PY} ${F2PY_FLAGS} -c -m ${WAVE_LMOD} $<
+
 ${LOOP_LMOD}.so: ${LOOP_LMOD}.f90
 	${F2PY} ${F2PY_FLAGS} -c -m ${LOOP_LMOD} $<
 
@@ -137,9 +166,15 @@ ${OR_LMOD}.so: ${OR_LMOD}.f90
 sfd.so: sfd.c sfd.pyf
 	${F2PY} ${F2PY_FLAGS} -c -m sfd sfd.c sfd.pyf
 
-clean:
+clean: $(DEL)
+
+clean1:
 	for i in $(DIRMODS) ; do   \
-    	( cd $$i ; make clobber) ;   \
+	    ( cd $$i ; make clobber) ;   \
 	done
 	rm -fv *~ *.bak *.o *.mod *.original *.so
 	rm -rfv $(BUILDDIR) *.dSYM
+
+clean2:
+	rm -fv *~ *.bak *.o *.mod *.original *.so
+	rm -rfv *.dSYM

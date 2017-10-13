@@ -28,9 +28,7 @@ from matplotlib import cm
 from pylab import rcParams
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-import os
-if 'READTHEDOCS' not in os.environ:
-    import pyBadlands.libUtils.simswan as swan
+import pyBadlands.libUtils.simswan as swan
 
 
 class oceanDyn():

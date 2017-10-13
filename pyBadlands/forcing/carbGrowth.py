@@ -27,11 +27,10 @@ class carbGrowth:
     """
     This class defines external carbonate growth parameters.
     """
-    def __init__(self, input=None, regX=None, regY=None, boundsPt=None):
+    def __init__(self, input=None, regX=None, regY=None, tinBase=None):
 
         self.regX = regX
         self.regY = regY
-        self.boundsPt = boundsPt
         self.tXY = None
 
         self.growth = input.carbGrowth
@@ -88,11 +87,7 @@ class carbGrowth:
         self.distances = None
         self.indices = None
 
-        self.tinBase1 = None
-        self.baseMap = input.baseMap
-
-        self.tinBase2 = None
-        self.baseMap2 = input.baseMap2
+        self.tinBase = tinBase
 
         if self.depthfile != None:
             self._build_depth_function(1)
@@ -107,33 +102,6 @@ class carbGrowth:
             self._build_sed_function(2)
         if self.wavefile2 != None:
             self._build_wave_function(2)
-
-    def build_basement(self,tXY,id):
-        """
-        Using Pandas library to read the basement map file and define consolidated and
-        soft sediment region.
-        """
-        self.tXY = tXY
-
-        # Read basement file
-        if id == 1:
-            self.tinBase1 = numpy.ones(len(tXY))
-            Bmap = pandas.read_csv(str(self.baseMap), sep=r'\s+', engine='c',
-                        header=None, na_filter=False, dtype=numpy.float, low_memory=False)
-
-            rectBase = numpy.reshape(Bmap.values,(len(self.regX), len(self.regY)),order='F')
-            self.tinBase1[self.boundsPt:] = interpolate.interpn( (self.regX, self.regY), rectBase,
-                                                        tXY[self.boundsPt:,:], method='linear')
-        elif id == 2:
-            self.tinBase2 = numpy.ones(len(tXY))
-            Bmap = pandas.read_csv(str(self.baseMap2), sep=r'\s+', engine='c',
-                        header=None, na_filter=False, dtype=numpy.float, low_memory=False)
-
-            rectBase = numpy.reshape(Bmap.values,(len(self.regX), len(self.regY)),order='F')
-            self.tinBase2[self.boundsPt:] = interpolate.interpn( (self.regX, self.regY), rectBase,
-                                                        tXY[self.boundsPt:,:], method='linear')
-
-        return
 
     def _build_depth_function(self,id):
         """
@@ -441,21 +409,13 @@ class carbGrowth:
         """
 
         if self.mdist == 0.:
-            if self.baseMap is not None:
+            if self.tinBase is not None:
                 tmpids = numpy.where(depthfield<0.)[0]
-                seaIds = numpy.where(numpy.logical_and(self.tinBase1==0,depthfield<0.))[0]
+                seaIds = numpy.where(numpy.logical_and(self.tinBase==0,depthfield<0.))[0]
             else:
                 seaIds = numpy.where(depthfield<0.)[0]
-
-            if self.growth2 > 0.:
-                if self.baseMap2 is not None:
-                    tmpids = numpy.where(depthfield<0.)[0]
-                    seaIds2 = numpy.where(numpy.logical_and(self.tinBase2==0,depthfield<0.))[0]
-                else:
-                    seaIds2 = numpy.where(depthfield<0.)[0]
         else:
             seaIds = self.getDistanceShore(depthfield)
-            seaIds2 = self.getDistanceShore(depthfield)
 
         growth = numpy.zeros(len(depthfield))
         growth.fill(1.1e6)
@@ -479,13 +439,13 @@ class carbGrowth:
         if self.growth2 > 0.:
             if self.depthfile2 != None:
                 self._getDepthFct(depthfield,2)
-                growth2[seaIds2] = numpy.minimum(growth2[seaIds2],self.depthgrowth2[seaIds2])
+                growth2[seaIds] = numpy.minimum(growth2[seaIds],self.depthgrowth2[seaIds])
             if self.sedfile2 != None:
                 self._getSedFct(sedfield,2)
-                growth2[seaIds2] = numpy.minimum(growth2[seaIds2],self.sedgrowth2[seaIds2])
+                growth2[seaIds] = numpy.minimum(growth2[seaIds],self.sedgrowth2[seaIds])
             if self.wavefile2 != None:
                 self._getWaveFct(wavefield,2)
-                growth2[seaIds2] = numpy.minimum(growth2[seaIds2],self.wavegrowth2[seaIds2])
+                growth2[seaIds] = numpy.minimum(growth2[seaIds],self.wavegrowth2[seaIds])
             growth2[growth2>1.e6] = 0.
 
         # Average growth function limitation
@@ -496,7 +456,7 @@ class carbGrowth:
         if self.growth2 > 0.:
             val2 = self.growth2*growth2*dt
             val2[val2<0.] = 0.
-            val2[seaIds2] = numpy.minimum(val2[seaIds2],-depthfield[seaIds2]*0.98)
+            val2[seaIds] = numpy.minimum(val2[seaIds],-depthfield[seaIds]*0.98)
         else:
             val2 = None
 
