@@ -528,6 +528,10 @@ class waveSed():
         Hent[self.landr,self.landc] = 0.
         Hent[Hent>self.Ero] = self.Ero
 
+        if np.max(Hent)==0.:
+            self.erodep = np.zeros(self.waveS.shape)
+            return
+
         # Limit erosion thickness based on active layer composition
         if self.regularlayer is not None:
             tr1,tc1 = np.where(Hent>self.regularlayer)
@@ -560,7 +564,10 @@ class waveSed():
         if sigma>0.:
             val = gaussian_filter(ndz+distw, sigma=sigma)
             totval = np.sum(val)
-            frac = np.sum(ndz+distw)/totval
+            if totval>0.:
+                frac = np.sum(ndz+distw)/totval
+            else:
+                frac = 1.
             val = frac*val
         else:
             val = ndz+distw
