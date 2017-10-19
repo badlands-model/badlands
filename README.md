@@ -1,4 +1,4 @@
-pyBadlands - python version of Badlands
+pyBadlands - Basin & Landscape Dynamics
 =====
     
 <div align="center">
