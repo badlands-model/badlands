@@ -114,7 +114,7 @@ class flowNetwork:
         self._rank = self._comm.Get_rank()
         self._size = self._comm.Get_size()
 
-    def compute_hillslope_diffusion(self, elev, neighbours, edges, distances, globalIDs, type):
+    def compute_hillslope_diffusion(self, elev, neighbours, edges, distances, globalIDs, type, Sc):
         """
         Perform hillslope evolution based on diffusion processes.
 
@@ -140,7 +140,12 @@ class flowNetwork:
         """
 
         if type == 0:
-            diff_flux = sfd.diffusion(elev, self.borders2, neighbours, edges, distances, globalIDs)
+            if Sc > 0.:
+                tSc = numpy.zeros(1)
+                tSc[0] = Sc
+                diff_flux = sfd.diffusionnl(tSc, elev, self.borders2, neighbours, edges, distances, globalIDs)
+            else:
+                diff_flux = sfd.diffusion(elev, self.borders2, neighbours, edges, distances, globalIDs)
         else:
             diff_flux = sfd.diffusionero(elev, self.borders2, neighbours, edges, distances, globalIDs)
 

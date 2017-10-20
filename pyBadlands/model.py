@@ -102,6 +102,7 @@ class Model(object):
         self.hillslope.CDaerial = self.input.CDa
         self.hillslope.CDmarine = self.input.CDm
         self.hillslope.CDriver = self.input.CDr
+        self.hillslope.Sc = self.input.Sc
         self.hillslope.updatedt = 0
 
         # Define flow parameters

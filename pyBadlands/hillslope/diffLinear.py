@@ -17,9 +17,13 @@ import warnings
 from pyBadlands.libUtils import FLOWalgo
 import mpi4py.MPI as MPI
 
+import os
+if 'READTHEDOCS' not in os.environ:
+    import pyBadlands.libUtils.sfd as sfd
+
 class diffLinear:
     """
-    Class for handling hillslope computation using a linear diffusion equation.
+    Class for handling hillslope computation using a linear/non-linear diffusion equation.
     """
 
     def __init__(self):
@@ -30,6 +34,7 @@ class diffLinear:
         self.CFL = None
         self.CFLms = None
         self.ids = None
+        self.Sc = 0.
         self.updatedt = 0
 
     def dt_stability(self, edgelen):
@@ -68,6 +73,44 @@ class diffLinear:
         comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFL = CFL[0]
         self.updatedt = 1
+
+    def dt_stabilityCs(self, elev, neighbours, distances, globalIDs, borders):
+        """
+        This function computes the maximal timestep to ensure computation stability
+        of the non-linear hillslope processes. This CFL-like condition is computed
+        using non-linear diffusion coefficients and distances between TIN nodes.
+
+        Parameters
+        ----------
+        edgelen
+            Numpy arrays containing the edges of the TIN surface for the considered partition.
+
+        elevation
+            Numpy arrays containing the edges of the TIN surface for the considered partition.
+        """
+
+        # Initialise MPI communications
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+
+        # Get the tin edges lengths
+        maxCD = max(self.CDaerial,self.CDmarine)
+
+        CFL = numpy.zeros(1)
+        if maxCD > 0.:
+            Sc = numpy.zeros(1)
+            Sc[0] = self.Sc
+            mCD = numpy.zeros(1)
+            mCD[0] = maxCD
+            CFL = sfd.diffnlcfl(Sc, mCD, elev, borders, neighbours, distances, globalIDs)
+        else:
+            CFL[0] = 1.e6
+
+        # Global mimimum value for diffusion stability
+        comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
+        self.CFL = CFL[0]
+        self.updatedt = 0
 
     def dt_stability_ms(self, edgelen):
         """

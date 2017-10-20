@@ -10,6 +10,7 @@
 This file is the main entry point to compute flow network and associated sedimentary fluxes.
 """
 
+import sys
 import time
 import numpy as np
 import mpi4py.MPI as mpi
@@ -153,7 +154,14 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     # Compute CFL condition
     walltime = time.clock()
     if input.Hillslope and hillslope.updatedt == 0:
-        hillslope.dt_stability(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
+        if hillslope.Sc == 0:
+            hillslope.dt_stability(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
+        else:
+            hillslope.dt_stabilityCs(elevation, FVmesh.neighbours, FVmesh.edge_length,
+                    lGIDs, flow.borders2)
+            if hillslope.CFL < input.minDT:
+                print 'Decrease your hillslope diffusion coefficients to ensure stability.'
+                sys.exit(0)
         hillslope.dt_stability_ms(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
     elif hillslope.CFL is None:
         hillslope.CFL = tEnd-tNow
@@ -251,7 +259,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     diffcoeff = hillslope.sedflux(force.sealevel, elevation, FVmesh.control_volumes)
     diffcoeff[flow.outsideIDs2] = 0.
     diff_flux = flow.compute_hillslope_diffusion(elevation, FVmesh.neighbours, FVmesh.vor_edges,
-                       FVmesh.edge_length, lGIDs, dtype)
+                       FVmesh.edge_length, lGIDs, dtype, hillslope.Sc)
     diff_flux[flow.outsideIDs2] = 0.
     cdiff = diffcoeff*diff_flux*timestep
 

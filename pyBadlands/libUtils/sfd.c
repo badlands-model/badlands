@@ -184,6 +184,102 @@ void diffusion(double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS], double 
     }
 }
 
+void diffnlcfl(double pySc[], double pyKd[], double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS],
+    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double pyCFL[], int pylocalNb, int pyglobalNb)
+{
+    pyCFL[0] = 1.e6;
+
+    int k;
+    double Sc2 = pySc[0] * pySc[0];
+    double kd = 20. * pyKd[0];
+
+    for (k = 0; k < pylocalNb; k++) {
+        int gid = pyGIDs[k];
+        int p;
+        if (pyBord[gid]>0) {
+          for (p = 0; p < MAX_NEIGHBOURS; p++) {
+              int ngbid = pyNgbs[gid][p];
+              if (ngbid < 0) {
+                  break;
+              }
+              if (pyBord[ngbid]>0 && pyDist[gid][p] > 0.){
+                double dh = pyZ[ngbid] - pyZ[gid];
+                if (dh < 0.){
+                  dh = -dh;
+                }
+                double num = pyDist[gid][p] * pyDist[gid][p] - (dh / Sc2);
+                if (num > 0.){
+                  if (pyCFL[0] > num / kd){
+                    pyCFL[0] = num / kd;
+                  }
+                }
+              }
+              if (pyBord[ngbid]<1){
+                if (pyZ[ngbid] < pyZ[gid] && pyDist[gid][p] > 0.){
+                  double dh = pyZ[ngbid] - pyZ[gid];
+                  if (dh < 0.){
+                    dh = -dh;
+                  }
+                  double num = pyDist[gid][p] * pyDist[gid][p] - (dh / Sc2);
+                  if (num > 0.){
+                    if (pyCFL[0] > num / kd){
+                      pyCFL[0] = num / kd;
+                    }
+                  }
+                }
+              }
+          }
+        }
+    }
+}
+
+
+void diffusionnl(double pySc[], double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
+    double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double pyDiff[], int pylocalNb, int pyglobalNb)
+{
+    int i;
+
+    for (i = 0; i < pyglobalNb; i++) {
+        pyDiff[i] = 0.;
+    }
+
+    int k;
+    double Sc2 = pySc[0] * pySc[0];
+
+    for (k = 0; k < pylocalNb; k++) {
+        int gid = pyGIDs[k];
+        int p;
+        if (pyBord[gid]>0) {
+          for (p = 0; p < MAX_NEIGHBOURS; p++) {
+              int ngbid = pyNgbs[gid][p];
+              if (ngbid < 0) {
+                  break;
+              }
+              if (pyBord[ngbid]>0 && pyDist[gid][p] > 0.){
+                double dh = (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+                double denom = 1. - ( dh*dh / Sc2 );
+                if (denom < 0.1){
+                  denom = 0.1;
+                }
+                if (denom>0.){
+                  pyDiff[gid] += pyEdge[gid][p] * dh / denom;
+                }
+              }
+              if (pyBord[ngbid]<1){
+                if (pyZ[ngbid] < pyZ[gid] && pyDist[gid][p] > 0.){
+                  double dh = (pyZ[ngbid] - pyZ[gid]) / pyDist[gid][p];
+                  double denom = 1. - ( dh*dh / Sc2 );
+                  if (denom < 0.1){
+                    denom = 0.1;
+                  }
+                  pyDiff[gid] += pyEdge[gid][p] * dh / denom;
+                }
+              }
+          }
+        }
+    }
+}
+
 void diffusionero(double pyZ[], int pyBord[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
     double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], double pyEro[], int pylocalNb, int pyglobalNb)
 {

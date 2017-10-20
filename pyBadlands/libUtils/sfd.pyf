@@ -73,6 +73,42 @@ interface
     double precision intent(out) :: pyDiff(pyglobalNb)
   end subroutine diffusion
 
+  subroutine diffnlcfl(pySc, pyKd, pyZ, pyBord, pyNgbs, pyDist, pyGIDs, pyCFL, pylocalNb, pyglobalNb)
+    intent(c) diffnlcfl                  ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pySc(1)
+    double precision intent(in) :: pyKd(1)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyCFL(1)
+  end subroutine diffnlcfl
+
+  subroutine diffusionnl(pySc, pyZ, pyBord, pyNgbs, pyEdge, pyDist, pyGIDs, pyDiff, pylocalNb, pyglobalNb)
+    intent(c) diffusionnl                  ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pySc(1)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyDiff(pyglobalNb)
+  end subroutine diffusionnl
+
   subroutine diffusionero(pyZ, pyBord, pyNgbs, pyEdge, pyDist, pyGIDs, pyEro, pylocalNb, pyglobalNb)
     intent(c) diffusionero               ! directions is a C function
     intent(c)                            ! all foo arguments are
