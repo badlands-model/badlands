@@ -142,6 +142,8 @@ class xmlParser:
         self.youndMod = None
         self.elasticH = None
         self.elasticGrid = None
+        self.elasticA1 = None
+        self.elasticA2 = None
         self.flexbounds = []
 
         self.erolays = None
@@ -1214,6 +1216,18 @@ class xmlParser:
                     raise ValueError('Elastic grid file is missing or the given path is incorrect.')
             else:
                 self.elasticGrid = None
+            element = None
+            element = flex.find('elasticA1')
+            if element is not None:
+                self.elasticA1 = float(element.text)
+            else:
+                self.elasticA1 = None
+            element = None
+            element = flex.find('elasticA2')
+            if element is not None:
+                self.elasticA2 = float(element.text)
+            else:
+                self.elasticA2 = None
             element = None
             element = flex.find('boundary_W')
             if element is not None:

@@ -375,18 +375,22 @@ def _init_flexure(FVmesh, input, recGrid, force, elevation, cumdiff,
 
     nx = input.fnx
     ny = input.fny
+    elasticT2 = 0.
     if nx == 0:
         nx = recGrid.nx
     if ny == 0:
         ny = recGrid.ny
-    if input.elasticH is None:
+    if input.elasticH is not None:
+        elasticT = input.elasticH
+    elif input.elasticGrid is not None:
         elasticT = str(input.elasticGrid)
     else:
-        elasticT = input.elasticH
-
+        elasticT = input.elasticA1
+        elasticT2 = input.elasticA2
+        
     flex = isoFlex.isoFlex()
     flex.buildGrid(nx, ny, input.youngMod, input.dmantle, input.dsediment,
-                elasticT, input.flexbounds, FVmesh.node_coords[:,:2])
+                elasticT, elasticT2, input.flexbounds, FVmesh.node_coords[:,:2], input.ftime)
 
     tinFlex = np.zeros(totPts, dtype=float)
     force.getSea(input.tStart)

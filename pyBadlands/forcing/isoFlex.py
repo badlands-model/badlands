@@ -49,11 +49,14 @@ class isoFlex:
         self.tree = None
         self.Te = None
         self.searchpts = None
+        self.Te1 = None
+        self.dtime = 0.
+        self.ftime = None
 
         return
 
     def buildGrid(self, nx, ny, youngMod, mantleDensity, sedimentDensity,
-                    elasticT, Boundaries, xyTIN):
+                    elasticT, elasticT2, Boundaries, xyTIN, ftime):
         """
         gFlex initialisation function.
 
@@ -77,6 +80,9 @@ class isoFlex:
         elasticT
             The elastic thickness. Can be scalar or an array
 
+        elasticT2
+            The initial elastic thickness.
+
         Boundaries
             List of string describing boundary conditions for West, East, South and North.
 
@@ -85,6 +91,9 @@ class isoFlex:
 
         xyTIN
             Numpy float-type array containing the coordinates for each nodes in the TIN (in m)
+
+        ftime
+            Flexure time step
         """
         # Build the flexural grid
         self.nx = nx
@@ -96,6 +105,7 @@ class isoFlex:
         self.ygrid = numpy.linspace(ymin,ymax,num=self.ny)
         self.xi, self.yi = numpy.meshgrid(self.xgrid, self.ygrid)
         self.xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
+        self.ftime = ftime
 
         # Call gFlex instance
         self.flex = gflex.F2D()
@@ -135,8 +145,11 @@ class isoFlex:
             TeMap = pandas.read_csv(elasticT, sep=r'\s+', engine='c', header=None,
                 na_filter=False, dtype=numpy.float, low_memory=False)
             self.Te = numpy.reshape(TeMap.values, (self.ny, self.nx))
-        else:
+        elif elasticT2 is None:
             self.Te = elasticT * numpy.ones((self.ny, self.nx))
+        else:
+            self.Te = elasticT2 * numpy.ones((self.ny, self.nx))
+            self.Te1 = elasticT
 
         # Surface load stresses
         self.flex.qs = numpy.zeros((self.ny, self.nx), dtype=float)
@@ -176,7 +189,11 @@ class isoFlex:
         Use gFlex module to compute flexure from surface load.
         """
 
-        self.flex.Te = self.Te
+        if self.Te1 is None:
+            self.flex.Te = self.Te
+        else:
+            coeff = self.Te1*numpy.sqrt(self.dtime)
+            self.flex.Te = coeff* numpy.ones((self.ny, self.nx)) + self.Te
 
         self.flex.initialize()
 
@@ -213,6 +230,8 @@ class isoFlex:
         flexureTIN
             Numpy array containing flexural deflection values for the TIN.
         """
+
+        self.dtime += self.ftime
 
         # Average volume of sediment and water on the flexural grid points
         sedload = numpy.zeros(len(self.xyi))

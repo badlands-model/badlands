@@ -38,6 +38,10 @@
         <maxdt>1000.</maxdt>
         <!-- Display interval [a] -->
         <display>5000.</display>
+        <!-- Mesh output frequency based on the display interval. (integer)
+             Considering a display interval of T yrs and a mesh output of K
+             the mesh will be stored every T*K yrs - (optional default is 1) -->
+        <meshout>28</meshout>
     </time>
 
     <!-- Simulation stratigraphic structure -->
@@ -374,10 +378,144 @@
         <caerial>0.001</caerial>
         <!-- Marine diffusion coefficient [m2/a] -->
         <cmarine>0.005</cmarine>
+        <!-- Critical slope for non-linear diffusion [m/m] - optional.
+             Default value is set to 0 meaning non-lnear diffusion is not considered. -->
+        <cslp>0.8</cslp>
         <!-- River transported sediment diffusion
              coefficient in marine realm [m2/a] -->
         <criver>10.</criver>
     </creep>
+
+    <!-- Wave global parameters structure -->
+    <waveglobal>
+        <!-- Wave model to consider either SWAN or WaveSed.
+             Default is WaveSed (wmodel = 0). -->
+        <wmodel>0</wmodel>
+        <!-- Wave interval [a] -->
+        <twave>250.</twave>
+        <!-- Wave grid resolution [m] -->
+        <wres>1000.</wres>
+        <!-- Maximum depth for wave influence [m] -->
+        <wbase>20</wbase>
+        <!-- Number of wave climate temporal events. -->
+        <events>1</events>
+        <!-- Mean grain size diameter [m] -->
+        <d50>0.0001</d50>
+        <!-- Wave sediment diffusion coefficient. Default is 50. -->
+        <wCd>50.</wCd>
+        <!-- Wave sediment entrainment coefficient. Value needs to be
+             set between ]0,1]. Default is 0.5 -->
+        <wCe>0.35</wCe>
+        <!-- Maximum wave-induced erosion [m] -->
+        <wEro>0.5</wEro>
+        <!-- Maximum depth for wave influence [m] -->
+        <wbase>10</wbase>
+        <!--  Steps used to perform sediment transport.
+              Default is 1000. -->
+        <tsteps>500</tsteps>
+        <!--  Steps used to perform sediment diffusion.
+              Default is 1000. -->
+        <dsteps>500</dsteps>
+    </waveglobal>
+
+    <!-- Wave definition based on wave global structure.
+         The wave field needs to be ordered by increasing start time.
+         The time needs to be continuous between each field without overlaps. -->
+    <wave>
+        <!-- Wave start time [a] -->
+        <start>-14000.</start>
+        <!-- Wave end time [a] -->
+        <end>0</end>
+        <!-- Wave climates number -->
+        <climNb>3</climNb>
+        <!-- Climatic wave definition for WaveSed model. -->
+        <climate>
+            <!-- Percentage of time this event is active during the time interval. -->
+            <perc>0.3</perc>
+            <!-- Significant wave height (in m) -->
+            <hs>2.</hs>
+            <!-- Wave direction in degrees (between 0 and 360) from the
+                 X-axis (horizontal) anti-clock wise. It specifies where the waves are
+                 actually coming from. The wave directions are reduced to 8 possible ones:
+                 East (dir = 0) - North (dir = 90) - West (dir = 180) - South (dir = 270) -
+                 NE (0<dir<90) - NW (90<dir<180) - SW (180<dir<270) - SE (dir>270). -->
+            <dir>0</dir>
+        </climate>
+        <!-- Climatic wave definition for WaveSed model. -->
+        <climate>
+            <!-- Percentage of time this event is active during the time interval. -->
+            <perc>0.3</perc>
+            <!-- Significant wave height (in m) -->
+            <hs>2.</hs>
+            <!-- Wave direction in degrees (between 0 and 360) from the
+                 X-axis (horizontal) anti-clock wise. It specifies where the waves are
+                 actually coming from. The wave directions are reduced to 8 possible ones:
+                 East (dir = 0) - North (dir = 90) - West (dir = 180) - South (dir = 270) -
+                 NE (0<dir<90) - NW (90<dir<180) - SW (180<dir<270) - SE (dir>270). -->
+            <dir>30</dir>
+        </climate>
+        <!-- Climatic wave definition for WaveSed model. -->
+        <climate>
+            <!-- Percentage of time this event is active during the time interval. -->
+            <perc>0.4</perc>
+            <!-- Significant wave height (in m) -->
+            <hs>2.</hs>
+            <!-- Wave direction in degrees (between 0 and 360) from the
+                 X-axis (horizontal) anti-clock wise. It specifies where the waves are
+                 actually coming from. The wave directions are reduced to 8 possible ones:
+                 East (dir = 0) - North (dir = 90) - West (dir = 180) - South (dir = 270) -
+                 NE (0<dir<90) - NW (90<dir<180) - SW (180<dir<270) - SE (dir>270). -->
+            <dir>300</dir>
+        </climate>
+    </wave>
+
+    <!-- Specify species 1 growth functions based on 3 main controlling forces: depth,
+         sedimentation rate and ocean wave height.
+         These functions are defined as csv files produced using pre-processing IPython
+         notebook. -->
+
+    <carb>
+        <!-- Specify initial basement structure (0) for hard rock and (1) for loose sediment. -->
+        <baseMap>data/base500south.csv</baseMap>
+        <!-- Wave interval [a] -->
+        <tcarb>50.</tcarb>
+    </carb>
+
+    <species1>
+        <!-- Species 1 growth rate [m/yr]. -->
+        <growth>0.009</growth>
+        <!-- Depth control on species 1 evolution. -->
+        <depthControl>data/depthcontrol1.csv</depthControl>
+        <!-- Ocean wave height control on species 1 evolution. -->
+        <waveControl>data/wavecontrolcarb1.csv</waveControl>
+        <!-- Sedimentation control on species 1 evolution. -->
+        <sedControl>data/sedcontrolcarb1.csv</sedControl>
+    </species1>
+
+    <!-- Specify species 2 growth functions based on 3 main controlling forces: depth,
+         sedimentation rate and ocean wave height.
+         These functions are defined as csv files produced using pre-processing IPython
+         notebook. -->
+    <species2>
+        <!-- Species 2 growth rate [m/yr]. -->
+        <growth>0.005</growth>
+        <!-- Depth control on species 2 evolution. -->
+        <depthControl>data/depthcontrol2.csv</depthControl>
+        <!-- Ocean wave height control on species 2 evolution. -->
+        <waveControl>data/wavecontrolcarb2.csv</waveControl>
+        <!-- Sedimentation control on species 2 evolution. -->
+        <sedControl>data/sedcontrolcarb2.csv</sedControl>
+    </species2>
+
+    <!-- Specify pelagic deposition functions based on depth control.
+         The function is defined as csv file produced using pre-processing IPython
+         notebook. -->
+    <pelagic>
+        <!-- Pelagic deposition rate [m/yr]. -->
+        <growth>0.00005</growth>
+        <!-- Depth control on pelagic deposition. -->
+        <depthControl>data/pelagiccontrol.csv</depthControl>
+    </pelagic>
 
     <!-- Flexural isostasy parameters:
          Parameterisation of the flexural isostasy using the gFlex model from Wickert 2015.
@@ -411,6 +549,14 @@
              Te value [m]. You will need to ensure that the grid dimensions match the number of
              points given for the flexural grid resolution - (optional) -->
         <elasticGrid>data/elasticthickness.csv</elasticGrid>
+        <!-- In case where the lithospheric elastic thickness (Te) varies with time.
+             The elastic thickness relates to the age of the lithosphere with a simple equation that
+             results from the square-root time dependence of lithospheric cooling via thermal conduction.
+                            Te = a1 x sqrt(dt) + a2
+             You will need to define the coefficient for a1 and a2 where a1 is the slope of the dependency
+             and a2 the initial elastic thickness [m] at the start of the simulation - (optional) -->
+        <elasticA1>2.7</elasticA1>
+        <elasticA2>10000.</elasticA2>
         <!-- Finite difference boundary conditions:
               + 0Displacement0Slope: 0-displacement-0-slope boundary condition
               + 0Moment0Shear: "Broken plate" boundary condition: second and

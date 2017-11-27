@@ -101,8 +101,9 @@ class waveSed():
         elif self.ds<= 150.:
             self.tau_cr = 0.013*np.power(self.ds,0.29)
         else:
-            self.tau_cr = 0.045
+            self.tau_cr = 0.055
 
+        self.tau_cr = self.tau_cr*self.grav*self.dia*(self.rhos-self.rhow)
         self.wavebase = input.waveBase
         self.resfac = input.resW
 
@@ -494,9 +495,10 @@ class waveSed():
 
         # Friction factor
         fric = np.zeros(waveC.shape)
-        R = waveU*waveT/(2.*np.pi*2.5*self.dia)
+        kbb = 2.*np.pi*self.dia/12.
+        R = waveU*waveT/(2.*np.pi*kbb)
         tmpr2,tmpc2 = np.where(R>0.)
-        fric[tmpr2,tmpc2] = 0.237*np.power(R[tmpr2,tmpc2],-0.52)
+        fric[tmpr2,tmpc2] = 1.39*np.power(R[tmpr2,tmpc2],-0.52)
 
         # Shear stress (N/m2)
         self.waveS = 0.5*self.rhow*fric*np.power(waveU,2.)
@@ -519,6 +521,7 @@ class waveSed():
         self.waveS[self.waveS<1.e-5] = 0.
         r,c=np.where(self.waveS>0.)
         Hent = np.zeros(self.waveS.shape)
+        #Hent[r,c] = self.Ce*np.log(self.waveS[r,c]/self.tau_cr)*perc
         Hent[r,c] = -self.Ce*np.log(np.sqrt(np.power(self.tau_cr/self.waveS[r,c],2)))*perc
         Hent[Hent<0.] = 0.
         r,c=np.where(np.logical_and(Hent>0.,Hent>0.25*self.depth))
