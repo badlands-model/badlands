@@ -56,10 +56,13 @@ _Release v1.0.0 :_
 + **[Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
 
 _Release v1.1.0 :_  
-+ **[Release 2: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
++ **[Release 1.1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
 
-_v2.0.0 Release Candidate :_
-+ The ```master``` branch is a stable version of the code with the most recent developments embedded and is expected to be released as **version 2.0.0**
+_Release v2.0.0 :_
++ **[Release 2: badlands-model/pyBadlands](https://zenodo.org/badge/latestdoi/51286954), Zenodo, doi:10.5281/zenodo.1069573, 2018.** 
+
+_RC_
++ The ```master``` branch is a stable version of the code with the most recent developments embedded.
 
 ### Reporting  
 
