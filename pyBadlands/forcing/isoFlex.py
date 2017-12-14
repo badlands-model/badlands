@@ -188,7 +188,7 @@ class isoFlex:
         """
         Use gFlex module to compute flexure from surface load.
         """
-
+        
         if self.Te1 is None:
             self.flex.Te = self.Te
         else:
@@ -230,8 +230,6 @@ class isoFlex:
         flexureTIN
             Numpy array containing flexural deflection values for the TIN.
         """
-
-        self.dtime += self.ftime
 
         # Average volume of sediment and water on the flexural grid points
         sedload = numpy.zeros(len(self.xyi))
@@ -276,5 +274,7 @@ class isoFlex:
             self.previous_flex = self.flex.w
             rgi_flexure = RegularGridInterpolator((self.ygrid, self.xgrid), flex_diff)
             flexureTIN[boundsPt:] = rgi_flexure((self.xyTIN[boundsPt:,1],self.xyTIN[boundsPt:,0]))
+
+        self.dtime += self.ftime
 
         return flexureTIN

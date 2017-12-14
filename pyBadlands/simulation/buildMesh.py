@@ -375,7 +375,7 @@ def _init_flexure(FVmesh, input, recGrid, force, elevation, cumdiff,
 
     nx = input.fnx
     ny = input.fny
-    elasticT2 = 0.
+    elasticT2 = None
     if nx == 0:
         nx = recGrid.nx
     if ny == 0:
@@ -387,7 +387,7 @@ def _init_flexure(FVmesh, input, recGrid, force, elevation, cumdiff,
     else:
         elasticT = input.elasticA1
         elasticT2 = input.elasticA2
-        
+
     flex = isoFlex.isoFlex()
     flex.buildGrid(nx, ny, input.youngMod, input.dmantle, input.dsediment,
                 elasticT, elasticT2, input.flexbounds, FVmesh.node_coords[:,:2], input.ftime)

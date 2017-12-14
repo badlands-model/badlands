@@ -552,7 +552,7 @@
         <!-- In case where the lithospheric elastic thickness (Te) varies with time.
              The elastic thickness relates to the age of the lithosphere with a simple equation that
              results from the square-root time dependence of lithospheric cooling via thermal conduction.
-                            Te = a1 x sqrt(dt) + a2
+                            Te = a1 x sqrt(t) + a2
              You will need to define the coefficient for a1 and a2 where a1 is the slope of the dependency
              and a2 the initial elastic thickness [m] at the start of the simulation - (optional) -->
         <elasticA1>2.7</elasticA1>
