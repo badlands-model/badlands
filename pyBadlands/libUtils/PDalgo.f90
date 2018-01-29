@@ -146,12 +146,11 @@ contains
 
     real(kind=8),dimension(pydnodes) :: elev, seadep, newelev
 
-    integer :: it, s, m, n, p, k, pid, nid, id, nup, ndown, ngbh(20)
+    integer :: it, s, m, n, p, k, pid, nid, id
     real(kind=8) :: dh, vol, minz, maxz
 
     dnodes = pydnodes
     elev = elevation
-
     do s = 1, pyRockNb
       newelev = elev
       do m = 1, diffnbmax
@@ -197,20 +196,15 @@ contains
               if(seadep(id)>0.)then
                 minz = elev(id)
                 nid = 0
-                nup = 0
-                ndown = 0
                 maxz = -1.e8
                 loop: do p = 1, 20
                   if( neighbours(id,p) < 0 ) exit loop
-                  ndown = ndown + 1
-                  ngbh(ndown) = neighbours(id,p)+1
                   if(minz>elev(neighbours(id,p)+1))then
                     nid = neighbours(id,p)+1
                     minz = elev(nid)
                   endif
                   if(maxz<elev(neighbours(id,p)+1))then
                     maxz = elev(neighbours(id,p)+1)
-                    nup = neighbours(id,p)+1
                   endif
                 enddo loop
                 if(nid==0)then
@@ -220,10 +214,15 @@ contains
                     seadep(id) = seadep(id) - dh*area(id)
                     pid = depIDs(k)+1
                     nid = depIDs(k)+1
-                    seadep(nid) = seadep(nid)+seadep(id)
-                    seadep(id) = 0.
-                    id = nid
                     it = 0
+                    if(nid == id)then
+                      seadep(nid) = seadep(id)
+                    else
+                      seadep(nid) = seadep(nid)+seadep(id)
+                      seadep(id) = 0.
+                    endif
+                    n = depIDs(k)+1
+                    id = n
                   else
                     elev(id) = elev(id) + seadep(id)/area(id)
                     seadep(id) = 0.
