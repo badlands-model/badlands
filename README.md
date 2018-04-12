@@ -83,14 +83,23 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 + flexural response due to loading and unloading under variable elastic thickness [nbviewer](http://nbviewer.jupyter.org/github/badlands-model/pyBadlands/blob/master/Examples/flexure/flexure.ipynb)
 + quick setup of real topography/bathymetry model using etopo1 [nbviewer](http://nbviewer.jupyter.org/github/badlands-model/pyBadlands/blob/master/Examples/etopo/etopo.ipynb)
 
+
 ### Documentation related to the physics & assumptions
 
 + **Salles, T. & Hardiman, L.: [Badlands: An open-source, flexible and parallel framework to study landscape dynamics](http://dx.doi.org/10.1016/j.cageo.2016.03.011), Computers & Geosciences, 91, 77-89, doi:10.1016/j.cageo.2016.03.011, 2016.**
+
 + **Salles, T.: [Badlands: A parallel basin and landscape dynamics model](http://dx.doi.org/10.1016/j.softx.2016.08.005), SoftwareX, 5, 195–202, doi:10.1016/j.softx.2016.08.005, 2016.**
+
++ **Salles, T., Ding, X. and Brocard, G.: [pyBadlands: A framework to simulate sediment transport, landscape dynamics and basin stratigraphic evolution through space and time](https://doi.org/10.1371/journal.pone.0195557), PLOS ONE 13(4): e0195557, 2018.** 
 
 ### Published research studies using Badlands:
 
 + **Salles, T., N. Flament, and D. Muller: [Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period](http://dx.doi.org/10.1002/2016GC006617), Geochem. Geophys. Geosyst., 18, doi:10.1002/2016GC006617, 2017** -- [Supplementary materials: Australian Landscape Dynamic](https://github.com/badlands-model/g-cubed-2016)
+
++ **Salles, T., X. Ding, J.M. Webster, A. Vila-Concejo, G. Brocard and J. Pall: [A unified framework for modelling sediment fate from source to sink and its interactions with reef systems over geological times](https://doi.org/10.1038/s41598-018-23519-8), Nature Scientific Report, doi:10.1038/s41598-018-23519-8, 2018** 
+
+
+When you use **Badlands**, please cite the above papers.
 
 
 When you use **Badlands**, please cite the above papers.
