@@ -55,7 +55,7 @@ setup(
     author="Tristan Salles",
     author_email="",
     description=("Python interface to Badlands"),
-    long_description=open('README.md').read(),
+    #long_description=open('README.md').read(),
     classifiers=[
         "Development Status :: 3 - Alpha",
     ],
