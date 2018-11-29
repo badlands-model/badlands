@@ -325,7 +325,7 @@ class carbGrowth:
             unique = OrderedDict()
             for p in zip(tmpts[:,0], tmpts[:,1]):
                 unique.setdefault(p[:2], p)
-            pts = numpy.asarray(unique.values())
+            pts = numpy.asarray(list(unique.values()))
 
             if closed:
                 cpts = numpy.zeros((len(pts)+1,2), order='F')

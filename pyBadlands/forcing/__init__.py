@@ -11,8 +11,8 @@
    parameters: climate, tectonic, sea level as well as isostatic flexure.
 """
 
-import xmlParser
-import forceSim
-import isoFlex
-import carbGrowth
-import pelagicGrowth
+from . import xmlParser
+from . import forceSim
+from . import isoFlex
+from . import carbGrowth
+from . import pelagicGrowth

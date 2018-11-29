@@ -206,7 +206,7 @@ class strataMesh():
         shape = (l1-l0, self.step+1)
 
         if rank == 0 and verbose:
-            print " - move stratal mesh ", time.clock() - walltime
+            print(" - move stratal mesh ", time.clock() - walltime)
 
         # Parallel calls
         if size > 1:
@@ -281,7 +281,7 @@ class strataMesh():
                 deformElev = numpy.concatenate((deformElev, guData2), axis=0)
 
             if rank == 0 and verbose:
-                print " - send/receive communication stratal mesh ", time.clock() - walltime
+                print(" - send/receive communication stratal mesh ", time.clock() - walltime)
 
         # Serial model
         else:
@@ -290,18 +290,18 @@ class strataMesh():
             deformThick = self.stratThick[:,:self.step+1]
             deformElev = self.stratElev[:,:self.step+1]
             if rank == 0 and verbose:
-                print " - create deformed stratal mesh arrays ", time.clock() - walltime
+                print(" - create deformed stratal mesh arrays ", time.clock() - walltime)
 
         # Build the kd-tree
         walltime = time.clock()
         deformtree = cKDTree(deformXY)
         if rank == 0 and verbose:
-            print " - create deformed stratal mesh kd-tree ", time.clock() - walltime
+            print(" - create deformed stratal mesh kd-tree ", time.clock() - walltime)
 
         walltime = time.clock()
         distances, indices = deformtree.query(self.xyi, k=4)
         if rank == 0 and verbose:
-            print " - query stratal mesh kd-tree ", time.clock() - walltime
+            print(" - query stratal mesh kd-tree ", time.clock() - walltime)
 
         # Compute inverse weighting distance
         walltime = time.clock()
@@ -331,10 +331,10 @@ class strataMesh():
         tmpID = numpy.where(numpy.amax(self.stratThick[:,:self.step+1], axis=1)>0)[0]
         self.stratIn[tmpID] = 1
         if rank == 0 and verbose:
-            print " - perform stratal mesh interpolation ", time.clock() - walltime
+            print(" - perform stratal mesh interpolation ", time.clock() - walltime)
 
         if rank == 0 and verbose:
-            print " - moving stratal mesh function ", time.clock() - st_time
+            print(" - moving stratal mesh function ", time.clock() - st_time)
 
         self.oldload = numpy.copy(cumdiff)
 

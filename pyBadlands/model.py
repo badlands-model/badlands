@@ -261,7 +261,7 @@ class Model(object):
             # At most, display output every 5 seconds
             tloop = time.clock() - last_time
             if self._rank == 0 and time.clock() - last_output >= 5.0:
-                print('tNow = %s (step took %0.02f seconds)' % (self.tNow, tloop))
+                print(('tNow = %s (step took %0.02f seconds)' % (self.tNow, tloop)))
                 last_output = time.clock()
             last_time = time.clock()
 
@@ -358,7 +358,7 @@ class Model(object):
                 # Update next flexure time
                 self.force.next_flexure += self.input.ftime
                 if self._rank == 0:
-                    print("   - Compute flexural isostasy ", time.clock() - flextime)
+                    print(("   - Compute flexural isostasy ", time.clock() - flextime))
 
             # Compute wavesed parameters
             if self.tNow >= self.force.next_wave:
@@ -378,7 +378,7 @@ class Model(object):
                 self.cumdiff  += waveED
                 self.wavediff  += waveED
                 if self._rank == 0:
-                    print("   - Compute wave-induced sediment transport ", time.clock() - wavetime)
+                    print(("   - Compute wave-induced sediment transport ", time.clock() - wavetime))
                 # Update carbonate active layer
                 if nactlay is not None:
                     self.carbTIN.update_active_layer(nactlay,self.elevation)
@@ -431,7 +431,7 @@ class Model(object):
                 self.oldsed = np.copy(self.cumdiff)
                 self.force.next_carb += self.input.tCarb
                 if self._rank == 0:
-                    print("   - Compute carbonate growth ", time.clock() - carbtime)
+                    print(("   - Compute carbonate growth ", time.clock() - carbtime))
 
             # Compute stream network
             self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
@@ -450,13 +450,13 @@ class Model(object):
                     meshtime = time.clock()
                     self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep,self._rank)
                     if self._rank == 0:
-                        print("   - Write sediment mesh output", time.clock() - meshtime)
+                        print(("   - Write sediment mesh output", time.clock() - meshtime))
 
                 if self.carbTIN is not None and self.outputStep % self.input.tmesh==0:
                     meshtime = time.clock()
                     self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep,self._rank)
                     if self._rank == 0:
-                        print("   - Write carbonate mesh output", time.clock() - meshtime)
+                        print(("   - Write carbonate mesh output", time.clock() - meshtime))
 
                 # Update next display time
                 last_output = time.clock()
@@ -501,7 +501,7 @@ class Model(object):
 
         tloop = time.clock() - last_time
         if self._rank == 0:
-            print('tNow = %s (%0.02f seconds)' % (self.tNow, tloop))
+            print(('tNow = %s (%0.02f seconds)' % (self.tNow, tloop)))
 
         # Isostatic flexure
         if self.input.flexure:
@@ -518,7 +518,7 @@ class Model(object):
             # Update next flexure time
             self.force.next_flexure += self.input.ftime
             if self._rank == 0:
-                print("   - Compute flexural isostasy ", time.clock() - flextime)
+                print(("   - Compute flexural isostasy ", time.clock() - flextime))
 
         # Create checkpoint files and write HDF5 output
         if self.input.udw == 0 or self.tNow == self.input.tEnd or self.tNow == self.force.next_display:

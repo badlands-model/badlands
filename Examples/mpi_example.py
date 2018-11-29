@@ -25,10 +25,10 @@ os.chdir(base_path)
 start_time = time.time()
 model = Model()
 
-print('loading %s' % xml_name)
+print(('loading %s' % xml_name))
 
-print(model.load_xml(xml_name))
+print((model.load_xml(xml_name)))
 
-print(model.run_to_time(run_years))
-print('run to %s years finished in %s seconds' % (run_years, time.time() - start_time))
+print((model.run_to_time(run_years)))
+print(('run to %s years finished in %s seconds' % (run_years, time.time() - start_time)))
 

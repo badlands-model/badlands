@@ -275,7 +275,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     localTIN = triangle.triangulate(dict(vertices=data[globIDs,:2]),' ')
 
     if rank == 0 and verbose:
-        print " - partition TIN including shadow zones ", time.clock() - walltime
+        print(" - partition TIN including shadow zones ", time.clock() - walltime)
 
     return globIDs, localTIN
 
@@ -310,7 +310,7 @@ def _robin_distribution(X,Y):
     numLoc = 0
 
     # Round robin initial distribution
-    for i in xrange(numGlob):
+    for i in range(numGlob):
         if i%size == rank:
             numLoc += 1
 
@@ -321,7 +321,7 @@ def _robin_distribution(X,Y):
 
     # Fill data for round robin distribution grid
     idx = 0
-    for i in xrange(numGlob):
+    for i in range(numGlob):
         # Assumes gids start at 1, gives round robin initial distribution
         if i%size == rank:
             GIDs[idx] = i

@@ -238,7 +238,7 @@ class carbMesh():
         self.alay = PDalgo.pdstack.getactlay2(actlay, self.layerThick[:,:self.step+1],
                                     self.depoThick[:,:self.step+1,:])
         if rank==0 and verbose:
-            print "   - Get active layer composition ", time.clock() - time0
+            print("   - Get active layer composition ", time.clock() - time0)
             time0 = time.clock()
             
         return
@@ -273,7 +273,7 @@ class carbMesh():
         self.paleoDepth[:,self.step] = elev
 
         if rank==0 and verbose:
-            print "   - Update active layer due to wave-induced erosion/deposition ", time.clock() - time0
+            print("   - Update active layer due to wave-induced erosion/deposition ", time.clock() - time0)
 
         return
 
@@ -295,7 +295,7 @@ class carbMesh():
         self.paleoDepth[:,self.step] = elev
 
         if rank==0 and verbose:
-            print "   - Update erosion/deposition ", time.clock() - time0
+            print("   - Update erosion/deposition ", time.clock() - time0)
 
         return
 

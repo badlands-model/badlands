@@ -10,6 +10,6 @@
    Implementation relating to Badlands mesh algorithm.
 """
 
-import visSurf
-import FVmethod
-import raster2TIN
+from . import visSurf
+from . import FVmethod
+from . import raster2TIN

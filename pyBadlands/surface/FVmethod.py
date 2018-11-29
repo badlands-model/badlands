@@ -76,7 +76,7 @@ class FVmethod:
         walltime = time.clock()
         Vor_pts, Vor_edges = triangle.voronoi(self.node_coords)
         if rank == 0 and verbose:
-            print " - build the voronoi diagram ", time.clock() - walltime
+            print(" - build the voronoi diagram ", time.clock() - walltime)
 
         # Call the finite volume frame construction function from libUtils
         walltime = time.clock()
@@ -86,7 +86,7 @@ class FVmethod:
             self.edges[:,:2]+1, self.cells[:,:3]+1, Vor_pts[:,0], Vor_pts[:,1], \
             Vor_edges[:,:2]+1)
         if rank == 0 and verbose:
-            print " - construct Finite Volume representation ", time.clock() - walltime
+            print(" - construct Finite Volume representation ", time.clock() - walltime)
 
         # Maximum number of neighbours for each partition
         maxNgbh = numpy.array(maxNgbhs)
@@ -351,6 +351,6 @@ class FVmethod:
         exportVors = self._gather_VorEdges(localPtsNb, shape, ngbhNbs)
 
         if rank == 0 and verbose:
-            print " - perform MPI communication ", time.clock() - walltime
+            print(" - perform MPI communication ", time.clock() - walltime)
 
         return exportGIDs, exportNgbhIDs, exportEdges, exportVors, exportVols

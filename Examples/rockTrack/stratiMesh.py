@@ -110,7 +110,7 @@ class stratiMesh:
 
         h5file = self.folder+'/'+self.h5Strat+str(step)+'.p'+str(rank)+'.hdf5'
         df = h5py.File(h5file, 'r')
-        rockNb = len(df.keys())-1
+        rockNb = len(list(df.keys()))-1
         paleoH = np.array((df['/paleoDepth']))
         rockProp = np.zeros((paleoH.shape[0],paleoH.shape[1],rockNb))
 
@@ -327,7 +327,7 @@ class stratiMesh:
         assert self.startStep<=self.endStep, 'ERROR: End step lower than Start step.'
 
         for s in range(self.startStep,self.endStep+1):
-            print 'Process layers at time [in years]: ',self.tnow
+            print('Process layers at time [in years]: ',self.tnow)
             ptsnb = []
             cellnb = []
             for i in range(0, self.ncpus):

@@ -664,7 +664,7 @@ class flowNetwork:
             else:
                 volChange = cdepo+cero
             if rank==0 and verbose:
-                print "   - Compute sediment volumetric flux ", time.clock() - time1
+                print("   - Compute sediment volumetric flux ", time.clock() - time1)
                 time1 = time.clock()
 
             # Find overfilling catchments
@@ -689,7 +689,7 @@ class flowNetwork:
             newdt = max(self.mindt,newdt)
 
             if rank==0 and verbose:
-                print "   - Compute depressions connectivity ", time.clock() - time1
+                print("   - Compute depressions connectivity ", time.clock() - time1)
                 time1 = time.clock()
 
             if newdt < dt:
@@ -700,7 +700,7 @@ class flowNetwork:
                 comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
                 volChange = cdepo+cero
                 if rank==0 and verbose:
-                    print "   - Compute volumetric fluxes with updated dt ", time.clock() - time1
+                    print("   - Compute volumetric fluxes with updated dt ", time.clock() - time1)
                     time1 = time.clock()
 
                 if check:
@@ -711,7 +711,7 @@ class flowNetwork:
                     if (len(search)>0) and (len(ids)>0):
                         overfilled = numpy.intersect1d(intID[search],ids)
                         if len(overfilled) > 0:
-                            print 'WARNING: overfilling persists after time-step limitation.',len(overfilled)
+                            print('WARNING: overfilling persists after time-step limitation.',len(overfilled))
 
             # Update river sediment load in kg/s
             sedld = numpy.sum(sedload,axis=1)
@@ -722,7 +722,7 @@ class flowNetwork:
             erosion = numpy.zeros(cero.shape)
             erosion[self.insideIDs,:] = cero[self.insideIDs,:]/Acell[self.insideIDs].reshape(len(self.insideIDs),1)
             if rank==0 and verbose:
-                print "   - Compute erosion ", time.clock() - time1
+                print("   - Compute erosion ", time.clock() - time1)
                 time1 = time.clock()
 
             # Compute deposition
@@ -743,7 +743,7 @@ class flowNetwork:
                     deposition[plainID,:] = depo[plainID,:]/Acell[plainID].reshape(len(plainID),1)
                     depo[plainID,:] = 0.
                     if rank==0 and verbose:
-                        print "   - Compute plain deposition ", time.clock() - time1
+                        print("   - Compute plain deposition ", time.clock() - time1)
                         time1 = time.clock()
 
                 # Compute land pit deposition
@@ -762,7 +762,7 @@ class flowNetwork:
 
                     depo[landIDs,:] = 0.
                     if rank==0 and verbose:
-                        print "   - Compute land pit deposition ", time.clock() - time1
+                        print("   - Compute land pit deposition ", time.clock() - time1)
                         time1 = time.clock()
 
                 # Compute water deposition
@@ -775,20 +775,20 @@ class flowNetwork:
                     deposition += seadep
                     depo[seaIDs,:] = 0.
                     if rank==0 and verbose:
-                        print "   - Compute marine deposition ", time.clock() - time1
+                        print("   - Compute marine deposition ", time.clock() - time1)
                         time1 = time.clock()
 
                 # Is there some remaining deposits?
                 if numpy.any(depo):
                     if rank == 0:
-                        print 'WARNING: forced deposition is performed during this timestep.'
+                        print('WARNING: forced deposition is performed during this timestep.')
                     deposition[self.insideIDs,:] += depo[self.insideIDs,:]/Acell[self.insideIDs].reshape(len(self.insideIDs),1)
 
             # Define erosion/deposition changes
             sedflux[self.insideIDs,:] = erosion[self.insideIDs,:]+deposition[self.insideIDs,:]
 
             if rank==0 and verbose:
-                print "   - Total sediment flux time ", time.clock() - time0
+                print("   - Total sediment flux time ", time.clock() - time0)
 
         return newdt,sedflux,erosion,deposition
 
@@ -817,7 +817,7 @@ class flowNetwork:
             # Querying the cKDTree later becomes a bottleneck, so distribute the xyi array across all MPI nodes
             xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
             splits = numpy.array_split(xyi, self._size)
-            split_lengths = numpy.array(map(len, splits)) * 3
+            split_lengths = numpy.array(list(map(len, splits))) * 3
             localxyi = splits[self._rank]
             query_shape = (xyi.shape[0], 3)
 

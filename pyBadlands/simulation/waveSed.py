@@ -322,7 +322,7 @@ class waveSed():
             unique = OrderedDict()
             for p in zip(tmpts[:,0], tmpts[:,1]):
                 unique.setdefault(p[:2], p)
-            pts = np.asarray(unique.values())
+            pts = np.asarray(list(unique.values()))
 
             if closed:
                 cpts = np.zeros((len(pts)+1,2), order='F')

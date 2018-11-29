@@ -119,7 +119,7 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
 
         visualiseFlow.write_xmf(input.outDir, input.fxmffile, input.fxdmffile, step, tNow,
                             fline, fnodes, input.fh5file, size)
-        print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, tNow)
+        print("   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, tNow))
 
     # Record erodibility maps
     if input.erolays >= 0 and rank == 0:

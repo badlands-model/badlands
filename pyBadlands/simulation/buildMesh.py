@@ -79,7 +79,7 @@ def construct_mesh(input, filename, verbose=False):
     tMesh = FVmethod.FVmethod(localTIN['vertices'], localTIN['triangles'], localTIN['edges'])
 
     if rank == 0 and size > 1 and verbose:
-        print " - partition TIN amongst processors and create local TINs", time.clock() - walltime
+        print(" - partition TIN amongst processors and create local TINs", time.clock() - walltime)
 
     # Define Finite Volume parameters
     walltime = time.clock()
@@ -100,7 +100,7 @@ def construct_mesh(input, filename, verbose=False):
     FVmesh.control_volumes[tGIDs] = tVols
 
     if rank == 0 and verbose:
-        print " - FV mesh ", time.clock() - walltime
+        print(" - FV mesh ", time.clock() - walltime)
 
     # Define TIN parameters
     if input.flexure:
@@ -200,7 +200,7 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     inGIDs = np.where(partitionIDs == rank)[0]
 
     if rank == 0 and verbose:
-        print " - partition TIN amongst processors ", time.clock() - walltime
+        print(" - partition TIN amongst processors ", time.clock() - walltime)
 
     # Define overlapping partitions
     walltime = time.clock()
@@ -230,7 +230,7 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     FVmesh.control_volumes[tGIDs] = tVols
 
     if rank == 0 and verbose:
-        print " - reconstructed FV mesh ", time.clock() - walltime
+        print(" - reconstructed FV mesh ", time.clock() - walltime)
 
     inIDs = np.where(FVmesh.partIDs[recGrid.boundsPt:] == rank)[0]
     inIDs += recGrid.boundsPt
@@ -305,7 +305,7 @@ def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
                                       input.diffprop, recGrid.boundsPt, input.fillmax)
 
     if rank == 0 and verbose:
-        print " - define paramters on TIN grid ", time.clock() - walltime
+        print(" - define paramters on TIN grid ", time.clock() - walltime)
 
     if input.flexure:
         return elevation, cumdiff, cumhill, cumflex, inIDs, parentIDs
@@ -336,7 +336,7 @@ def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, rank, verbose=False):
             strata = strataMesh.strataMesh(sdx, bbX, bbY, layNb, FVmesh.node_coords[:, :2],
                                 input.outDir, input.sh5file)
         if rank == 0 and verbose:
-            print " - create stratigraphic regions ", time.clock() - walltime
+            print(" - create stratigraphic regions ", time.clock() - walltime)
 
     # Define pre-existing erodibility maps
     if input.erolays >= 0:
@@ -355,7 +355,7 @@ def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, rank, verbose=False):
                                      rfolder=None, rstep=0)
 
         if rank == 0 and verbose:
-            print " - create erodibility mesh ", time.clock() - walltime
+            print(" - create erodibility mesh ", time.clock() - walltime)
 
     if input.laytime > 0 and input.erolays >= 0:
         return strata, mapero
@@ -399,7 +399,7 @@ def _init_flexure(FVmesh, input, recGrid, force, elevation, cumdiff,
     tinFlex = force.disp_border(tinFlex, FVmesh.neighbours, FVmesh.edge_length, recGrid.boundsPt)
     cumflex += tinFlex
     if rank == 0 and verbose:
-        print "   - Initialise flexural isostasy ", time.clock() - walltime
+        print("   - Initialise flexural isostasy ", time.clock() - walltime)
 
     return flex, tinFlex, cumflex
 
@@ -422,7 +422,7 @@ def _init_wave(input, recGrid, force, rank, verbose=False):
     force.getSea(input.tStart)
 
     if rank == 0 and verbose:
-        print "   - Initialise wave grid ", time.clock() - walltime
+        print("   - Initialise wave grid ", time.clock() - walltime)
 
     return wave
 
@@ -438,6 +438,6 @@ def _init_wavesed(input, recGrid, force, rank, verbose=False):
     force.getSea(input.tStart)
 
     if rank == 0 and verbose:
-        print "   - Initialise wavesed grid ", time.clock() - walltime
+        print("   - Initialise wavesed grid ", time.clock() - walltime)
 
     return wave

@@ -538,9 +538,9 @@ class morphoGrid:
             Y values for the profile (minZ, meanZ, maxZ)
         """
 
-        meanZ = map(self.profile_mean, zip(*pData))
-        minZ = map(self.profile_min, zip(*pData))
-        maxZ = map(self.profile_max, zip(*pData))
+        meanZ = list(map(self.profile_mean, list(zip(*pData))))
+        minZ = list(map(self.profile_min, list(zip(*pData))))
+        maxZ = list(map(self.profile_max, list(zip(*pData))))
 
         trace0 = Scatter(
             x=pDist,

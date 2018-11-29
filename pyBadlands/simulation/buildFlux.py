@@ -45,7 +45,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
         fillH = elevationTIN.pit_stack_PD(elevation,0,force.sealevel)
 
     if rank == 0 and verbose and input.spl:
-        print " -   depression-less algorithm PD with stack", time.clock() - walltime
+        print(" -   depression-less algorithm PD with stack", time.clock() - walltime)
 
     # Compute stream network
     walltime = time.clock()
@@ -54,14 +54,14 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
                        lGIDs)
 
     if rank == 0 and verbose:
-        print " -   compute receivers parallel ", time.clock() - walltime
+        print(" -   compute receivers parallel ", time.clock() - walltime)
 
     # Distribute evenly local minimas to processors on filled surface
     walltime = time.clock()
     flow.localbase = np.array_split(flow.base, size)[rank]
     flow.ordered_node_array_filled()
     if rank == 0 and verbose:
-        print " -   compute stack order locally for filled surface", time.clock() - walltime
+        print(" -   compute stack order locally for filled surface", time.clock() - walltime)
 
     walltime = time.clock()
     stackNbs = comm.allgather(len(flow.localstack))
@@ -70,14 +70,14 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
                     recvbuf=[globalstack, (stackNbs, None), mpi.INT])
     flow.stack = globalstack
     if rank == 0 and verbose:
-        print " -   send stack order for filled surface globally ", time.clock() - walltime
+        print(" -   send stack order for filled surface globally ", time.clock() - walltime)
 
     # Distribute evenly local minimas on real surface
     walltime = time.clock()
     flow.localbase1 = np.array_split(flow.base1, size)[rank]
     flow.ordered_node_array_elev()
     if rank == 0 and verbose:
-        print " -   compute stack order locally for real surface", time.clock() - walltime
+        print(" -   compute stack order locally for real surface", time.clock() - walltime)
 
     walltime = time.clock()
     stackNbs1 = comm.allgather(len(flow.localstack1))
@@ -86,7 +86,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
                     recvbuf=[globalstack1, (stackNbs1, None), mpi.INT])
     flow.stack1 = globalstack1
     if rank == 0 and verbose:
-        print " -   send stack order for real surface globally ", time.clock() - walltime
+        print(" -   send stack order for real surface globally ", time.clock() - walltime)
 
     # Compute a unique ID for each local depression and their downstream draining nodes
     flow.compute_parameters_depression(fillH,elevation,FVmesh.control_volumes,force.sealevel)
@@ -95,7 +95,7 @@ def streamflow(input, FVmesh, recGrid, force, hillslope, flow, elevation, \
     walltime = time.clock()
     flow.compute_flow(elevation, FVmesh.control_volumes, riverrain)
     if rank == 0 and verbose:
-        print " -   compute discharge ", time.clock() - walltime
+        print(" -   compute discharge ", time.clock() - walltime)
 
     return fillH, elevation
 
@@ -123,7 +123,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         flow.erodibility = np.sum(straTIN.rockCk*activelay/flow.activelay.reshape(len(elevation),1),axis=1)
         eroCk = straTIN.rockCk
         if rank == 0 and verbose:
-            print " -   Get active layer ", time.clock() - walltime
+            print(" -   Get active layer ", time.clock() - walltime)
     else:
         activelay = None
         eroCk = 0.
@@ -160,7 +160,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
             hillslope.dt_stabilityCs(elevation, FVmesh.neighbours, FVmesh.edge_length,
                     lGIDs, flow.borders2)
             if hillslope.CFL < input.minDT:
-                print 'Decrease your hillslope diffusion coefficients to ensure stability.'
+                print('Decrease your hillslope diffusion coefficients to ensure stability.')
                 sys.exit(0)
         hillslope.dt_stability_ms(FVmesh.edge_length[inGIDs,:tMesh.maxNgbh])
     elif hillslope.CFL is None:
@@ -171,12 +171,12 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     if CFLtime>1.:
         CFLtime = float(round(CFLtime-0.5,0))
     if rank == 0 and verbose:
-        print 'CFL for hillslope and flow ',hillslope.CFL,flow.CFL,CFLtime
+        print('CFL for hillslope and flow ',hillslope.CFL,flow.CFL,CFLtime)
     CFLtime = min(CFLtime, tEnd - tNow)
     CFLtime = max(input.minDT, CFLtime)
     CFLtime = min(input.maxDT, CFLtime)
     if rank == 0 and verbose:
-        print " -   Get CFL time step ", time.clock() - walltime
+        print(" -   Get CFL time step ", time.clock() - walltime)
 
     # Compute sediment fluxes
     if input.erolays >= 0:
@@ -189,7 +189,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
                                           input.slp_cr, FVmesh.neighbours, verbose=False)
 
     if rank == 0 and verbose:
-        print " -   Get stream fluxes ", time.clock() - walltime
+        print(" -   Get stream fluxes ", time.clock() - walltime)
     ed = np.sum(sedchange,axis=1)
     elevation += ed
     cumdiff += ed
@@ -247,7 +247,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
             it += 1
 
         if rank == 0 and verbose:
-            print " -   Get river sediment marine fluxes ", time.clock() - walltime
+            print(" -   Get river sediment marine fluxes ", time.clock() - walltime)
 
     # Compute hillslope processes
     dtype = 1
@@ -302,7 +302,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         elevation[:recGrid.nx+1] = elevation[flow.parentIDs[:recGrid.nx+1]]+100.
 
     if rank == 0 and verbose:
-        print " -   Get hillslope fluxes ", time.clock() - walltime
+        print(" -   Get hillslope fluxes ", time.clock() - walltime)
 
     # Update erodibility values
     if input.erolays >= 0:
@@ -315,6 +315,6 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     tNow += timestep
 
     if rank == 0 and verbose:
-        print " - Flow computation ", time.clock() - flow_time
+        print(" - Flow computation ", time.clock() - flow_time)
 
     return tNow,elevation,cumdiff,cumhill
