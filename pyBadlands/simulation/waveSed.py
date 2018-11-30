@@ -29,7 +29,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 from matplotlib.path import Path
 from collections import OrderedDict
-from matplotlib import _cntr as cntr
+from legacycontour import _cntr as cntr
 
 import pyBadlands.libUtils.WAVEsed as ocean
 

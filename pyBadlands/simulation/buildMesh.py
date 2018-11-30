@@ -109,6 +109,7 @@ def construct_mesh(input, filename, verbose=False):
         elevation, cumdiff, cumhill, inIDs, parentIDs = _define_TINparams(totPts, input, FVmesh, recGrid, verbose)
 
     # Build stratigraphic and erodibility meshes
+    print(input.laytime,input.erolays)
     if input.laytime > 0 and input.erolays >= 0:
         strata, mapero = _build_strateroMesh(input, FVmesh, recGrid, cumdiff, rank, verbose)
     elif input.laytime > 0:
