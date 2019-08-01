@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<badlands xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!-- Regular grid structure -->
+    <grid>
+        <!-- Digital elevation model file path -->
+        <demfile>data/deltaHR.csv</demfile>
+        <!-- Optional parameter (integer) used to decrease TIN resolution.
+             The default value is set to 1. Increasing the factor
+             value will multiply the digital elevation model resolution
+             accordingly.  -->
+        <resfactor>5</resfactor>
+        <!-- Boundary type: flat, slope, fix or wall -->
+        <boundary>flat</boundary>
+    </grid>
+
+    <!-- Simulation time structure -->
+    <time>
+        <!-- Simulation start time [a] -->
+        <start>0.</start>
+        <!-- Simulation end time [a] -->
+        <end>100000.</end>
+        <!-- Display interval [a] -->
+        <display>5000.</display>
+    </time>
+
+    <!-- Sea-level structure -->
+    <sea>
+        <!-- Relative sea-level position [m] -->
+        <position>-50.</position>
+        <!-- Sea-level curve - (optional) -->
+        <curve>data/sea.csv</curve>
+    </sea>
+
+    <!-- Precipitation structure -->
+    <precipitation>
+        <!-- Number of precipitation events -->
+        <climates>1</climates>
+        <!-- Precipitation definition -->
+        <rain>
+            <!-- Rain start time [a] -->
+            <rstart>0.</rstart>
+            <!-- Rain end time [a] -->
+            <rend>1000000.</rend>
+            <!-- Precipitation value [m/a] - (optional) -->
+            <rval>1.</rval>
+        </rain>
+    </precipitation>
+
+    <!-- Stream power law parameters:
+         The stream power law is a simplified form of the usual expression of
+         sediment transport by water flow, in which the transport rate is assumed
+         to be equal to the local carrying capacity, which is itself a function of
+         boundary shear stress. -->
+    <sp_law>
+        <!-- Values of m and n indicate how the incision rate scales
+             with bed shear stress for constant value of sediment flux
+             and sediment transport capacity.
+             Generally, m and n are both positive, and their ratio
+             (m/n) is considered to be close to 0.5 -->
+        <m>0.5</m>
+        <n>1.0</n>
+         <!-- The erodibility coefficient is scale-dependent and its value depend
+              on lithology and mean precipitation rate, channel width, flood
+              frequency, channel hydraulics. -->
+        <erodibility>1.e-5</erodibility>
+        <!-- Number of steps used to distribute marine deposit.
+             Default value is 5 (integer). -->
+        <diffnb>10</diffnb>
+        <!-- Proportion of marine sediment deposited on downstream nodes. It needs
+             to be set between ]0,1[. Default value is 0.9 (optional). -->
+        <diffprop>0.1</diffprop>
+    </sp_law>
+
+    <!-- Erodibility structure
+         This option allows you to specify different erodibility values either on the surface
+         or within a number of initial stratigraphic layers. -->
+    <erocoeffs>
+        <!-- Active layer thickness [m]-->
+        <actlay>5.</actlay>
+        <!-- Stratal layer interval [a] -->
+        <laytime>5000.</laytime>
+        <!-- Number of rock types to track. -->
+        <rocktype>2</rocktype>
+        <!-- Definition of erodibility values for each rock types -->
+        <rockero>
+            <!-- Erodibility coefficient for rock type 1 -->
+            <erorock>1.e-5</erorock>
+        </rockero>
+        <rockero>
+            <!-- Erodibility coefficient for rock type 2 -->
+            <erorock>3.e-5</erorock>
+        </rockero>
+
+        <!-- Number of erosion layers. -->
+        <erolayers>2</erolayers>
+        <!-- The layering is defined from top to bottom, with a file containing the
+             following properties for each points of the regular grid (DEM):
+              - 1st column the thickness of the considered layer
+              - 2nd column the rock type ID (an integer) -->
+        <!-- Constant erodibility and layer thickness -->
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlay0.csv</laymap>
+        </erolay>
+        <erolay>
+            <!-- Uniform erodibility value for the considered layer. -->
+            <laymap>data/thlay1.csv</laymap>
+        </erolay>
+    </erocoeffs>
+
+    <!-- Linear slope diffusion parameters:
+         Parameterisation of the sediment transport includes the simple creep transport
+         law which states that transport rate depends linearly on topographic gradient. -->
+    <creep>
+        <!-- Surface diffusion coefficient [m2/a] -->
+        <caerial>3.e-1</caerial>
+        <!-- Marine diffusion coefficient [m2/a] -->
+        <cmarine>5.e-1</cmarine>
+        <!-- River transported sediment diffusion
+             coefficient in marine realm [m2/a] -->
+        <criver>10.</criver>
+    </creep>
+
+    <!-- Output folder path -->
+    <outfolder>multiplerocks</outfolder>
+
+</badlands>

@@ -16,7 +16,6 @@ import time
 import h5py
 import numpy
 import pandas
-import mpi4py.MPI as mpi
 from scipy import interpolate
 from scipy.spatial import cKDTree
 from scipy.interpolate import RegularGridInterpolator
@@ -84,11 +83,6 @@ class carbMesh():
         rstep
             Restart step.
         """
-
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
 
         # Number of points on the TIN
         self.ptsNb = len(xyTIN)
@@ -229,18 +223,13 @@ class carbMesh():
             Active layer elevation based on nodes elevation [m]
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         time0 = time.clock()
         self.alay = PDalgo.pdstack.getactlay2(actlay, self.layerThick[:,:self.step+1],
                                     self.depoThick[:,:self.step+1,:])
-        if rank==0 and verbose:
-            print "   - Get active layer composition ", time.clock() - time0
+        if verbose:
+            print("   - Get active layer composition ", time.clock() - time0)
             time0 = time.clock()
-            
+
         return
 
     def update_active_layer(self, actlayer, elev, verbose=False):
@@ -256,11 +245,6 @@ class carbMesh():
             Value of the erosion for the given points [m]
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         time0 = time.clock()
         ero = actlayer[:,0]-self.alay[:,0]
         ero[ero>0.] = 0.
@@ -272,8 +256,8 @@ class carbMesh():
         self.layerThick[:,:self.step+1] = newH
         self.paleoDepth[:,self.step] = elev
 
-        if rank==0 and verbose:
-            print "   - Update active layer due to wave-induced erosion/deposition ", time.clock() - time0
+        if verbose:
+            print("   - Update active layer due to wave-induced erosion/deposition ", time.clock() - time0)
 
         return
 
@@ -282,11 +266,6 @@ class carbMesh():
         This function updates the stratigraphic layers.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         time0 = time.clock()
         newH, newS = PDalgo.pdstack.stratcarb(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
                                     clastic)
@@ -294,12 +273,12 @@ class carbMesh():
         self.layerThick[:,:self.step+1] = newH[:,:self.step+1]
         self.paleoDepth[:,self.step] = elev
 
-        if rank==0 and verbose:
-            print "   - Update erosion/deposition ", time.clock() - time0
+        if verbose:
+            print("   - Update erosion/deposition ", time.clock() - time0)
 
         return
 
-    def write_hdf5_stratigraphy(self, lGIDs, outstep, rank):
+    def write_hdf5_stratigraphy(self, lGIDs, outstep):
         """
         This function writes for each processor the HDF5 file containing sub-surface information.
 
@@ -310,12 +289,9 @@ class carbMesh():
 
         outstep
             Output time step.
-
-        rank
-            ID of the local partition.
         """
 
-        sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p'+str(rank)+'.hdf5'
+        sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p0.hdf5'
         with h5py.File(sh5file, "w") as f:
 
             # Write stratal layers paeleoelevations per cells

@@ -12,23 +12,20 @@ This file is used to checkpoint and is the main entry to write simulation output
 
 import time
 import numpy as np
-import mpi4py.MPI as mpi
 
 from pyBadlands import (visualiseFlow, visualiseTIN, eroMesh)
 
 def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
                       tMesh, force, flow, rain, elevation, fillH, \
-                      cumdiff, cumhill, wavediff, step, prop, \
+                      cumdiff, cumhill, cumfail, wavediff, step, prop, \
                       mapero=None, cumflex=None):
     """
     Create the checkpoint files (used for HDF5 output).
     """
 
-    rank = mpi.COMM_WORLD.rank
-    size = mpi.COMM_WORLD.size
-    comm = mpi.COMM_WORLD
+    deepb = input.deepbasin
 
-    if input.erolays >= 0:
+    if (input.erolays and input.erolays >= 0):
         eroOn = True
     else:
         eroOn = False
@@ -45,29 +42,27 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
         FVmesh.outPts, FVmesh.outCells = visualiseTIN.output_cellsIDs(lGIDs, inIDs,
                                             visXlim, visYlim, FVmesh.node_coords[:, :2],
                                             tMesh.cells)
-    tcells = np.zeros(size)
-    tcells[rank] = len(FVmesh.outCells)
-    comm.Allreduce(mpi.IN_PLACE, tcells, op=mpi.MAX)
-    tnodes = np.zeros(size)
-    tnodes[rank] = len(lGIDs)
-    comm.Allreduce(mpi.IN_PLACE, tnodes, op=mpi.MAX)
+    tcells = np.zeros(1)
+    tcells[0] = len(FVmesh.outCells)
+    tnodes = np.zeros(1)
+    tnodes[0] = len(lGIDs)
 
     # Done for every visualisation step
     flowIDs, polylines = visualiseFlow.output_Polylines(FVmesh.outPts, flow.receivers[FVmesh.outPts],
                                                         visXlim, visYlim, FVmesh.node_coords[:, :2])
-    fnodes = np.zeros(size)
-    fnodes[rank] = len(flowIDs)
-    comm.Allreduce(mpi.IN_PLACE, fnodes, op=mpi.MAX)
-    fline = np.zeros(size)
-    fline[rank] = len(polylines[:, 0])
-    comm.Allreduce(mpi.IN_PLACE, fline, op=mpi.MAX)
+    fnodes = np.zeros(1)
+    fnodes[0] = len(flowIDs)
+    fline = np.zeros(1)
+    fline[0] = len(polylines[:, 0])
 
     # Compute flow parameters
+    if deepb >= 5000.:
+        deepb = force.sealevel
     flow.view_receivers(fillH, elevation, FVmesh.neighbours, FVmesh.vor_edges,
-                        FVmesh.edge_length, lGIDs, force.sealevel)
+                        FVmesh.edge_length, lGIDs, deepb) #force.sealevel)
     flow.compute_parameters()
     visdis = np.copy(flow.discharge)
-    seaIDs = np.where(elevation<force.sealevel)[0]
+    seaIDs = np.where(elevation<deepb)[0] #force.sealevel)[0]
     if len(seaIDs)>0:
         visdis[seaIDs] = 1.
         flow.basinID[seaIDs] = -1
@@ -92,35 +87,44 @@ def write_checkpoints(input, recGrid, lGIDs, inIDs, tNow, FVmesh, \
     if input.flexure:
         visualiseTIN.write_hdf5_flexure(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
                                     elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
-                                    cumhill[lGIDs], cumflex[lGIDs], FVmesh.outCells, rank, input.oroRain,
+                                    cumhill[lGIDs], cumfail[lGIDs], cumflex[lGIDs], FVmesh.outCells, input.oroRain,
                                     eroOn, flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs],
                                     waveOn, meanH, meanS, wdiff, rockOn, prop[lGIDs,:])
     else:
         visualiseTIN.write_hdf5(input.outDir, input.th5file, step, tMesh.node_coords[:,:2],
                                 elevation[lGIDs], rain[lGIDs], visdis[lGIDs], cumdiff[lGIDs],
-                                cumhill[lGIDs], FVmesh.outCells, rank, input.oroRain, eroOn,
+                                cumhill[lGIDs], cumfail[lGIDs], FVmesh.outCells, input.oroRain, eroOn,
                                 flow.erodibility[lGIDs], FVmesh.control_volumes[lGIDs],
                                 waveOn, meanH, meanS, wdiff, rockOn,
                                 prop[lGIDs,:])
 
     if flow.sedload is not None:
-        visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
-                                 visdis[flowIDs], flow.chi[flowIDs], flow.sedload[flowIDs], flow.basinID[flowIDs], polylines, rank)
+            if flow.flowdensity is not None:
+                visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
+                                     visdis[flowIDs], flow.chi[flowIDs], flow.sedload[flowIDs], flow.flowdensity[flowIDs], flow.basinID[flowIDs], polylines)
+            else:
+                zeros = np.zeros(len(flowIDs),dtype=float)
+                visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
+                                     visdis[flowIDs], flow.chi[flowIDs], flow.sedload[flowIDs], zeros, flow.basinID[flowIDs], polylines)
     else:
         zeros = np.zeros(len(flowIDs),dtype=float)
-        visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
-                                 visdis[flowIDs], flow.chi[flowIDs], zeros, flow.basinID[flowIDs], polylines, rank)
+        if flow.flowdensity is not None:
+            visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
+                                 visdis[flowIDs], flow.chi[flowIDs], zeros, flow.flowdensity[flowIDs], flow.basinID[flowIDs], polylines)
+        else:
+            visualiseFlow.write_hdf5(input.outDir, input.fh5file, step, FVmesh.node_coords[flowIDs, :2], elevation[flowIDs],
+                                 visdis[flowIDs], flow.chi[flowIDs], zeros, zeros, flow.basinID[flowIDs], polylines)
 
     # Combine HDF5 files and write time series
-    if rank == 0:
-        visualiseTIN.write_xmf(input.outDir, input.txmffile, input.txdmffile, step, tNow, tcells,
-                           tnodes, input.th5file, force.sealevel, size, input.flexure,
+    visualiseTIN.write_xmf(input.outDir, input.txmffile, input.txdmffile, step, tNow, tcells,
+                           tnodes, input.th5file, force.sealevel, input.flexure,
                            input.oroRain, eroOn, waveOn, rockOn, prop.shape[1])
 
-        visualiseFlow.write_xmf(input.outDir, input.fxmffile, input.fxdmffile, step, tNow,
-                            fline, fnodes, input.fh5file, size)
-        print "   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, tNow)
+    visualiseFlow.write_xmf(input.outDir, input.fxmffile, input.fxdmffile, step, tNow,
+                            fline, fnodes, input.fh5file)
+
+    print("   - Writing outputs (%0.02f seconds; tNow = %s)" % (time.clock() - out_time, tNow))
 
     # Record erodibility maps
-    if input.erolays >= 0 and rank == 0:
+    if (input.erolays and input.erolays >= 0):
         mapero.write_hdf5_erolay(step)

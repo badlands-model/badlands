@@ -17,6 +17,8 @@ pyBadlands - Basin & Landscape Dynamics
 
 For installation information and documentation visit our github [**wiki page**](https://github.com/badlands-model/pyBadlands/wiki) which provides several useful notes on how to start using the tool.
 
+Recent examples part of our pyBadlands workshops are available through the following github [repository](https://github.com/badlands-model/pyBadlands-workshop).
+
 The easiest way to get started is with the [Docker container](https://hub.docker.com/u/badlandsmodel/) using [Kitematic](https://docs.docker.com/kitematic/userguide/). Once **Kitematic** is installed on your computer, open it and look for **pybadlands-demo** via the *search* menu.
 
 If you want to install it yourself, these 2 Dockerfiles ([**dependencies**](https://github.com/badlands-model/pyBadlands-Dependencies-Docker/blob/master/Dockerfile) & [**code**](https://github.com/badlands-model/pyBadlands-Docker-Demo/blob/master/Dockerfile)) are the best documentation of the required packages.
@@ -34,10 +36,7 @@ The model is based on the following characteristics:
 * 3D surface deformations using the node refinement technique proposed by [**Thieulot et al. ( 2014)**](http://onlinelibrary.wiley.com/doi/10.1002/2014GC005490/abstract;jsessionid=48A885F79A40B1E3E76AFC1BEAA2B238.f03t03).
 * Orographic precipitation using [**Smith & Barstad (2004)**](http://journals.ametsoc.org/doi/abs/10.1175/1520-0469(2004)061%3C1377%3AALTOOP%3E2.0.CO%3B2) linear model to compute topographic induced rain field.
 * Varying erodibility layers (both horizontally and vertically) to simulate impact of changing sediment characteristics on landscape evolution. 
-* Long-term evolution of longshore currents and induced sediment transport is simulated based on linear wave theory.
-* Fuzzy logic approach is used to estimate carbonate growth based on depth, wave energy and sedimentation rate.
-  
-  
+
 A set of functions for _pre_ & _post_-processing of **Badlands** inputs and outputs is available in a GitHub [**Companion**](https://github.com/badlands-model/pyBadlands-Companion) repository which is already shipped with the Badlands Docker container.
 
 ### Community driven
@@ -56,13 +55,10 @@ _Release v1.0.0 :_
 + **[Release 1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.160412), Zenodo, doi:10.5281/zenodo.160412, 2016.**
 
 _Release v1.1.0 :_  
-+ **[Release 1.1: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
++ **[Release 2: badlands-model/pyBadlands](http://doi.org/10.5281/zenodo.268053), Zenodo, doi:10.5281/zenodo.268053, 2017.**
 
-_Release v2.0.0 :_
-+ **[Release 2: badlands-model/pyBadlands](https://zenodo.org/badge/latestdoi/51286954), Zenodo, doi:10.5281/zenodo.1069573, 2018.** 
-
-_RC_
-+ The ```master``` branch is a stable version of the code with the most recent developments embedded.
+_v2.0.0 Release Candidate :_
++ The ```master``` branch is a stable version of the code with the most recent developments embedded and is expected to be released as **version 2.0.0**
 
 ### Reporting  
 
@@ -83,13 +79,18 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 + flexural response due to loading and unloading under variable elastic thickness [nbviewer](http://nbviewer.jupyter.org/github/badlands-model/pyBadlands/blob/master/Examples/flexure/flexure.ipynb)
 + quick setup of real topography/bathymetry model using etopo1 [nbviewer](http://nbviewer.jupyter.org/github/badlands-model/pyBadlands/blob/master/Examples/etopo/etopo.ipynb)
 
+#### Stratigraphy & Wheeler diagram in pyBadlands
+
+[Youtube video](https://youtu.be/VRXR86uRnUY)
+
+<div align="center">
+    <img width=500 src="https://github.com/badlands-model/Badlands-Code/blob/master/badlands-doc/figures/stratalDing.png" alt="YouTube" title="Youtube"</img>
+</div>
 
 ### Documentation related to the physics & assumptions
 
 + **Salles, T. & Hardiman, L.: [Badlands: An open-source, flexible and parallel framework to study landscape dynamics](http://dx.doi.org/10.1016/j.cageo.2016.03.011), Computers & Geosciences, 91, 77-89, doi:10.1016/j.cageo.2016.03.011, 2016.**
-
 + **Salles, T.: [Badlands: A parallel basin and landscape dynamics model](http://dx.doi.org/10.1016/j.softx.2016.08.005), SoftwareX, 5, 195–202, doi:10.1016/j.softx.2016.08.005, 2016.**
-
 + **Salles, T., Ding, X. and Brocard, G.: [pyBadlands: A framework to simulate sediment transport, landscape dynamics and basin stratigraphic evolution through space and time](https://doi.org/10.1371/journal.pone.0195557), PLOS ONE 13(4): e0195557, 2018.** 
 
 ### Published research studies using Badlands:
@@ -97,9 +98,6 @@ A compilation of notebooks with examples are proposed to give you a quick feelin
 + **Salles, T., N. Flament, and D. Muller: [Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period](http://dx.doi.org/10.1002/2016GC006617), Geochem. Geophys. Geosyst., 18, doi:10.1002/2016GC006617, 2017** -- [Supplementary materials: Australian Landscape Dynamic](https://github.com/badlands-model/g-cubed-2016)
 
 + **Salles, T., X. Ding, J.M. Webster, A. Vila-Concejo, G. Brocard and J. Pall: [A unified framework for modelling sediment fate from source to sink and its interactions with reef systems over geological times](https://doi.org/10.1038/s41598-018-23519-8), Nature Scientific Report, doi:10.1038/s41598-018-23519-8, 2018** 
-
-
-When you use **Badlands**, please cite the above papers.
 
 
 When you use **Badlands**, please cite the above papers.

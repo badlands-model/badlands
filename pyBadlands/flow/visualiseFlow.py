@@ -89,7 +89,7 @@ def output_Polylines(outPts, rcvIDs, visXlim, visYlim, coordXY):
     return flowIDs, line[lineIDs,:2]
 
 def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi,
-               sedload, basin, connect, rank):
+               sedload, flowdensity, basin, connect):
     """
     This function writes for each processor the HDF5 file containing flow network information.
 
@@ -129,7 +129,7 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi,
         ID of the local partition.
     """
 
-    h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
+    h5file = folder+'/'+h5file+str(step)+'.p0.hdf5'
     with h5py.File(h5file, "w") as f:
 
         # Write node coordinates and elevation
@@ -148,6 +148,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi,
 
         f.create_dataset('sedload',shape=(len(sedload), 1), dtype='float32', compression='gzip')
         f["sedload"][:,0] = sedload
+
+        f.create_dataset('flowdensity',shape=(len(sedload), 1), dtype='float32', compression='gzip')
+        f["flowdensity"][:,0] = flowdensity
 
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["discharge"][:,0] = discharge/3.154e7
@@ -188,7 +191,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
     f.write('</Xdmf>\n')
     f.close()
 
-def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size):
+def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file):
     """
     This function writes the XmF file which is calling each HFD5 file.
 
@@ -215,9 +218,6 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
 
     h5file
         First part of the hdf5 file name.
-
-    size
-        Number of partitions.
     """
 
     xmf_file = folder+'/'+xmffile+str(step)+'.xmf'
@@ -230,8 +230,8 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
     f.write('    <Grid GridType="Collection" CollectionType="Spatial">\n')
     f.write('      <Time Type="Single" Value="%s"/>\n'%time)
 
-    for p in range(size):
-        pfile = h5file+str(step)+'.p'+str(p)+'.hdf5'
+    for p in range(1):
+        pfile = h5file+str(step)+'.p0.hdf5'
         f.write('      <Grid Name="Block.%s">\n' %(str(p)))
         f.write('         <Topology Type="Polyline" NodesPerElement="2" ')
         f.write('NumberOfElements="%d" BaseOffset="1">\n'%elems[p])
@@ -262,6 +262,11 @@ def write_xmf(folder, xmffile, xdmffile, step, time, elems, nodes, h5file, size)
         f.write('         <Attribute Type="Scalar" Center="Node" Name="sedload [m3/s]">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/sedload</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
+
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="flowdensity adim">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/flowdensity</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
 
         f.write('      </Grid>\n')

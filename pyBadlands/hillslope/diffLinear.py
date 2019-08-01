@@ -15,7 +15,6 @@ import math
 import numpy
 import warnings
 from pyBadlands.libUtils import FLOWalgo
-import mpi4py.MPI as MPI
 
 import os
 if 'READTHEDOCS' not in os.environ:
@@ -33,8 +32,11 @@ class diffLinear:
         self.CDriver = None
         self.CFL = None
         self.CFLms = None
+        self.CFLfail = None
         self.ids = None
         self.Sc = 0.
+        self.Sfail = None
+        self.Cfail = None
         self.updatedt = 0
 
     def dt_stability(self, edgelen):
@@ -52,11 +54,6 @@ class diffLinear:
             Numpy arrays containing the edges of the TIN surface for the considered partition.
         """
 
-        # Initialise MPI communications
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Get the tin edges lengths
         maxCD = max(self.CDaerial,self.CDmarine)
         edgedist = edgelen.flatten()
@@ -70,7 +67,6 @@ class diffLinear:
             CFL[0] = 1.e6
 
         # Global mimimum value for diffusion stability
-        comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFL = CFL[0]
         self.updatedt = 1
 
@@ -89,11 +85,6 @@ class diffLinear:
             Numpy arrays containing the edges of the TIN surface for the considered partition.
         """
 
-        # Initialise MPI communications
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Get the tin edges lengths
         maxCD = max(self.CDaerial,self.CDmarine)
 
@@ -108,7 +99,6 @@ class diffLinear:
             CFL[0] = 1.e6
 
         # Global mimimum value for diffusion stability
-        comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFL = CFL[0]
         self.updatedt = 0
 
@@ -127,11 +117,6 @@ class diffLinear:
             Numpy arrays containing the edges of the TIN surface for the considered partition.
         """
 
-        # Initialise MPI communications
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Get the tin edges lengths
         edgedist = edgelen.flatten()
         distIDs = numpy.where(edgedist > 0.)
@@ -144,8 +129,36 @@ class diffLinear:
             CFL[0] = 0.01*numpy.amin(edgedist[distIDs]**2)/self.CDriver
 
         # Global mimimum value for diffusion stability
-        comm.Allreduce(MPI.IN_PLACE,CFL,op=MPI.MIN)
         self.CFLms = CFL[0]
+
+    def dt_stability_fail(self, edgelen):
+        """
+        This function computes the maximal timestep to ensure computation stability
+        of the slope failure processes. This CFL-like condition is computed using diffusion
+        coefficients and distances between TIN nodes.
+        It is worth noticing that the approach does not rely on the elevation of the nodes
+        and therefore the maximal hillslope timestep to ensure stability just needs to be
+        computed once for each given TIN grid.
+
+        Parameters
+        ----------
+        edgelen
+            Numpy arrays containing the edges of the TIN surface for the considered partition.
+        """
+
+        # Get the tin edges lengths
+        edgedist = edgelen.flatten()
+        distIDs = numpy.where(edgedist > 0.)
+
+        # First-order, forward-in-time scheme
+        CFL = numpy.zeros(1)
+        if self.Cfail== 0.:
+            CFL[0] = 0.01*numpy.amin(edgedist[distIDs]**2)
+        else:
+            CFL[0] = 0.01*numpy.amin(edgedist[distIDs]**2)/self.Cfail
+
+        # Global mimimum value for diffusion stability
+        self.CFLfail = CFL[0]
 
     def sedflux(self, sea, elevation, area):
         """
@@ -211,3 +224,29 @@ class diffLinear:
         coeff = numpy.where(elevation >= sea, 0., self.CDriver)
 
         return numpy.nan_to_num(areacoeff * coeff)
+
+    def sedfluxfailure(self, area):
+        """
+        This function computes the diffusion of slope failure using  a linear diffusion approximation.
+        The linear diffusion process is implemented through the FV approximation and is based on
+        the area of each node voronoi polygon and the sum over all the neighbours of the slope of the
+        segment (i.e. height differences divided by the length of the mesh edge) as well as the length
+        of the corresponding voronoi edge.
+
+        Parameters
+        ----------
+
+        elevation
+            Numpy arrays containing the elevation of the nodes.
+
+        area
+            Numpy arrays containing the area of the voronoi polygon for each TIN nodes.
+        """
+
+        if self.ids is None:
+            self.ids = numpy.where(area > 0)[0]
+
+        areacoeff = numpy.zeros(len(area))
+        areacoeff[self.ids] = 1./area[self.ids]
+
+        return numpy.nan_to_num(areacoeff * self.Cfail)

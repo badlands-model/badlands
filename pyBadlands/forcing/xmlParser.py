@@ -46,10 +46,13 @@ class xmlParser:
         self.Afactor = 1
         self.nopit = 0
         self.udw = 0
+        self.searef = None
+        self.poro0 = 0.
+        self.poroC = 0.47
 
         self.restart = False
-        self.rForlder = None
-        self.rStep = 0
+        self.rfolder = None
+        self.rstep = 0
         self.tStart = None
         self.tEnd = None
         self.tDisplay = None
@@ -104,6 +107,8 @@ class xmlParser:
         self.diffnb = 5
         self.diffprop = 0.9
         self.spl = False
+        self.deepbasin = -10000.
+        self.denscrit = 20000.
 
         self.incisiontype = 0
         self.mp = 0.
@@ -118,6 +123,8 @@ class xmlParser:
         self.CDa = 0.
         self.CDm = 0.
         self.Sc = 0.
+        self.Sfail = 0.
+        self.Cfail = 0.
         self.CDr = 0.
         self.makeUniqueOutputDir = makeUniqueOutputDir
 
@@ -191,7 +198,6 @@ class xmlParser:
 
         self.carb = False
         self.carbonate = False
-        self.carbGrowth = 0.
         self.carbDepth = None
         self.carbSed = None
         self.carbWave = None
@@ -199,9 +205,12 @@ class xmlParser:
         self.coastdist = 0.
         self.baseMap = None
         self.tCarb = None
+        self.carbNb = None
+        self.carbValSp1 = None
+        self.carbValSp2 = None
+        self.carbTime = None
 
         self.carbonate2 = False
-        self.carbGrowth2 = 0.
         self.carbDepth2 = None
         self.carbSed2 = None
         self.carbWave2 = None
@@ -269,6 +278,12 @@ class xmlParser:
                     self.udw = 1
             else:
                 self.udw = 0
+            element = None
+            element = grid.find('searef')
+            if element is not None:
+                self.searef = eval(element.text)
+                if not isinstance(self.searef, tuple):
+                    raise ValueError("""searef must be a python tuple (x,y)""")
         else:
             raise ValueError('Error in the XmL file: grid structure definition is required!')
 
@@ -347,6 +362,14 @@ class xmlParser:
                 self.stratdx = float(element.text)
             else:
                 self.stratdx = 0.
+            element = None
+            element = strat.find('poroC')
+            if element is not None:
+                self.poroC = float(element.text)
+            element = None
+            element = strat.find('poro0')
+            if element is not None:
+                self.poro0 = float(element.text)
             element = None
             element = strat.find('laytime')
             if element is not None:
@@ -856,7 +879,6 @@ class xmlParser:
             self.rainMap[0] = None
             self.orographic[0] = False
             self.orographiclin[0] = False
-            self.rainVal[0] = 0.
             self.rbgd[0] = 0.
             self.rmin[0] = 0.
             self.rmax[0] = 0.
@@ -926,6 +948,14 @@ class xmlParser:
                 self.diffnb = int(element.text)
             else:
                 self.diffnb = 5
+            element = None
+            element = spl.find('dens_cr')
+            if element is not None:
+                self.denscrit = float(element.text)
+            element = None
+            element = spl.find('deepbasin')
+            if element is not None:
+                self.deepbasin = float(element.text)
             element = None
             element = spl.find('diffprop')
             if element is not None:
@@ -1018,6 +1048,22 @@ class xmlParser:
                     self.Sc = 0.
             else:
                 self.Sc = 0.
+            element = None
+            element = creep.find('sfail')
+            if element is not None:
+                self.Sfail = float(element.text)
+                if self.Sfail < 0.:
+                    self.Sfail = 0.
+            else:
+                self.Sfail = 0.
+            element = None
+            element = creep.find('cfail')
+            if element is not None:
+                self.Cfail = float(element.text)
+                if self.Cfail < 0.:
+                    self.Cfail = 0.
+            else:
+                self.Cfail = 0.
             element = None
             element = creep.find('criver')
             if element is not None:
@@ -1265,10 +1311,10 @@ class xmlParser:
             if os.path.exists(self.outDir):
                 self.outDir += '_'+str(len(glob.glob(self.outDir+str('*')))-1)
 
-            os.makedirs(self.outDir)
-            os.makedirs(self.outDir+'/h5')
-            os.makedirs(self.outDir+'/xmf')
-            shutil.copy(self.inputfile,self.outDir)
+        os.makedirs(self.outDir)
+        os.makedirs(self.outDir+'/h5')
+        os.makedirs(self.outDir+'/xmf')
+        shutil.copy(self.inputfile,self.outDir)
 
         # Extract global wave field parameters
         wavefield = None
@@ -1559,19 +1605,124 @@ class xmlParser:
                 self.baseMap = element.text
                 if not os.path.isfile(self.baseMap):
                     raise ValueError('Basement map file for species1 growth is missing or the given path is incorrect.')
+            element = None
             element = carbp.find('tcarb')
             if element is not None:
-                self.tCarb = element.text
+                self.tCarb = float(element.text)
                 if Decimal(self.tEnd - self.tStart) % Decimal(self.tCarb) != 0.:
                     raise ValueError('Error in the definition of the simulation time: carbonate interval needs to be a multiple of simulation time.')
             else:
                 raise ValueError('Error in the definition of the simulation time: carbonate interval is required')
+            element = None
+            element = carbp.find('growth_events')
+            if element is not None:
+                tmpNb = int(element.text)
+            else:
+                raise ValueError('The number of carbonate growth events needs to be defined.')
             if self.tCarb > self.maxDT:
                 self.tCarb = self.maxDT
             if self.tCarb > self.tWave:
                 self.tCarb = self.tWave
             else:
                 self.tWave = self.tCarb
+                self.maxDT = self.tCarb
+
+            tmpValSp1 = numpy.empty(tmpNb)
+            tmpValSp2 = numpy.empty(tmpNb)
+            tmpTime = numpy.empty((tmpNb,2))
+
+            id = 0
+
+            for clim in carbp.iter('event'):
+                if id >= tmpNb:
+                    raise ValueError('The number of reef growth events does not match the number of defined events.')
+                element = None
+                element = clim.find('growth_sp1')
+                if element is not None:
+                    tmpValSp1[id] = float(element.text)
+                else:
+                    tmpValSp1[id] = 0.
+                element = None
+                element = clim.find('growth_sp2')
+                if element is not None:
+                    tmpValSp2[id] = float(element.text)
+                else:
+                    tmpValSp2[id] = 0.
+                element = None
+                element = clim.find('gstart')
+                if element is not None:
+                    tmpTime[id,0] = float(element.text)
+                else:
+                    raise ValueError('Reef growth event %d is missing start time argument.'% int(id+1))
+                element = None
+                element = clim.find('gend')
+                if element is not None:
+                    tmpTime[id,1] = float(element.text)
+                else:
+                    raise ValueError('Reef growth event %d is missing end time argument.'% int(id+1))
+                if tmpTime[id,0] >= tmpTime[id,1]:
+                    raise ValueError('Reef growth event %d start and end time values are not properly defined.' % int(id+1))
+                if id > 0:
+                    if tmpTime[id,0] < tmpTime[id-1,1]:
+                        raise ValueError('Reef growth event %d start time needs to be >= than rain climate %d end time.'%(int(id+1),id))
+
+                id += 1
+
+            if id != tmpNb:
+                raise ValueError('Reef growth event parameter %d does not match with the number of declared reef growth events %d.' %(tmpNb,id))
+
+            # Create continuous reef growth series
+            self.carbNb = tmpNb
+            if tmpTime[0,0] > self.tStart:
+                self.carbNb += 1
+            for id in range(1,tmpNb):
+                if tmpTime[id,0] > tmpTime[id-1,1]:
+                    self.carbNb += 1
+            if tmpTime[tmpNb-1,1] < self.tEnd:
+                self.carbNb += 1
+            self.carbValSp1 = numpy.empty(self.carbNb)
+            self.carbValSp2 = numpy.empty(self.carbNb)
+            self.carbTime = numpy.empty((self.carbNb,2))
+
+            id = 0
+
+            if tmpTime[id,0] > self.tStart:
+                self.carbValSp1[id] = 0.
+                self.carbValSp2[id] = 0.
+                self.carbTime[id,0] = self.tStart
+                self.carbTime[id,1] = tmpTime[0,0]
+                id += 1
+            self.carbTime[id,:] = tmpTime[0,:]
+            self.carbValSp1[id] = tmpValSp1[0]
+            self.carbValSp2[id] = tmpValSp2[0]
+
+            id += 1
+            for p in range(1,tmpNb):
+                if tmpTime[p,0] > tmpTime[p-1,1]:
+                    self.carbValSp1[id] = 0.
+                    self.carbValSp2[id] = 0.
+                    self.carbTime[id,0] = tmpTime[p-1,1]
+                    self.carbTime[id,1] = tmpTime[p,0]
+                    id += 1
+                self.carbTime[id,:] = tmpTime[p,:]
+                self.carbValSp1[id] = tmpValSp1[p]
+                self.carbValSp2[id] = tmpValSp2[p]
+                id += 1
+            if tmpTime[tmpNb-1,1] < self.tEnd:
+                self.carbValSp1[id] = 0.
+                self.carbValSp2[id] = 0.
+                self.carbTime[id,0] = tmpTime[tmpNb-1,1]
+                self.carbTime[id,1] = self.tEnd
+        else:
+            self.carbNb = 1
+            self.carbValSp1 = numpy.empty(self.carbNb)
+            self.carbValSp2 = numpy.empty(self.carbNb)
+            self.carbTime = numpy.empty((self.carbNb,2))
+            self.carbValSp1[0] = 0.
+            self.carbValSp2[0] = 0.
+            self.carbTime[0,0] = self.tStart
+            self.carbTime[0,1] = self.tEnd
+
 
         # Species 1 class
         carb = None
@@ -1579,11 +1730,6 @@ class xmlParser:
         if carb is not None:
             self.carbonate = True
             element = None
-            element = carb.find('growth')
-            if element is not None:
-                self.carbGrowth = float(element.text)
-            else:
-                self.carbGrowth = 0.
             element = carb.find('depthControl')
             if element is not None:
                 self.carbDepth = element.text
@@ -1591,6 +1737,7 @@ class xmlParser:
                     raise ValueError('Species1 depth control file is missing or the given path is incorrect.')
             else:
                 self.carbDepth = None
+            element = None
             element = carb.find('waveControl')
             if element is not None:
                 self.carbWave = element.text
@@ -1598,6 +1745,7 @@ class xmlParser:
                     raise ValueError('Species1 wave control file is missing or the given path is incorrect.')
             else:
                 self.carbWave = None
+            element = None
             element = carb.find('sedControl')
             if element is not None:
                 self.carbSed = element.text
@@ -1605,11 +1753,13 @@ class xmlParser:
                     raise ValueError('Species1 sedimentation control file is missing or the given path is incorrect.')
             else:
                 self.carbSed = None
+            element = None
             element = carb.find('isld')
             if element is not None:
                 self.islandPerim = float(element.text)
             else:
                 self.islandPerim = 0.
+            element = None
             element = carb.find('dist')
             if element is not None:
                 self.coastdist = float(element.text)
@@ -1622,11 +1772,6 @@ class xmlParser:
         if carb2 is not None:
             self.carbonate2 = True
             element = None
-            element = carb2.find('growth')
-            if element is not None:
-                self.carbGrowth2 = float(element.text)
-            else:
-                self.carbGrowth2 = 0.
             element = carb2.find('depthControl')
             if element is not None:
                 self.carbDepth2 = element.text
@@ -1634,6 +1779,7 @@ class xmlParser:
                     raise ValueError('Species2 depth control file is missing or the given path is incorrect.')
             else:
                 self.carbDepth2 = None
+            element = None
             element = carb2.find('waveControl')
             if element is not None:
                 self.carbWave2 = element.text
@@ -1641,6 +1787,7 @@ class xmlParser:
                     raise ValueError('Species2 wave control file is missing or the given path is incorrect.')
             else:
                 self.carbWave2 = None
+            element = None
             element = carb2.find('sedControl')
             if element is not None:
                 self.carbSed2 = element.text
@@ -1648,12 +1795,14 @@ class xmlParser:
                     raise ValueError('Species2 sedimentation control file is missing or the given path is incorrect.')
             else:
                 self.carbSed2 = None
+            element = None
             element = carb2.find('isld')
             if element is not None:
                 self.islandPerim2 = float(element.text)
             else:
                 self.islandPerim2 = 0.
             element = carb2.find('dist')
+            element = None
             if element is not None:
                 self.coastdist2 = float(element.text)
             else:
@@ -1670,6 +1819,7 @@ class xmlParser:
                 self.pelGrowth = float(element.text)
             else:
                 self.pelGrowth = 0.
+            element = None
             element = pelagic.find('depthControl')
             if element is not None:
                 self.pelDepth = element.text

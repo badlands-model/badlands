@@ -15,8 +15,6 @@ import numpy
 from pyBadlands.libUtils import FVframe
 import warnings
 import triangle
-import mpi4py.MPI as mpi
-
 
 class FVmethod:
     """
@@ -69,14 +67,11 @@ class FVmethod:
             within the partition (not those on the edges).
         """
 
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-
         # Build the voronoi diagram (dual of the delaunay)
         walltime = time.clock()
         Vor_pts, Vor_edges = triangle.voronoi(self.node_coords)
-        if rank == 0 and verbose:
-            print " - build the voronoi diagram ", time.clock() - walltime
+        if verbose:
+            print(" - build the voronoi diagram ", time.clock() - walltime)
 
         # Call the finite volume frame construction function from libUtils
         walltime = time.clock()
@@ -85,13 +80,11 @@ class FVmethod:
              lGIDs+1, self.localIDs+1, self.node_coords[:,0], self.node_coords[:,1],
             self.edges[:,:2]+1, self.cells[:,:3]+1, Vor_pts[:,0], Vor_pts[:,1], \
             Vor_edges[:,:2]+1)
-        if rank == 0 and verbose:
-            print " - construct Finite Volume representation ", time.clock() - walltime
+        if verbose:
+            print(" - construct Finite Volume representation ", time.clock() - walltime)
 
         # Maximum number of neighbours for each partition
-        maxNgbh = numpy.array(maxNgbhs)
-        comm.Allreduce(mpi.IN_PLACE,maxNgbh,op=mpi.MAX)
-        self.maxNgbh = maxNgbh
+        self.maxNgbh = numpy.array(maxNgbhs)
 
     def _gather_GIDs(self, lGIDs):
         """
@@ -112,20 +105,17 @@ class FVmethod:
             Number of points on each local partition.
         """
 
-        comm = mpi.COMM_WORLD
-
         # Get global IDs of non-boundary vertex for each TIN
         gid = lGIDs.astype(numpy.int32)
         gids = gid[self.localIDs]
         localPtsNb = len(gids)
 
         # Find each partition contribution to global dataset
-        arraylIDsNb = comm.allgather(localPtsNb)
+        arraylIDsNb = localPtsNb
 
         # Gather vertex IDs from each region globally
-        exportGIDs = numpy.zeros(sum(arraylIDsNb),dtype=gids.dtype)
-        comm.Allgatherv(sendbuf=[gids, mpi.INTEGER4],
-            recvbuf=[exportGIDs, (arraylIDsNb, None), mpi.INTEGER4])
+        #exportGIDs = numpy.zeros(arraylIDsNb,dtype=gids.dtype)
+        exportGIDs = gids
 
         return exportGIDs, localPtsNb
 
@@ -144,20 +134,17 @@ class FVmethod:
             Numpy float-type array containing the voronoi area for each TIN node.
         """
 
-        comm = mpi.COMM_WORLD
-
         # Get local volume declaration
         vols = numpy.zeros(localPtsNb, dtype=numpy.float)
         vols = self.control_volumes[self.localIDs]
         volsFLT = vols.astype(numpy.float32)
 
         # Find each partition contribution to global dataset
-        arraylocNb = comm.allgather(len(volsFLT))
+        arraylocNb = len(volsFLT)
 
         # Gather flatten neighbour array definition from each region globally
-        exportVols = numpy.zeros(sum(arraylocNb),dtype=volsFLT.dtype)
-        comm.Allgatherv(sendbuf=[volsFLT, mpi.FLOAT],
-                     recvbuf=[exportVols, (arraylocNb, None), mpi.FLOAT])
+        #exportVols = numpy.zeros(sum(arraylocNb),dtype=volsFLT.dtype)
+        exportVols = volsFLT
 
         return exportVols
 
@@ -185,8 +172,6 @@ class FVmethod:
             Numpy integer-type array filled with the local neighbourhood IDs.
         """
 
-        comm = mpi.COMM_WORLD
-
         # Get local neighbourhood declaration
         ngbh = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.int)
         ngbh.fill(-2)
@@ -195,13 +180,12 @@ class FVmethod:
         ngbhINT = ngbh.astype(numpy.int32)
 
         # Find each partition contribution to global dataset
-        ngbhNbs = comm.allgather(len(ngbhINT))
+        ngbhNbs = len(ngbhINT)
 
         # Gather flatten neighbour array definition from each region globally
         shape = (totPts, self.maxNgbh)
-        globalNgbh = numpy.zeros(sum(ngbhNbs),dtype=ngbhINT.dtype)
-        comm.Allgatherv(sendbuf=[ngbhINT, mpi.INT],
-                     recvbuf=[globalNgbh, (ngbhNbs, None), mpi.INT])
+        #globalNgbh = numpy.zeros(sum(ngbhNbs),dtype=ngbhINT.dtype)
+        globalNgbh = ngbhINT
         exportNgbhIDs = numpy.reshape(globalNgbh,shape)
 
         return exportNgbhIDs, shape, ngbhNbs
@@ -227,8 +211,6 @@ class FVmethod:
             Numpy float-type array containing the lengths to each neighbour.
         """
 
-        comm = mpi.COMM_WORLD
-
         # Get local edges length declaration
         edges = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
         edges = self.edge_length[self.localIDs,:self.maxNgbh]
@@ -236,9 +218,8 @@ class FVmethod:
         edgesFLT = edges.astype(numpy.float32)
 
         # Gather flatten array definition from each region globally
-        globalEdges = numpy.zeros(sum(ngbhNbs),dtype=edgesFLT.dtype)
-        comm.Allgatherv(sendbuf=[edgesFLT, mpi.FLOAT],
-                     recvbuf=[globalEdges, (ngbhNbs, None), mpi.FLOAT])
+        #globalEdges = numpy.zeros(sum(ngbhNbs),dtype=edgesFLT.dtype)
+        globalEdges = edgesFLT
         exportEdges = numpy.reshape(globalEdges,shape)
 
         return exportEdges
@@ -264,8 +245,6 @@ class FVmethod:
             Numpy float-type array containing the voronoi edge lengths to each neighbour.
         """
 
-        comm = mpi.COMM_WORLD
-
         # Get local voronoi length declaration
         vors = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
         vors = self.vor_edges[self.localIDs,:self.maxNgbh]
@@ -273,9 +252,8 @@ class FVmethod:
         vorsFLT = vors.astype(numpy.float32)
 
         # Gather flatten array definition from each region globally
-        globalVors = numpy.zeros(sum(ngbhNbs),dtype=vorsFLT.dtype)
-        comm.Allgatherv(sendbuf=[vorsFLT, mpi.FLOAT],
-                     recvbuf=[globalVors, (ngbhNbs, None), mpi.FLOAT])
+        #globalVors = numpy.zeros(sum(ngbhNbs),dtype=vorsFLT.dtype)
+        globalVors = vorsFLT
         exportVors = numpy.reshape(globalVors,shape)
 
         return exportVors
@@ -318,18 +296,15 @@ class FVmethod:
             Numpy float-type array containing the voronoi area for each TIN node.
         """
 
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-
         # Define each partition nodes global IDs
         inArrays = numpy.in1d(lGIDs, inIDs)
         ids = numpy.where(inArrays == True)[0]
         self.partIDs = numpy.zeros(len(lGIDs))
         self.partIDs.fill(-1)
-        self.partIDs[ids] = rank
+        self.partIDs[ids] = 0
 
         # Get each partition local node ID
-        self.localIDs = numpy.where(self.partIDs == rank)[0]
+        self.localIDs = numpy.where(self.partIDs == 0)[0]
 
         # Call finite volume function
         self._FV_utils(lGIDs)
@@ -350,7 +325,5 @@ class FVmethod:
         # Gather voronoi edges lengths from each region globally
         exportVors = self._gather_VorEdges(localPtsNb, shape, ngbhNbs)
 
-        if rank == 0 and verbose:
-            print " - perform MPI communication ", time.clock() - walltime
 
         return exportGIDs, exportNgbhIDs, exportEdges, exportVors, exportVols

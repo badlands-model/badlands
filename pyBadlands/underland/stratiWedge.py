@@ -15,7 +15,6 @@ import time
 import h5py
 import numpy
 import pandas
-import mpi4py.MPI as mpi
 from scipy import interpolate
 from scipy.spatial import cKDTree
 from scipy.interpolate import RegularGridInterpolator
@@ -93,11 +92,6 @@ class stratiWedge():
             Restart step.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Number of points on the TIN
         self.ptsNb = len(xyTIN)
         self.oldload = None
@@ -120,10 +114,10 @@ class stratiWedge():
             else:
                 raise ValueError('The restart folder is missing or the given path is incorrect.')
 
-            if restartncpus != size:
+            if restartncpus != 1:
                 raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
 
-            df = h5py.File('%s/h5/stratal.time%s.p%s.hdf5'%(rfolder, rstep, rank), 'r')
+            df = h5py.File('%s/h5/stratal.time%s.p0.hdf5'%(rfolder, rstep), 'r')
 
             paleoDepth = numpy.array((df['/paleoDepth']))
             eroLay =  paleoDepth.shape[1]
@@ -213,16 +207,11 @@ class stratiWedge():
             Active layer elevation based on nodes elevation [m]
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         time0 = time.clock()
         self.alayR = PDalgo.pdstack.getactlay(actlay, self.layerThick[:,:self.step+1],
                                     self.depoThick[:,:self.step+1,:])
-        if rank==0 and verbose:
-            print "   - Get active layer composition ", time.clock() - time0
+        if verbose:
+            print("   - Get active layer composition ", time.clock() - time0)
             time0 = time.clock()
 
         return
@@ -240,11 +229,6 @@ class stratiWedge():
             Value of the erosion for the given points [m]
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         time0 = time.clock()
         newH, newS = PDalgo.pdstack.updatestrati(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
                                     erosion, deposition)
@@ -253,12 +237,12 @@ class stratiWedge():
         self.layerThick[:,:self.step+1] = newH
         self.paleoDepth[:,self.step] = elev
 
-        if rank==0 and verbose:
-            print "   - Update erosion/deposition ", time.clock() - time0
+        if verbose:
+            print("   - Update erosion/deposition ", time.clock() - time0)
 
         return
 
-    def write_hdf5_stratigraphy(self, lGIDs, outstep, rank):
+    def write_hdf5_stratigraphy(self, lGIDs, outstep):
         """
         This function writes for each processor the HDF5 file containing sub-surface information.
 
@@ -269,12 +253,9 @@ class stratiWedge():
 
         outstep
             Output time step.
-
-        rank
-            ID of the local partition.
         """
-        
-        sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p'+str(rank)+'.hdf5'
+
+        sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p0.hdf5'
         with h5py.File(sh5file, "w") as f:
 
             # Write stratal layers paeleoelevations per cells

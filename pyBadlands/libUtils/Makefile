@@ -22,19 +22,9 @@ INCDIR = .
 # SWAN compilation
 TOP=$(shell pwd)
 
-#WAVE = SWANSED
 WAVE = WAVESED
 
-ifeq ($(WAVE),SWANSED)
-	SWAN = simswan
-	DIRMODS = WaveComp
-	BUILDDIR = $(TOP)/WaveComp/build
-	OBJDIR = $(BUILDDIR)/objects
-	MODDIR = $(BUILDDIR)/modules
-	LIBDIR2 = $(BUILDDIR)/lib
-endif
-
-FMPI = mpif90
+FMPI = gfortran #mpif90
 F2PYMPI = f2py --fcompiler=gfortran
 # Fortran optimisation flags
 FCFLAGS = -O3 -funroll-loops --param max-unroll-times=2 -cpp \
@@ -76,17 +66,7 @@ OR_LMOD = ORmodel
 # Wave sedimentation computation
 WAVE_LMOD = WAVEsed
 
-ifeq ($(WAVE),SWANSED)
-	OBJECTS = waves ${PD_FMOD}.so ${PD_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
-else
-	OBJECTS = ${PD_FMOD}.so ${PD_LMOD}.so ${WAVE_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
-endif
-
-ifeq ($(WAVE),SWANSED)
-	DEL = clean1
-else
-	DEL = clean2
-endif
+OBJECTS = ${PD_FMOD}.so ${PD_LMOD}.so ${WAVE_LMOD}.so ${FLOW_LMOD}.so ${LOOP_LMOD}.so ${FNET_FMOD}.so ${FNET_LMOD}.so ${FV_FMOD}.so ${FV_LMOD}.so ${OR_FMOD}.so ${OR_LMOD}.so sfd.so
 
 all: $(OBJECTS)
 	@echo ""
@@ -166,15 +146,6 @@ ${OR_LMOD}.so: ${OR_LMOD}.f90
 sfd.so: sfd.c sfd.pyf
 	${F2PY} ${F2PY_FLAGS} -c -m sfd sfd.c sfd.pyf
 
-clean: $(DEL)
-
-clean1:
-	for i in $(DIRMODS) ; do   \
-	    ( cd $$i ; make clobber) ;   \
-	done
-	rm -fv *~ *.bak *.o *.mod *.original *.so
-	rm -rfv $(BUILDDIR) *.dSYM
-
-clean2:
+clean:
 	rm -fv *~ *.bak *.o *.mod *.original *.so
 	rm -rfv *.dSYM

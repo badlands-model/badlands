@@ -14,7 +14,6 @@ import glob
 import time
 import h5py
 import numpy
-import mpi4py.MPI as mpi
 from scipy import interpolate
 from scipy.spatial import cKDTree
 from scipy.interpolate import RegularGridInterpolator
@@ -39,7 +38,7 @@ class strataMesh():
         Numpy array containing the current depth of each stratigraphic layer
     """
 
-    def __init__(self, sdx, bbX, bbY, layNb, xyTIN, folder, h5file,
+    def __init__(self, sdx, bbX, bbY, layNb, xyTIN, folder, h5file, poro0, poroC,
                  cumdiff=0, rfolder=None, rstep=0):
         """
         Constructor.
@@ -77,11 +76,6 @@ class strataMesh():
             Restart step.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         self.ids = None
         self.ptsNb = None
         self.oldload = None
@@ -91,6 +85,9 @@ class strataMesh():
         self.step = 0
         self.upper = None
         self.lower = None
+        self.poro0 = poro0
+        self.poroC = poroC
+        self.xyTIN = xyTIN
 
         # User defined parameter
         self.dx = sdx
@@ -98,9 +95,9 @@ class strataMesh():
         # Create stratal regular grid
         self.nx = int(round((bbX[1]-bbX[0])/sdx - 0.5)+1)
         self.ny = int(round((bbY[1]-bbY[0])/sdx - 0.5)+1)
-        xgrid = numpy.linspace(bbX[0],bbX[1],num=self.nx)
-        ygrid = numpy.linspace(bbY[0],bbY[1],num=self.ny)
-        xi, yi = numpy.meshgrid(xgrid, ygrid)
+        self.xgrid = numpy.linspace(bbX[0],bbX[1],num=self.nx)
+        self.ygrid = numpy.linspace(bbY[0],bbY[1],num=self.ny)
+        xi, yi = numpy.meshgrid(self.xgrid, self.ygrid)
         self.xyi = numpy.dstack([xi.flatten(), yi.flatten()])[0]
 
         # Partition mesh
@@ -117,13 +114,14 @@ class strataMesh():
             else:
                 raise ValueError('The restart folder is missing or the given path is incorrect.')
 
-            if restartncpus != size:
+            if restartncpus != 1:
                 raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
 
-            df = h5py.File('%s/h5/sed.time%s.p%s.hdf5'%(rfolder, rstep, rank), 'r')
+            df = h5py.File('%s/h5/sed.time%s.p0.hdf5'%(rfolder, rstep), 'r')
             layDepth = numpy.array((df['/layDepth']))
             layElev = numpy.array((df['/layElev']))
             layThick = numpy.array((df['/layThick']))
+            layPoro = numpy.array((df['/layPoro']))
             rstlays = layDepth.shape[1]
             layNb +=  rstlays
             self.step = rstlays
@@ -132,12 +130,15 @@ class strataMesh():
         self.stratIn = numpy.zeros([self.ptsNb],dtype=int)
         self.stratElev = numpy.zeros([self.ptsNb,layNb])
         self.stratThick = numpy.zeros([self.ptsNb,layNb])
+        self.stratPoro = numpy.zeros([self.ptsNb,layNb])
         self.stratDepth = numpy.zeros([self.ptsNb,layNb])
+        self.stratPoro.fill(self.poro0)
 
         if rstep > 0:
             self.stratDepth[:,:rstlays] = layDepth
             self.stratElev[:,:rstlays] = layElev
             self.stratThick[:,:rstlays] = layThick
+            self.stratPoro[:,:rstlays] = layPoro
 
         # Define TIN grid kdtree for interpolation
         self.tree = cKDTree(xyTIN)
@@ -169,6 +170,7 @@ class strataMesh():
 
         # Update TIN grid kdtree for interpolation
         self.tree = cKDTree(xyTIN)
+        self.xyTIN = xyTIN
 
     def move_mesh(self, dispX, dispY, cumdiff, verbose=False):
         """
@@ -186,11 +188,6 @@ class strataMesh():
             Numpy float-type array containing the cumulative erosion/deposition of the nodes in the TIN
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Move coordinates
         walltime = time.clock()
         st_time = walltime
@@ -205,103 +202,27 @@ class strataMesh():
         u0 = u1 - self.nx
         shape = (l1-l0, self.step+1)
 
-        if rank == 0 and verbose:
-            print " - move stratal mesh ", time.clock() - walltime
+        if verbose:
+            print(" - move stratal mesh ", time.clock() - walltime)
 
-        # Parallel calls
-        if size > 1:
-            walltime = time.clock()
-            if rank == 0:
-                # Send upper row to next processor
-                uData1 = self.stratThick[u0:u1,:self.step+1].ravel()
-                uData2 = self.stratElev[u0:u1,:self.step+1].ravel()
-                comm.Send(uData1, dest=rank+1, tag=rank)
-                comm.Send(uData2, dest=rank+1, tag=rank+2000)
-                # Receive upper ghost row from next processor
-                comm.Recv(guData1, source=rank+1, tag=rank+1)
-                comm.Recv(guData2, source=rank+1, tag=rank+2001)
-                guData1.reshape(shape)
-                guData2.reshape(shape)
-
-            elif rank == size-1:
-                # Send lower row to previous processor
-                lData1 = self.stratThick[l0:l1,:self.step+1].ravel()
-                lData2 = self.stratElev[l0:l1,:self.step+1].ravel()
-                comm.Send(lData1, dest=rank-1, tag=rank)
-                comm.Send(lData2, dest=rank-1, tag=rank+2000)
-                # Receive lower ghost row from previous processor
-                comm.Recv(glData1, source=rank-1, tag=rank-1)
-                comm.Recv(glData2, source=rank-1, tag=rank+1999)
-                glData1.reshape(shape)
-                glData2.reshape(shape)
-
-            else:
-                # Send lower row to previous processor
-                lData1 = self.stratThick[l0:l1,:self.step+1].ravel()
-                lData2 = self.stratElev[l0:l1,:self.step+1].ravel()
-                comm.Send(lData1, dest=rank-1, tag=rank)
-                comm.Send(lData2, dest=rank-1, tag=rank+2000)
-                # Receive lower ghost row from previous processor
-                comm.Recv(glData1, source=rank-1, tag=rank-1)
-                comm.Recv(glData2, source=rank-1, tag=rank+1999)
-                glData1.reshape(shape)
-                glData2.reshape(shape)
-                # Send upper row to next processor
-                uData1 = self.stratThick[u0:u1,:self.step+1].ravel()
-                uData2 = self.stratElev[u0:u1,:self.step+1].ravel()
-                comm.Send(uData1, dest=rank+1, tag=rank)
-                comm.Send(uData2, dest=rank+1, tag=rank+2000)
-                # Receive upper ghost row from next processor
-                comm.Recv(guData1, source=rank+1, tag=rank+1)
-                comm.Recv(guData2, source=rank+1, tag=rank+2001)
-                guData1.reshape(shape)
-                guData2.reshape(shape)
-
-        # Build deformed mesh
-        # Parallel model
-        if size > 1:
-            u0 = self.upper[rank,0]
-            u1 = self.upper[rank,1]
-            l0 = self.lower[rank,0]
-            l1 = self.lower[rank,1]
-            if rank == 0:
-                deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[u0:u1,:]), axis=0)
-                deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], guData1), axis=0)
-                deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], guData2), axis=0)
-            elif rank == size-1:
-                deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[l0:l1,:]), axis=0)
-                deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], glData1), axis=0)
-                deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], glData2), axis=0)
-            else:
-                deformXY = numpy.concatenate((moveXY[self.ids,:], moveXY[l0:l1,:]), axis=0)
-                deformXY = numpy.concatenate((deformXY, moveXY[u0:u1,:]), axis=0)
-                deformThick = numpy.concatenate((self.stratThick[:,:self.step+1], glData1), axis=0)
-                deformElev = numpy.concatenate((self.stratElev[:,:self.step+1], glData2), axis=0)
-                deformThick = numpy.concatenate((deformThick, guData1), axis=0)
-                deformElev = numpy.concatenate((deformElev, guData2), axis=0)
-
-            if rank == 0 and verbose:
-                print " - send/receive communication stratal mesh ", time.clock() - walltime
-
-        # Serial model
-        else:
-            walltime = time.clock()
-            deformXY = moveXY
-            deformThick = self.stratThick[:,:self.step+1]
-            deformElev = self.stratElev[:,:self.step+1]
-            if rank == 0 and verbose:
-                print " - create deformed stratal mesh arrays ", time.clock() - walltime
+        walltime = time.clock()
+        deformXY = moveXY
+        deformThick = self.stratThick[:,:self.step+1]
+        deformPoro = self.stratPoro[:,:self.step+1]
+        deformElev = self.stratElev[:,:self.step+1]
+        if verbose:
+            print(" - create deformed stratal mesh arrays ", time.clock() - walltime)
 
         # Build the kd-tree
         walltime = time.clock()
         deformtree = cKDTree(deformXY)
-        if rank == 0 and verbose:
-            print " - create deformed stratal mesh kd-tree ", time.clock() - walltime
+        if verbose:
+            print(" - create deformed stratal mesh kd-tree ", time.clock() - walltime)
 
         walltime = time.clock()
         distances, indices = deformtree.query(self.xyi, k=4)
-        if rank == 0 and verbose:
-            print " - query stratal mesh kd-tree ", time.clock() - walltime
+        if verbose:
+            print(" - query stratal mesh kd-tree ", time.clock() - walltime)
 
         # Compute inverse weighting distance
         walltime = time.clock()
@@ -314,31 +235,35 @@ class strataMesh():
         tmpIDs = numpy.where(distances[:,0] == 0)[0]
         if len(tmpIDs) > 0:
             self.stratThick[tmpIDs,:self.step+1] = deformThick[indices[tmpIDs,0],:self.step+1]
+            self.stratPoro[tmpIDs,:self.step+1]  = deformPoro[indices[tmpIDs,0],:self.step+1]
             self.stratElev[tmpIDs,:self.step+1]  = deformElev[indices[tmpIDs,0],:self.step+1]
             tmpID = numpy.where(distances[:,0] > 0)[0]
             if len(tmpID) > 0:
                 self.stratThick[tmpID,:self.step+1] = numpy.average(deformThick[indices[tmpID,:],:],
+                                                                    weights=weights[tmpID,:], axis=1)
+                self.stratPoro[tmpID,:self.step+1] = numpy.average(deformPoro[indices[tmpID,:],:],
                                                                     weights=weights[tmpID,:], axis=1)
                 self.stratElev[tmpID,:self.step+1] = numpy.average(deformElev[indices[tmpID,:],:],
                                                                     weights=weights[tmpID,:], axis=1)
 
         else:
             self.stratThick[:,:self.step+1] = numpy.average(deformThick[indices,:],weights=weights, axis=1)
+            self.stratPoro[:,:self.step+1] = numpy.average(deformPoro[indices,:],weights=weights, axis=1)
             self.stratElev[:,:self.step+1] = numpy.average(deformElev[indices,:],weights=weights, axis=1)
 
         # Reset depostion flag
         self.stratIn.fill(0)
         tmpID = numpy.where(numpy.amax(self.stratThick[:,:self.step+1], axis=1)>0)[0]
         self.stratIn[tmpID] = 1
-        if rank == 0 and verbose:
-            print " - perform stratal mesh interpolation ", time.clock() - walltime
+        if verbose:
+            print(" - perform stratal mesh interpolation ", time.clock() - walltime)
 
-        if rank == 0 and verbose:
-            print " - moving stratal mesh function ", time.clock() - st_time
+        if verbose:
+            print(" - moving stratal mesh function ", time.clock() - st_time)
 
         self.oldload = numpy.copy(cumdiff)
 
-    def buildStrata(self, elev, cumdiff, sea, rank, write=0, outstep=0):
+    def buildStrata(self, elev, cumdiff, sea, boundsPt, write=0, outstep=0):
         """
         Build the stratigraphic layer on the regular grid.
 
@@ -352,9 +277,6 @@ class strataMesh():
 
         sea
             Sea level elevation
-
-        rank
-            Rank of the given processor
 
         write
             Flag for output generation
@@ -394,7 +316,11 @@ class strataMesh():
         # Update stratal deposition
         localCum = fcum[self.ids]
         depIDs = numpy.where(localCum>0.)[0]
-        self.depoLayer(self.ids[depIDs], localCum)
+        subs = self.depoLayer(self.ids[depIDs], localCum)
+        subsi = numpy.reshape(subs,(len(self.ygrid),len(self.xgrid)))
+        subs_flexure = RegularGridInterpolator((self.ygrid, self.xgrid), subsi)
+        sub_poro = numpy.zeros(len(self.xyTIN[:,0]))
+        sub_poro[boundsPt:] = subs_flexure((self.xyTIN[boundsPt:,1],self.xyTIN[boundsPt:,0]))
 
         # Update stratal erosion
         eroIDs = numpy.where(localCum<0.)[0]
@@ -402,28 +328,24 @@ class strataMesh():
 
         if write>0:
             self.layerMesh(selev[self.ids])
-            self.write_hdf5_stratal(outstep,rank)
+            self.write_hdf5_stratal(outstep)
 
         self.step += 1
 
-        return
+        return sub_poro
 
     def buildPartition(self, bbX, bbY):
         """
         Define a partition for the stratal mesh.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
+        size = 1
         # extent of X partition
-        Yst = numpy.zeros( size )
-        Yed = numpy.zeros( size )
-        partYID = numpy.zeros( (size,2) )
-        nbY = int((self.ny-1) / size)
-        for p in range(size):
+        Yst = numpy.zeros( 1 )
+        Yed = numpy.zeros( 1 )
+        partYID = numpy.zeros( (1,2) )
+        nbY = int((self.ny-1) / 1)
+        for p in range(1):
             if p == 0:
                 Yst[p] = bbY[0]
                 Yed[p] = Yst[p] + nbY*self.dx
@@ -438,23 +360,23 @@ class strataMesh():
         partYID[size-1,1] = self.ny*self.nx
 
         # Get send/receive data ids for each processors
-        self.upper = numpy.zeros( (size,2) )
-        self.lower = numpy.zeros( (size,2) )
-        self.upper[rank,0] = partYID[rank,1]
-        self.upper[rank,1] = partYID[rank,1] + self.nx
-        self.lower[rank,0] = partYID[rank,0]
-        self.lower[rank,1] = partYID[rank,0] - self.nx
+        self.upper = numpy.zeros( (1,2) )
+        self.lower = numpy.zeros( (1,2) )
+        self.upper[0,0] = partYID[0,1]
+        self.upper[0,1] = partYID[0,1] + self.nx
+        self.lower[0,0] = partYID[0,0]
+        self.lower[0,1] = partYID[0,0] - self.nx
 
         # Define partitions ID globally
-        Xst = numpy.zeros( size )
-        Xed = numpy.zeros( size )
+        Xst = numpy.zeros( 1 )
+        Xed = numpy.zeros( 1 )
         Xst += bbX[0]
         Xed += bbX[1]
 
         # Loop over node coordinates and find if they belong to local partition
         # Note: used a Cython/Fython class to increase search loop performance... in libUtils
-        partID = FASTloop.part.overlap(self.xyi[:,0],self.xyi[:,1],Xst[rank],
-                                        Yst[rank],Xed[rank],Yed[rank])
+        partID = FASTloop.part.overlap(self.xyi[:,0],self.xyi[:,1],Xst[0],
+                                        Yst[0],Xed[0],Yed[0])
 
         # Extract local domain nodes global ID
         self.ids = numpy.where(partID > -1)[0]
@@ -481,7 +403,26 @@ class strataMesh():
         # Add deposit to the considered layer time
         self.stratThick[ids,self.step] += depo[ids]
 
-        return
+        # Define porosity values
+        subs = numpy.zeros(self.ptsNb)
+        if self.poro0 > 0:
+            self.stratPoro[ids,self.step] = self.poro0
+            cumThick = numpy.cumsum(self.stratThick[ids,self.step::-1],axis=1)[:,::-1]
+            poro = self.poro0*numpy.exp(-self.poroC*cumThick/1000.)
+            #tmpid = numpy.where(self.stratPoro[ids,:self.step+1]<poro)[0]
+            tmp1,tmp2 = numpy.where(numpy.logical_and(self.stratPoro[ids,:self.step+1]<poro,self.stratThick[ids,:self.step+1]>0.))
+            if len(tmp1)>0:
+                 poro[tmp1,tmp2] = self.stratPoro[ids[tmp1],tmp2]
+            nh = self.stratThick[ids,:self.step+1]*(1.-self.stratPoro[ids,:self.step+1])/(1.-poro)
+            nh = numpy.minimum(self.stratThick[ids,:self.step+1],nh)
+            # Subsidence due to porosity change
+            subs[ids] = numpy.sum(nh-self.stratThick[ids,:self.step+1],axis=1)
+            # Update layer thickness
+            self.stratThick[ids,:self.step+1] = nh
+            # Update porosity
+            self.stratPoro[ids,:self.step+1] = poro
+
+        return subs
 
     def eroLayer(self, nids, erosion):
         """
@@ -545,25 +486,24 @@ class strataMesh():
         # Clear points with no stratigraphic layer
         tmpIDs = numpy.where(self.stratIn == 0)[0]
         #surf = numpy.tile(topsurf[tmpIDs].transpose(), (1, self.step+1)).reshape(self.step+1,len(tmpIDs)).transpose()
-        surf = numpy.array([topsurf[tmpIDs],]*int(self.step+1)).transpose()
-        self.stratDepth[tmpIDs,:self.step+1] = surf
-        self.stratThick[tmpIDs,:self.step+1] = 0.
-
+        surf = numpy.array([topsurf[tmpIDs],]*int(self.step+2)).transpose()
+        self.stratDepth[tmpIDs,:self.step+2] = surf
+        self.stratThick[tmpIDs,:self.step+2] = 0.
         # Find points with stratigraphic layers
         tmpIDs = numpy.where(self.stratIn == 1)[0]
         if len(tmpIDs) == 0:
             return
 
         # Compute cumulative stratal thicknesses
-        cumThick = numpy.cumsum(self.stratThick[tmpIDs,self.step::-1],axis=1)[:,::-1]
+        cumThick = numpy.cumsum(self.stratThick[tmpIDs,self.step+1::-1],axis=1)[:,::-1]
 
         # Updata stratal depth
-        surf = numpy.array([topsurf[tmpIDs],]*int(self.step+1)).transpose()
-        self.stratDepth[tmpIDs,:self.step+1] = surf - cumThick
+        surf = numpy.array([topsurf[tmpIDs],]*int(self.step+2)).transpose()
+        self.stratDepth[tmpIDs,:self.step+2] = surf - cumThick
 
         return
 
-    def write_hdf5_stratal(self, outstep, rank):
+    def write_hdf5_stratal(self, outstep):
         """
         This function writes for each processor the HDF5 file containing sub-surface information.
 
@@ -571,25 +511,26 @@ class strataMesh():
         ----------
         outstep
             Output time step.
-
-        rank
-            ID of the local partition.
         """
 
-        sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p'+str(rank)+'.hdf5'
+        sh5file = self.folder+'/'+self.h5file+str(outstep)+'.p0.hdf5'
         with h5py.File(sh5file, "w") as f:
             # Write node coordinates
             f.create_dataset('coords',shape=(self.ptsNb,2), dtype='float32', compression='gzip')
             f["coords"][:,:2] = self.xyi[self.ids]
 
             # Write stratal layers depth per cells
-            f.create_dataset('layDepth',shape=(self.ptsNb,self.step+1), dtype='float32', compression='gzip')
-            f["layDepth"][:,:self.step+1] = self.stratDepth[self.ids,:self.step+1]
+            f.create_dataset('layDepth',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f["layDepth"][:,:self.step+2] = self.stratDepth[self.ids,:self.step+2]
 
             # Write stratal layers elevations per cells
-            f.create_dataset('layElev',shape=(self.ptsNb,self.step+1), dtype='float32', compression='gzip')
-            f["layElev"][:,:self.step+1] = self.stratElev[self.ids,:self.step+1]
+            f.create_dataset('layElev',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f["layElev"][:,:self.step+2] = self.stratElev[self.ids,:self.step+2]
 
             # Write stratal layers thicknesses per cells
-            f.create_dataset('layThick',shape=(self.ptsNb,self.step+1), dtype='float32', compression='gzip')
-            f["layThick"][:,:self.step+1] = self.stratThick[self.ids,:self.step+1]
+            f.create_dataset('layThick',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f["layThick"][:,:self.step+2] = self.stratThick[self.ids,:self.step+2]
+
+            # Write stratal layers porosity per cells
+            f.create_dataset('layPoro',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f["layPoro"][:,:self.step+2] = self.stratPoro[self.ids,:self.step+2]

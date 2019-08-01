@@ -15,13 +15,12 @@ import time
 import numpy
 import pandas
 import triangle
-import mpi4py.MPI as mpi
 from pyBadlands.libUtils import ORmodel
 from scipy.ndimage.filters import gaussian_filter
 from scipy import interpolate
 from scipy.spatial import cKDTree
 from collections import OrderedDict
-from matplotlib import _cntr as cntr
+from legacycontour import _cntr as cntr
 
 class carbGrowth:
     """
@@ -33,12 +32,10 @@ class carbGrowth:
         self.regY = regY
         self.tXY = None
 
-        self.growth = input.carbGrowth
         self.depthfile = input.carbDepth
         self.sedfile = input.carbSed
         self.wavefile = input.carbWave
 
-        self.growth2 = input.carbGrowth2
         self.depthfile2 = input.carbDepth2
         self.sedfile2 = input.carbSed2
         self.wavefile2 = input.carbWave2
@@ -63,10 +60,12 @@ class carbGrowth:
         self.wavefct2 = None
         self.waveFunc2 = None
 
+        self.carbonate = input.carbonate
         self.sedgrowth = None
         self.depthgrowth = None
         self.wavegrowth = None
 
+        self.carbonate2 = input.carbonate2
         self.sedgrowth2 = None
         self.depthgrowth2 = None
         self.wavegrowth2 = None
@@ -325,7 +324,7 @@ class carbGrowth:
             unique = OrderedDict()
             for p in zip(tmpts[:,0], tmpts[:,1]):
                 unique.setdefault(p[:2], p)
-            pts = numpy.asarray(unique.values())
+            pts = numpy.asarray(list(unique.values()))
 
             if closed:
                 cpts = numpy.zeros((len(pts)+1,2), order='F')
@@ -403,7 +402,7 @@ class carbGrowth:
 
         return seaIDs
 
-    def computeCarbonate(self, wavefield, sedfield, depthfield, dt):
+    def computeCarbonate(self, wavefield, sedfield, depthfield, growthsp1, growthsp2, dt):
         """
         Computes carbonate growth.
         """
@@ -420,7 +419,7 @@ class carbGrowth:
         growth = numpy.zeros(len(depthfield))
         growth.fill(1.1e6)
 
-        if self.growth2 > 0.:
+        if self.carbonate2:
             growth2 = numpy.zeros(len(depthfield))
             growth2.fill(1.1e6)
 
@@ -436,7 +435,7 @@ class carbGrowth:
             growth[seaIds] = numpy.minimum(growth[seaIds],self.wavegrowth[seaIds])
         growth[growth>1.e6] = 0.
 
-        if self.growth2 > 0.:
+        if self.carbonate2:
             if self.depthfile2 != None:
                 self._getDepthFct(depthfield,2)
                 growth2[seaIds] = numpy.minimum(growth2[seaIds],self.depthgrowth2[seaIds])
@@ -449,14 +448,14 @@ class carbGrowth:
             growth2[growth2>1.e6] = 0.
 
         # Average growth function limitation
-        val = self.growth*growth*dt
+        val = growthsp1*growth*dt
         val[val<0.] = 0.
-        val[seaIds] = numpy.minimum(val[seaIds],-depthfield[seaIds]*0.98)
+        val[seaIds] = numpy.minimum(val[seaIds],-depthfield[seaIds]*0.9)
         tmpid = numpy.where(numpy.logical_and(val==val.max(),val>0))[0]
-        if self.growth2 > 0.:
-            val2 = self.growth2*growth2*dt
+        if self.carbonate2:
+            val2 = growthsp2*growth2*dt
             val2[val2<0.] = 0.
-            val2[seaIds] = numpy.minimum(val2[seaIds],-depthfield[seaIds]*0.98)
+            val2[seaIds] = numpy.minimum(val2[seaIds],-depthfield[seaIds]*0.9)
         else:
             val2 = None
 

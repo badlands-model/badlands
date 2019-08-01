@@ -77,8 +77,8 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
 
     return lGIDs[allInside], outcell[localCell2] + 1
 
-def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill,
-               cells, rank, rainOn, eroOn, erodibility, area, waveOn, waveH, waveS, wavediff,
+def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill, cumfail,
+               cells, rainOn, eroOn, erodibility, area, waveOn, waveH, waveS, wavediff,
                rockOn, prop):
     """
     This function writes for each processor the HDF5 file containing surface information.
@@ -124,9 +124,6 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
     cells
         Numpy integer-type array filled with the global cell IDs.
 
-    rank
-        ID of the local partition.
-
     rainOn
         Boolean for orographic precipitation.
 
@@ -143,7 +140,7 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
         Average shear stress on bed.
     """
 
-    h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
+    h5file = folder+'/'+h5file+str(step)+'.p0.hdf5'
     with h5py.File(h5file, "w") as f:
 
         # Write node coordinates and elevation
@@ -171,6 +168,9 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
         f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumhill"][:,0] = cumhill
 
+        f.create_dataset('cumfail',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["cumfail"][:,0] = cumfail
+
         f.create_dataset('area',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["area"][:,0] = area
 
@@ -195,8 +195,8 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
                     f.create_dataset('depSpecies2',shape=(len(discharge), 1), dtype='float32', compression='gzip')
                     f["depSpecies2"][:,0] = prop[:,k]
 
-def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill,
-                       cumflex, cells, rank, rainOn, eroOn, erodibility, area, waveOn, waveH,  waveS, wavediff,
+def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill, cumfail,
+                       cumflex, cells, rainOn, eroOn, erodibility, area, waveOn, waveH,  waveS, wavediff,
                        rockOn, prop):
     """
     This function writes for each processor the HDF5 file containing surface information.
@@ -242,9 +242,6 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
     cells
         Numpy integer-type array filled with the global cell IDs.
 
-    rank
-        ID of the local partition.
-
     rainOn
         Boolean for orographic precipitation.
 
@@ -261,7 +258,7 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
         Average shear stress on bed.
     """
 
-    h5file = folder+'/'+h5file+str(step)+'.p'+str(rank)+'.hdf5'
+    h5file = folder+'/'+h5file+str(step)+'.p0.hdf5'
     with h5py.File(h5file, "w") as f:
 
         # Write node coordinates and elevation
@@ -288,6 +285,9 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
 
         f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumhill"][:,0] = cumhill
+
+        f.create_dataset('cumfail',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f["cumfail"][:,0] = cumfail
 
         f.create_dataset('cumflex',shape=(len(discharge), 1), dtype='float32', compression='gzip')
         f["cumflex"][:,0] = cumflex
@@ -354,7 +354,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
 
     return
 
-def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel, size,
+def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel,
               flexOn, rainOn, eroOn, waveOn, rockOn, nbSed):
     """
     This function writes the XmF file which is calling each HFD5 file.
@@ -411,8 +411,8 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
     f.write('    <Grid GridType="Collection" CollectionType="Spatial">\n')
     f.write('      <Time Type="Single" Value="%s"/>\n'%t)
 
-    for p in range(size):
-        pfile = h5file+str(step)+'.p'+str(p)+'.hdf5'
+    for p in range(1):
+        pfile = h5file+str(step)+'.p0.hdf5'
         f.write('      <Grid Name="Block.%s">\n' %(str(p)))
         f.write('         <Topology Type="Triangle" NumberOfElements="%d" BaseOffset="1">\n'%elems[p])
         f.write('          <DataItem Format="HDF" DataType="Int" ')
@@ -437,6 +437,11 @@ def write_xmf(folder, xmffile, xdmffile, step, t, elems, nodes, h5file, sealevel
         f.write('         <Attribute Type="Scalar" Center="Node" Name="EroDep hillslope">\n')
         f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
         f.write('Dimensions="%d 1">%s:/cumhill</DataItem>\n'%(nodes[p],pfile))
+        f.write('         </Attribute>\n')
+
+        f.write('         <Attribute Type="Scalar" Center="Node" Name="EroDep failure">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 1">%s:/cumfail</DataItem>\n'%(nodes[p],pfile))
         f.write('         </Attribute>\n')
 
         if flexOn:

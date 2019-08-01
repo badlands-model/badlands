@@ -50,6 +50,10 @@
         <stratdx>500.</stratdx>
         <!-- Stratal layer interval [a] -->
         <laytime>2500.</laytime>
+        <!-- Surface porosity  -->
+        <poro0>0.52</poro0>
+        <!-- characteristic constant for Athy's porosity law  [/km] -->
+        <poroC>0.47</poroC>
     </strata>
 
     <!-- Sea-level structure -->
@@ -233,6 +237,12 @@
         <!-- Proportion of marine sediment deposited on downstream nodes. It needs
              to be set between ]0,1[. Default value is 0.9 (optional). -->
         <diffprop>0.2</diffprop>
+        <!-- Critical density of water+sediment flux to trigger hyperpycnal current
+             off shore - (optional) -->
+        <dens_cr>1060.</dens_cr>
+        <!-- Deep basin depth under which hyperpycnal flow are forced to
+             deposit [m] - (optional) -->
+        <deepbasin>-2500.</deepbasin>
     </sp_law>
 
     <!-- Flux-dependent function structure  (optional)
@@ -384,6 +394,11 @@
         <!-- River transported sediment diffusion
              coefficient in marine realm [m2/a] -->
         <criver>10.</criver>
+        <!-- Critical slope above which slope failure are triggered [m/m] - optional.
+             Default value is set to 0 meaning non-lnear diffusion is not considered. -->
+        <sfail>0.26</sfail>
+        <!-- Triggered failure sediment diffusion coefficient [m2/a] -->
+        <cfail>3.</cfail>
     </creep>
 
     <!-- Wave global parameters structure -->
@@ -469,21 +484,46 @@
         </climate>
     </wave>
 
+    <!-- Carbonate growth definition based on carbonate global structure.
+         The events need to be ordered by increasing start time.
+         The time needs to be continuous between each event without overlaps. -->
+
+    <carb>
+        <!-- Specify initial basement structure (0) for hard rock and (1) for loose sediment. -->
+        <baseMap>data/base500south.csv</baseMap>
+        <!-- Carbonate growth time interval [a] -->
+        <tcarb>50.</tcarb>
+        <!-- Specify the number of reef growth events -->
+        <growth_events>2</growth_events>
+        <!-- Specify Species 1 and 2 growth rates for specific reef growth events-->
+        <event>
+            <!-- Reef growth event start time [a] -->
+            <gstart>-1000.</gstart>
+            <!-- Reef growth event end time [a] -->
+            <gend>-750.</gend>
+            <!-- Species 1 growth rate during event [m/yr]. -->
+            <growth_sp1>0.009</growth_sp1>
+            <!-- Species 2 growth rate during event [m/yr]. -->
+            <growth_sp2>0.005</growth_sp2>
+        </event>
+        <event>
+            <!-- Reef growth event start time [a] -->
+            <gstart>-500.</gstart>
+            <!-- Reef growth event end time [a] -->
+            <gend>-250.</gend>
+            <!-- Species 1 growth rate during event [m/yr]. -->
+            <growth_sp1>0.</growth_sp1>
+            <!-- Species 2 growth rate during event [m/yr]. -->
+            <growth_sp2>0.</growth_sp2>
+        </event>
+    </carb>
+
     <!-- Specify species 1 growth functions based on 3 main controlling forces: depth,
          sedimentation rate and ocean wave height.
          These functions are defined as csv files produced using pre-processing IPython
          notebook. -->
 
-    <carb>
-        <!-- Specify initial basement structure (0) for hard rock and (1) for loose sediment. -->
-        <baseMap>data/base500south.csv</baseMap>
-        <!-- Wave interval [a] -->
-        <tcarb>50.</tcarb>
-    </carb>
-
     <species1>
-        <!-- Species 1 growth rate [m/yr]. -->
-        <growth>0.009</growth>
         <!-- Depth control on species 1 evolution. -->
         <depthControl>data/depthcontrol1.csv</depthControl>
         <!-- Ocean wave height control on species 1 evolution. -->
@@ -498,7 +538,6 @@
          notebook. -->
     <species2>
         <!-- Species 2 growth rate [m/yr]. -->
-        <growth>0.005</growth>
         <!-- Depth control on species 2 evolution. -->
         <depthControl>data/depthcontrol2.csv</depthControl>
         <!-- Ocean wave height control on species 2 evolution. -->

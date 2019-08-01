@@ -101,6 +101,7 @@ class visSurf:
             coords = numpy.array((df['/coords']))
             cumdiff = numpy.array((df['/cumdiff']))
             cumhill = numpy.array((df['/cumhill']))
+            cumfail = numpy.array((df['/cumfail']))
             discharge = numpy.array((df['/discharge']))
             if i == 0:
                 x = coords[:,0]
@@ -108,10 +109,12 @@ class visSurf:
                 z = coords[:,2]
                 c = cumdiff.ravel()
                 h = cumhill.ravel()
+                f = cumfail.ravel()
                 d = discharge.ravel()
             else:
                 c = numpy.append(c, cumdiff)
                 h = numpy.append(h, cumhill)
+                f = numpy.append(f, cumfail)
                 d = numpy.append(d, discharge)
                 x = numpy.append(x, coords[:,0])
                 y = numpy.append(y, coords[:,1])
@@ -138,11 +141,13 @@ class visSurf:
             d_vals = d[indices][:,:,0]
             c_vals = c[indices][:,:,0]
             h_vals = h[indices][:,:,0]
+            f_vals = f[indices][:,:,0]
         else:
             z_vals = z[indices]
             d_vals = d[indices]
             c_vals = c[indices]
             h_vals = h[indices]
+            f_vals = f[indices]
 
         distances[distances<0.0001] = 0.0001
         with numpy.errstate(divide='ignore'):
@@ -150,6 +155,7 @@ class visSurf:
             di = numpy.average(d_vals,weights=(1./distances), axis=1)
             ci = numpy.average(c_vals,weights=(1./distances), axis=1)
             hi = numpy.average(h_vals,weights=(1./distances), axis=1)
+            fi = numpy.average(f_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
@@ -157,6 +163,7 @@ class visSurf:
             di[onIDs] = d[indices[onIDs,0]]
             ci[onIDs] = c[indices[onIDs,0]]
             hi[onIDs] = h[indices[onIDs,0]]
+            fi[onIDs] = f[indices[onIDs,0]]
 
         self.z = numpy.reshape(zi,(self.ny,self.nx))
 
@@ -165,9 +172,12 @@ class visSurf:
             self.cumchange = numpy.reshape(cclip,(self.ny,self.nx))
             hclip = numpy.clip(hi, self.crange[0], self.crange[1])
             self.hillchange = numpy.reshape(hclip,(self.ny,self.nx))
+            fclip = numpy.clip(fi, self.crange[0], self.crange[1])
+            self.failchange = numpy.reshape(fclip,(self.ny,self.nx))
         else:
             self.cumchange = numpy.reshape(ci,(self.ny,self.nx))
             self.hillchange = numpy.reshape(hclip,(self.ny,self.nx))
+            self.faillchange = numpy.reshape(fclip,(self.ny,self.nx))
 
         self.discharge = numpy.reshape(di,(self.ny,self.nx))
 

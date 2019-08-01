@@ -11,4 +11,4 @@
 """
 
 #import oceanDyn
-import waveSed
+from . import waveSed

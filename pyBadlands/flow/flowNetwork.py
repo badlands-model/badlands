@@ -14,7 +14,6 @@ import math
 import time
 import numpy
 import warnings
-import mpi4py.MPI as mpi
 from scipy.spatial import cKDTree
 from scipy.interpolate import RegularGridInterpolator
 from scipy.ndimage.filters import gaussian_filter
@@ -95,6 +94,9 @@ class flowNetwork:
         self.kt = input.kt
         self.kw = input.kw
         self.b = input.b
+        self.deepb = input.deepbasin
+        self.critdens = input.denscrit
+        self.flowdensity = None
         self.sedload = None
         self.straTIN = 0
         self.activelay = None
@@ -109,10 +111,6 @@ class flowNetwork:
 
         FLOWalgo.flowcompute.eroparams(input.incisiontype,input.SPLm,input.SPLn,input.mt,
                                        input.nt,input.kt,input.kw,input.b,input.bedslptype)
-
-        self._comm = mpi.COMM_WORLD
-        self._rank = self._comm.Get_rank()
-        self._size = self._comm.Get_size()
 
     def compute_hillslope_diffusion(self, elev, neighbours, edges, distances, globalIDs, type, Sc):
         """
@@ -149,9 +147,6 @@ class flowNetwork:
         else:
             diff_flux = sfd.diffusionero(elev, self.borders2, neighbours, edges, distances, globalIDs)
 
-        # Send local diffusion flux globally
-        self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
-
         return diff_flux
 
     def compute_marine_diffusion(self, elev, depoH, neighbours, edges, distances, coeff,
@@ -183,11 +178,60 @@ class flowNetwork:
                                            distances, coeff, globalIDs, seal, maxth, tstep)
 
         # Send local diffusion flux globally
-        self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
         mindt = numpy.array(ndt)
-        self._comm.Allreduce(mpi.IN_PLACE,mindt,op=mpi.MIN)
 
         return diff_flux,mindt
+
+    def compute_failure_diffusion(self, elev, depoH, neighbours, edges, distances, coeff,
+                                 globalIDs, maxth, tstep):
+        """
+        Perform slope failure transported sediments diffusion.
+
+        Parameters
+        ----------
+        elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        dep
+            Numpy arrays flagging the deposited nodes.
+
+        neighbours
+            Numpy integer-type array with the neighbourhood IDs.
+
+        edges
+            Numpy real-type array with the voronoi edges length for each neighbours of the TIN nodes.
+
+        distances
+            Numpy real-type array with the distances between each connection in the TIN.
+
+        globalIDs
+            Numpy integer-type array containing for local nodes their global IDs.
+        """
+        diff_flux, ndt = FLOWalgo.flowcompute.difffailure(elev, self.borders, depoH, neighbours, edges,
+                                           distances, coeff, globalIDs, maxth, tstep)
+
+        # Send local diffusion flux globally
+        mindt = numpy.array(ndt)
+
+        return diff_flux,mindt
+
+    def compute_failure(self, elev, sfail):
+        """
+        Perform erosion induced by slope failure.
+
+        Parameters
+        ----------
+        elev
+            Numpy arrays containing the elevation of the TIN nodes.
+
+        sfail
+            Critical slope to initiate slope failure.
+        """
+
+        erosion = FLOWalgo.flowcompute.slumpero(self.localstack,self.receivers,self.xycoords, \
+                             elev,sfail,self.borders)
+
+        return erosion
 
     def compute_sediment_marine(self, elev, dep, sdep, coeff, neighbours, seal, maxth,
                                 edges, distances, globalIDs):
@@ -219,9 +263,6 @@ class flowNetwork:
         """
         diff_prop, diff_flux = FLOWalgo.flowcompute.diffsedmarine(elev, self.borders, dep, sdep,
                                            seal, maxth, coeff, neighbours, edges, distances, globalIDs)
-        # Send local diffusion flux globally
-        self._comm.Allreduce(mpi.IN_PLACE,diff_flux,op=mpi.MAX)
-        self._comm.Allreduce(mpi.IN_PLACE,diff_prop,op=mpi.MAX)
 
         return diff_prop,diff_flux
 
@@ -259,11 +300,6 @@ class flowNetwork:
         sumdiff, ero, depo = FLOWalgo.flowcompute.diffsedhillslope(elev, self.borders, difflay,
                                            layh, coeff, neighbours, edges, distances, globalIDs)
 
-        # Send local diffusion flux globally
-        self._comm.Allreduce(mpi.IN_PLACE,ero,op=mpi.MAX)
-        self._comm.Allreduce(mpi.IN_PLACE,depo,op=mpi.MAX)
-        self._comm.Allreduce(mpi.IN_PLACE,sumdiff,op=mpi.MAX)
-
         return sumdiff,ero,depo
 
     def SFD_receivers(self, fillH, elev, neighbours, edges, distances, globalIDs):
@@ -298,33 +334,27 @@ class flowNetwork:
         base1, receivers1 = sfd.directions_base(elev, neighbours, edges, distances, globalIDs)
 
         # Send local base level globally
-        self._comm.Allreduce(mpi.IN_PLACE,base1,op=mpi.MAX)
         bpos = numpy.where(base1 >= 0)[0]
         self.base1 = base1[bpos]
 
         # Send local receivers globally
-        self._comm.Allreduce(mpi.IN_PLACE,receivers1,op=mpi.MAX)
         self.receivers1 = receivers1
 
         # Get the directions from filled surface
         base, receivers, maxh, maxdep = sfd.directions(fillH, elev, neighbours, edges, distances, globalIDs)
 
         # Send local base level globally
-        self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
         bpos = numpy.where(base >= 0)[0]
         self.base = base[bpos]
         numpy.random.shuffle(self.base)
 
         # Send local receivers globally
-        self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
         self.receivers = receivers
 
         # Send local maximum height globally
-        self._comm.Allreduce(mpi.IN_PLACE,maxh,op=mpi.MAX)
         self.maxh = maxh
 
         # Send local maximum deposition globally
-        self._comm.Allreduce(mpi.IN_PLACE,maxdep,op=mpi.MAX)
         self.maxdep = maxdep
 
     def _donors_number_array(self):
@@ -415,7 +445,7 @@ class flowNetwork:
         stids = numpy.where(lstcks > -1 )[0]
         self.localstack1 = lstcks[stids]
 
-    def compute_flow(self, elev, Acell, rain):
+    def compute_flow(self, sealevel, elev, Acell, rain):
         """
         Calculates the drainage area and water discharge at each node.
 
@@ -437,11 +467,8 @@ class flowNetwork:
         self.discharge[self.stack] = Acell[self.stack] * rain[self.stack]
 
         # Compute discharge using libUtils
-        self.discharge, self.activelay = FLOWalgo.flowcompute.discharge(self.localstack, self.receivers,
+        self.discharge, self.activelay = FLOWalgo.flowcompute.discharge(sealevel, self.localstack, self.receivers,
                                                         elev, self.discharge)
-        self._comm.Allreduce(mpi.IN_PLACE, self.discharge, op=mpi.MAX)
-        self._comm.Allreduce(mpi.IN_PLACE, self.activelay, op=mpi.MAX)
-
 
     def view_receivers(self, fillH, elev, neighbours, edges, distances, globalIDs, sea):
         """
@@ -477,21 +504,16 @@ class flowNetwork:
         base, receivers = sfd.dirview(fillH, elev, neighbours, edges, distances, globalIDs, sea)
 
         # Send local base level globally
-        self._comm.Allreduce(mpi.IN_PLACE,base,op=mpi.MAX)
         bpos = numpy.where(base >= 0)[0]
         self.base = base[bpos]
         numpy.random.shuffle(self.base)
 
         # Send local receivers globally
-        self._comm.Allreduce(mpi.IN_PLACE,receivers,op=mpi.MAX)
         self.receivers = receivers
-        self.localbase = numpy.array_split(self.base, self._size)[self._rank]
+        self.localbase = self.base
         self.ordered_node_array_filled()
 
-        stackNbs = self._comm.allgather(len(self.localstack))
-        globalstack = numpy.zeros(sum(stackNbs), dtype=self.localstack.dtype)
-        self._comm.Allgatherv(sendbuf=[self.localstack, mpi.INT],
-                        recvbuf=[globalstack, (stackNbs, None), mpi.INT])
+        globalstack = self.localstack
         self.stack = globalstack
 
         return
@@ -501,21 +523,14 @@ class flowNetwork:
         Calculates the catchment IDs and the Chi parameter (Willett 2014).
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Get basin starting IDs for each local partition
-        cumbase = numpy.zeros(size+1)
-        for i in range(size):
-            cumbase[i+1] = len(numpy.array_split(self.base, size)[i])+cumbase[i]+1
+        cumbase = numpy.zeros(2)
+        for i in range(1):
+            cumbase[i+1] = len(numpy.array_split(self.base, 1)[i])+cumbase[i]+1
 
         # Compute discharge using libUtils
         chi, basinID = FLOWalgo.flowcompute.parameters(self.localstack,self.receivers,
-                                               self.discharge,self.xycoords,cumbase[rank])
-        comm.Allreduce(mpi.IN_PLACE,chi,op=mpi.MAX)
-        comm.Allreduce(mpi.IN_PLACE,basinID,op=mpi.MAX)
+                                               self.discharge,self.xycoords,cumbase[0])
 
         self.chi = chi
         self.basinID = basinID
@@ -540,17 +555,9 @@ class flowNetwork:
             Real value giving the sea-level height at considered time step.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Compute pit ID and volume using libUtils
         pitID, pitVolume = FLOWalgo.flowcompute.basinparameters(self.localstack1,self.receivers1,
                                                                 elev,fillH,Acell)
-        comm.Allreduce(mpi.IN_PLACE,pitID,op=mpi.MAX)
-        comm.Allreduce(mpi.IN_PLACE,pitVolume,op=mpi.MAX)
-
         self.pitID = pitID
         self.pitVolume = pitVolume
 
@@ -619,10 +626,6 @@ class flowNetwork:
 
         check = False
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
         newdt = numpy.copy(dt)
 
         if actlay is None:
@@ -633,7 +636,7 @@ class flowNetwork:
         # Compute sediment flux using libUtils
         # Stream power law
         if self.spl:
-            if rank==0 and verbose:
+            if verbose:
                 time0 = time.clock()
                 time1 = time.clock()
 
@@ -653,18 +656,16 @@ class flowNetwork:
             if actlay is None:
                 actlay = numpy.zeros((len(elev),1))
 
-            cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
+            cdepo, cero, sedload, flowdensity = FLOWalgo.flowcompute.streampower(self.critdens, self.localstack,self.receivers,self.pitID, \
                      self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
-                     elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,self.borders)
-            comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
-            comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
+                     elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,sealevel+self.deepb,newdt,self.borders)
 
             if self.depo == 0:
                 volChange = cero
             else:
                 volChange = cdepo+cero
-            if rank==0 and verbose:
-                print "   - Compute sediment volumetric flux ", time.clock() - time1
+            if verbose:
+                print("   - Compute sediment volumetric flux ", time.clock() - time1)
                 time1 = time.clock()
 
             # Find overfilling catchments
@@ -688,19 +689,17 @@ class flowNetwork:
                 newdt = float(round(newdt-0.5,0))
             newdt = max(self.mindt,newdt)
 
-            if rank==0 and verbose:
-                print "   - Compute depressions connectivity ", time.clock() - time1
+            if verbose:
+                print("   - Compute depressions connectivity ", time.clock() - time1)
                 time1 = time.clock()
 
             if newdt < dt:
-                cdepo, cero, sedload = FLOWalgo.flowcompute.streampower(self.localstack,self.receivers,self.pitID, \
+                cdepo, cero, sedload, flowdensity = FLOWalgo.flowcompute.streampower(self.critdens, self.localstack,self.receivers,self.pitID, \
                         self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
-                        elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,newdt,self.borders)
-                comm.Allreduce(mpi.IN_PLACE,cdepo,op=mpi.MAX)
-                comm.Allreduce(mpi.IN_PLACE,cero,op=mpi.MIN)
+                        elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,sealevel+self.deepb,newdt,self.borders)
                 volChange = cdepo+cero
-                if rank==0 and verbose:
-                    print "   - Compute volumetric fluxes with updated dt ", time.clock() - time1
+                if verbose:
+                    print("   - Compute volumetric fluxes with updated dt ", time.clock() - time1)
                     time1 = time.clock()
 
                 if check:
@@ -711,18 +710,19 @@ class flowNetwork:
                     if (len(search)>0) and (len(ids)>0):
                         overfilled = numpy.intersect1d(intID[search],ids)
                         if len(overfilled) > 0:
-                            print 'WARNING: overfilling persists after time-step limitation.',len(overfilled)
+                            print('WARNING: overfilling persists after time-step limitation.',len(overfilled))
 
             # Update river sediment load in kg/s
             sedld = numpy.sum(sedload,axis=1)
-            comm.Allreduce(mpi.IN_PLACE,sedld,op=mpi.MAX)
             self.sedload = sedld/(newdt*3.154e7)
+            den = flowdensity/1000.
+            self.flowdensity = den
 
             # Compute erosion
             erosion = numpy.zeros(cero.shape)
             erosion[self.insideIDs,:] = cero[self.insideIDs,:]/Acell[self.insideIDs].reshape(len(self.insideIDs),1)
-            if rank==0 and verbose:
-                print "   - Compute erosion ", time.clock() - time1
+            if verbose:
+                print("   - Compute erosion ", time.clock() - time1)
                 time1 = time.clock()
 
             # Compute deposition
@@ -738,12 +738,13 @@ class flowNetwork:
                 plainid,landid,seaid,perc,nplain,nland,nsea,ndepo = FLOWalgo.flowcompute.getids(fillH,elev,depo,
                                                                     self.pitVolume,sealevel)
                 depo = ndepo
+
                 if nplain > 0:
                     plainID = plainid[:nplain]
                     deposition[plainID,:] = depo[plainID,:]/Acell[plainID].reshape(len(plainID),1)
                     depo[plainID,:] = 0.
-                    if rank==0 and verbose:
-                        print "   - Compute plain deposition ", time.clock() - time1
+                    if verbose:
+                        print("   - Compute plain deposition ", time.clock() - time1)
                         time1 = time.clock()
 
                 # Compute land pit deposition
@@ -761,8 +762,8 @@ class flowNetwork:
                         deposition[tmp,:] *= dfrac
 
                     depo[landIDs,:] = 0.
-                    if rank==0 and verbose:
-                        print "   - Compute land pit deposition ", time.clock() - time1
+                    if verbose:
+                        print("   - Compute land pit deposition ", time.clock() - time1)
                         time1 = time.clock()
 
                 # Compute water deposition
@@ -774,21 +775,20 @@ class flowNetwork:
                     seadep = PDalgo.pdstack.marine_distribution(elev, seavol, sealevel, self.borders, seaIDs)
                     deposition += seadep
                     depo[seaIDs,:] = 0.
-                    if rank==0 and verbose:
-                        print "   - Compute marine deposition ", time.clock() - time1
+                    if verbose:
+                        print("   - Compute marine deposition ", time.clock() - time1)
                         time1 = time.clock()
 
                 # Is there some remaining deposits?
                 if numpy.any(depo):
-                    if rank == 0:
-                        print 'WARNING: forced deposition is performed during this timestep.'
+                    print('WARNING: forced deposition is performed during this timestep.')
                     deposition[self.insideIDs,:] += depo[self.insideIDs,:]/Acell[self.insideIDs].reshape(len(self.insideIDs),1)
 
             # Define erosion/deposition changes
             sedflux[self.insideIDs,:] = erosion[self.insideIDs,:]+deposition[self.insideIDs,:]
 
-            if rank==0 and verbose:
-                print "   - Total sediment flux time ", time.clock() - time0
+            if verbose:
+                print("   - Total sediment flux time ", time.clock() - time0)
 
         return newdt,sedflux,erosion,deposition
 
@@ -816,9 +816,9 @@ class flowNetwork:
 
             # Querying the cKDTree later becomes a bottleneck, so distribute the xyi array across all MPI nodes
             xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
-            splits = numpy.array_split(xyi, self._size)
-            split_lengths = numpy.array(map(len, splits)) * 3
-            localxyi = splits[self._rank]
+            splits = numpy.array_split(xyi, 1)
+            split_lengths = numpy.array(list(map(len, splits))) * 3
+            localxyi = splits[0]
             query_shape = (xyi.shape[0], 3)
 
             # Build Tree
@@ -829,14 +829,8 @@ class flowNetwork:
             indices = numpy.empty(query_shape, dtype=numpy.int64)
             localdistances, localindices = tree.query(localxyi, k=3)
 
-            distances_flat = numpy.empty(nelems, dtype=numpy.float64)
-            self._comm.Allgatherv(numpy.ravel(localdistances), [distances_flat, (split_lengths, None)])
-
-            indices_flat = numpy.empty(nelems, dtype=numpy.int64)
-            self._comm.Allgatherv(numpy.ravel(localindices), [indices_flat, (split_lengths, None)])
-
-            self.distances = distances_flat.reshape(query_shape)
-            self.indices = indices_flat.reshape(query_shape)
+            self.distances = localdistances
+            self.indices = localindices
             self.onIDs = numpy.where(self.distances[:,0] == 0)[0]
 
         depZ = numpy.copy(diff)
@@ -877,20 +871,12 @@ class flowNetwork:
             Numpy integer-type array containing for local nodes their global IDs.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         # Compute the local value for time stability
         dt = FLOWalgo.flowcompute.flowcfl(locIDs,self.receivers,self.xycoords,elev, \
                                       self.discharge,self.erodibility)
 
         # Global mimimum value for diffusion stability
-        CFL = numpy.zeros(1)
-        CFL[0] = dt
-        comm.Allreduce(mpi.IN_PLACE,CFL,op=mpi.MIN)
-        self.CFL = CFL[0]
+        self.CFL = dt
 
         return
 

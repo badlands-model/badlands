@@ -39,9 +39,6 @@ class raster2TIN:
     inputfile : string
         This is a string containing the path to the regular grid file.
 
-    rank : integer
-        Rank of processor.
-
     delimiter : string
         The delimiter between columns from the regular grid file. The regular file contains
         coordinates of each nodes and is ordered by row from SW to NE corner. The file has no
@@ -66,7 +63,7 @@ class raster2TIN:
         Default: 1
     """
 
-    def __init__(self, inputfile=None, rank=0, delimiter=r'\s+', resRecFactor=1, areaDelFactor=1):
+    def __init__(self, inputfile=None, delimiter=r'\s+', resRecFactor=1, areaDelFactor=1):
         if inputfile==None:
             raise RuntimeError('DEM input file name must be defined to construct Badlands irregular grid.')
         if not os.path.isfile(inputfile):
@@ -281,13 +278,16 @@ class raster2TIN:
             coords = numpy.array((df['/coords']))
             cumdiff = numpy.array((df['/cumdiff']))
             cumhill = numpy.array((df['/cumhill']))
+            cumfail = numpy.array((df['/cumfail']))
             if i == 0:
                 x, y, z = numpy.hsplit(coords, 3)
                 c = cumdiff
                 h = cumhill
+                f = cumfail
             else:
                 c = numpy.append(c, cumdiff)
                 h = numpy.append(h, cumhill)
+                f = numpy.append(f, cumfail)
                 x = numpy.append(x, coords[:,0])
                 y = numpy.append(y, coords[:,1])
                 z = numpy.append(z, coords[:,2])
@@ -300,23 +300,33 @@ class raster2TIN:
             z_vals = z[indices][:,:,0]
             c_vals = c[indices][:,:,0]
             h_vals = h[indices][:,:,0]
+            f_vals = f[indices][:,:,0]
         else:
             z_vals = z[indices]
             c_vals = c[indices]
             h_vals = h[indices]
+            f_vals = f[indices]
 
         with numpy.errstate(divide='ignore'):
             elev = numpy.average(z_vals,weights=(1./distances), axis=1)
             cum = numpy.average(c_vals,weights=(1./distances), axis=1)
             hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
+            fcum = numpy.average(f_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] == 0)[0]
         if len(onIDs) > 0:
-            elev[onIDs] = z[indices[onIDs,0]]
-            cum[onIDs] = c[indices[onIDs,0]]
-            hcum[onIDs] = h[indices[onIDs,0]]
+            if len(z[indices].shape) == 3:
+                elev[onIDs] = z[indices[onIDs,0],0]
+                cum[onIDs] = c[indices[onIDs,0],0]
+                hcum[onIDs] = h[indices[onIDs,0],0]
+                fcum[onIDs] = f[indices[onIDs,0],0]
+            else:
+                elev[onIDs] = z[indices[onIDs,0]]
+                cum[onIDs] = c[indices[onIDs,0]]
+                hcum[onIDs] = h[indices[onIDs,0]]
+                fcum[onIDs] = f[indices[onIDs,0]]
 
-        return elev, cum, hcum
+        return elev, cum, hcum, fcum
 
     def load_hdf5_flex(self, restartFolder, timestep, tXY):
         """
@@ -360,15 +370,18 @@ class raster2TIN:
             coords = numpy.array((df['/coords']))
             cumdiff = numpy.array((df['/cumdiff']))
             cumhill = numpy.array((df['/cumhill']))
+            cumfail = numpy.array((df['/cumfail']))
             cumflex = numpy.array((df['/cumflex']))
             if i == 0:
                 x, y, z = numpy.hsplit(coords, 3)
                 c = cumdiff
                 h = cumhill
+                s = cumfail
                 f = cumflex
             else:
                 c = numpy.append(c, cumdiff)
                 h = numpy.append(h, cumhill)
+                s = numpy.append(s, cumfail)
                 f = numpy.append(f, cumflex)
                 x = numpy.append(x, coords[:,0])
                 y = numpy.append(y, coords[:,1])
@@ -382,10 +395,12 @@ class raster2TIN:
             z_vals = z[indices][:,:,0]
             c_vals = c[indices][:,:,0]
             h_vals = h[indices][:,:,0]
+            s_vals = s[indices][:,:,0]
             f_vals = f[indices][:,:,0]
         else:
             z_vals = z[indices]
             c_vals = c[indices]
+            s_vals = s[indices]
             h_vals = h[indices]
             f_vals = f[indices]
 
@@ -394,13 +409,14 @@ class raster2TIN:
             elev = numpy.average(z_vals,weights=(1./distances), axis=1)
             cum = numpy.average(c_vals,weights=(1./distances), axis=1)
             hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
-            cumf = numpy.average(f_vals,weights=(1./distances), axis=1)
+            scum = numpy.average(s_vals,weights=(1./distances), axis=1)
 
         onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
             elev[onIDs] = z[indices[onIDs,0]]
             cum[onIDs] = c[indices[onIDs,0]]
             cumf[onIDs] = f[indices[onIDs,0]]
+            scum[onIDs] = s[indices[onIDs,0]]
             hcum[onIDs] = h[indices[onIDs,0]]
 
-        return elev, cum, hcum, cumf
+        return elev, cum, hcum, scum, cumf

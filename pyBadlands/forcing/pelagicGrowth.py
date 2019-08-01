@@ -14,7 +14,6 @@ import os
 import numpy
 import pandas
 import triangle
-import mpi4py.MPI as mpi
 from pyBadlands.libUtils import ORmodel
 from scipy.ndimage.filters import gaussian_filter
 from scipy import interpolate

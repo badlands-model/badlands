@@ -141,7 +141,7 @@ class isoFlex:
         # Sea Water Density
         self.rho_w = 1029.0
         # Elastic thickness [m]
-        if isinstance(elasticT, basestring):
+        if isinstance(elasticT, str):
             TeMap = pandas.read_csv(elasticT, sep=r'\s+', engine='c', header=None,
                 na_filter=False, dtype=numpy.float, low_memory=False)
             self.Te = numpy.reshape(TeMap.values, (self.ny, self.nx))

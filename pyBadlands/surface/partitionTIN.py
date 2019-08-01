@@ -14,11 +14,10 @@ import time
 import numpy
 import triangle
 from pyBadlands.libUtils import FASTloop
-import mpi4py.MPI as mpi
 
 from numpy import random
 
-def get_closest_factors(size):
+def get_closest_factors():
     """
     This function finds the two closest integers which, when multiplied, equal a given number.
     This is used to defined the partition of the regular and TIN grids.
@@ -40,6 +39,7 @@ def get_closest_factors(size):
         Integers which specify the number of processors along each axis.
     """
     factors =  []
+    size = 1
     for i in range(1, size + 1):
         if size % i == 0:
             factors.append(i)
@@ -101,27 +101,13 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
         Integers which specify the number of processors along each axis.
     """
 
-    # Initialise MPI communications
-    comm = mpi.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
     xmin = X.min()
     xmax = X.max()
     ymin = Y.min()
     ymax = Y.max()
-
-    if Xdecomp == 1 and Ydecomp == 1 and size > 1:
-        n1,n2 = get_closest_factors(size)
-        if xmax-xmin > ymax-ymin :
-            nbprocX = n2
-            nbprocY = n1
-        else:
-            nbprocX = n1
-            nbprocY = n2
-    else:
-        nbprocX = Xdecomp
-        nbprocY = Ydecomp
+    size = 1
+    nbprocX = Xdecomp
+    nbprocY = Ydecomp
 
     # Check decomposition versus CPUs number
     if size != nbprocX*nbprocY:
@@ -210,12 +196,8 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
         Triangle class representing local TIN coordinates and parameters.
     """
 
-    # Initialise MPI communications
-    comm = mpi.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
     walltime = time.clock()
-
+    size = 1
     # Check decomposition versus CPUs number
     if size != nbprocX*nbprocY:
         raise ValueError('Error in the decomposition grid: the number of domains \
@@ -265,7 +247,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
 
     # Loop over node coordinates and find if they belong to local partition
     # Note: used a Cython/Fython class to increase search loop performance... in libUtils
-    partID = FASTloop.part.overlap(X,Y,Xst[rank],Yst[rank],Xed[rank],Yed[rank])
+    partID = FASTloop.part.overlap(X,Y,Xst[0],Yst[0],Xed[0],Yed[0])
 
     # Extract local domain nodes global ID
     globIDs = numpy.where(partID > -1)[0]
@@ -274,92 +256,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     data = numpy.column_stack((X,Y))
     localTIN = triangle.triangulate(dict(vertices=data[globIDs,:2]),' ')
 
-    if rank == 0 and verbose:
-        print " - partition TIN including shadow zones ", time.clock() - walltime
+    if verbose:
+        print(" - partition TIN including shadow zones ", time.clock() - walltime)
 
     return globIDs, localTIN
-
-def _robin_distribution(X,Y):
-    """
-    This function defines an initial distribution using round-robin algorithm.
-
-    Parameters
-    ----------
-    X: Numpy array containing the X coordinates of the TIN vertices.
-
-    Y: Numpy array containing the Y coordinates of the TIN vertices.
-
-    Returns
-    -------
-    GIDs
-        Numpy integer-type array containing local nodes global IDs.
-
-    Lx
-        Numpy float-type array containing local nodes X coordinates.
-
-    Ly
-        Numpy float-type array containing local nodes Y coordinates.
-    """
-
-    # Initialise MPI communications
-    comm = mpi.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    numGlob = len(X)
-    numLoc = 0
-
-    # Round robin initial distribution
-    for i in xrange(numGlob):
-        if i%size == rank:
-            numLoc += 1
-
-    # Allocate data for round robin distribution grid
-    GIDs = numpy.zeros(numLoc,dtype=int)
-    Lx = numpy.zeros(numLoc,dtype=float)
-    Ly = numpy.zeros(numLoc,dtype=float)
-
-    # Fill data for round robin distribution grid
-    idx = 0
-    for i in xrange(numGlob):
-        # Assumes gids start at 1, gives round robin initial distribution
-        if i%size == rank:
-            GIDs[idx] = i
-            Lx[idx] = X[i]
-            Ly[idx] = Y[i]
-            idx += 1
-
-    return GIDs, Lx, Ly
-
-def _compute_partition_ghosts(size, neighbours, partID):
-    """
-    This function find the ghosts (nodes) in the vicinity of each decomposition zone.
-
-    Parameters
-    ----------
-    size
-        Number of processors.
-
-    neighbours
-        Numpy integer-type array containing for each nodes its neigbhours IDs
-
-    partID
-        Numpy integer-type array containing for each nodes its partition ID
-
-    Returns
-    -------
-    ghosts
-        List containing the ghost nodes for each partition.
-    """
-
-    ghosts = {}
-    for p in range(size):
-        ghostIDs = numpy.array([], dtype=int)
-        localIDs = numpy.where(partID == p)[0]
-        for id in range(len(localIDs)):
-            ids = numpy.where( (partID[neighbours[localIDs[id]]] != p) & (neighbours>=0))[0]
-            for k in range(len(ids)):
-                ghostIDs = numpy.append(ghostIDs, neighbours[localIDs[id]][ids[k]])
-        ghosts[p] = numpy.unique(ghostIDs)
-
-    return ghosts

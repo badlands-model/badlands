@@ -10,7 +10,7 @@
    Implementation relating to Badlands underlying stratigraphic architecture.
 """
 
-import eroMesh
-import stratiWedge
-import carbMesh
-import strataMesh
+from . import eroMesh
+from . import stratiWedge
+from . import carbMesh
+from . import strataMesh

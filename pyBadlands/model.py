@@ -1,6 +1,5 @@
 import time
 import numpy as np
-import mpi4py.MPI as mpi
 
 from scipy.spatial import cKDTree
 from pyBadlands import (diffLinear, flowNetwork, buildMesh, waveSed,  #oceanDyn,
@@ -11,7 +10,7 @@ from pyBadlands import (diffLinear, flowNetwork, buildMesh, waveSed,  #oceanDyn,
 import cProfile
 import os
 import pstats
-import StringIO
+import io
 
 #from pyBadlands.libUtils  import simswan as swan
 
@@ -31,23 +30,20 @@ class Model(object):
         self.prop = None
         self.carbval = None
         self.carbval2 = None
+        self.carbMaxGrowthSp1 = None
+        self.carbMaxGrowthSp2 = None
+        self.next_carbStep = None
         self.pelaval = None
         self.applyDisp = False
         self.simStarted = False
-        self._rank = mpi.COMM_WORLD.rank
-        self._size = mpi.COMM_WORLD.size
-        self._comm = mpi.COMM_WORLD
-        self.fcomm = mpi.COMM_WORLD.py2f()
 
     def load_xml(self, filename, verbose=False):
         """
         Load an XML configuration file.
-
         Parameters
         ----------
         filename : string
             Path to the XML file to load.
-
         verbose : bool
             When True, output additional debug information.
         """
@@ -55,18 +51,13 @@ class Model(object):
         np.seterr(divide='ignore',invalid='ignore')
 
         # Only the first node should create a unique output dir
-        self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=(self._rank == 0))
+        self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=True)
         self.tNow = self.input.tStart
-
-        # Sync the chosen output dir to all nodes
-        self.input.outDir = self._comm.bcast(self.input.outDir, root=0)
 
         # Seed the random number generator consistently on all nodes
         seed = None
-        if self._rank == 0:
-            # limit to max uint32
-            seed = np.random.mtrand.RandomState().tomaxint() % 0xFFFFFFFF
-        seed = self._comm.bcast(seed, root=0)
+        # limit to max uint32
+        seed = np.random.mtrand.RandomState().tomaxint() % 0xFFFFFFFF
         np.random.seed(seed)
 
         # If there's no demfile specified, we assume that it will be loaded
@@ -88,7 +79,7 @@ class Model(object):
     def build_mesh(self, filename, verbose):
         # Construct Badlands mesh and grid to run simulation
         self.recGrid, self.FVmesh, self.force, self.tMesh, self.lGIDs, self.fixIDs, self.inIDs, parentIDs, \
-        self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumhill, self.cumflex, self.strata, self.mapero, \
+        self.inGIDs, self.totPts, self.elevation, self.cumdiff, self.cumhill, self.cumfail, self.cumflex, self.strata, self.mapero, \
         self.tinFlex, self.flex, self.wave, self.straTIN, self.carbTIN = buildMesh.construct_mesh(self.input, filename, verbose)
 
         if self.input.waveSed:
@@ -102,6 +93,9 @@ class Model(object):
         self.hillslope.CDaerial = self.input.CDa
         self.hillslope.CDmarine = self.input.CDm
         self.hillslope.CDriver = self.input.CDr
+        self.hillslope.Sc = self.input.Sc
+        self.hillslope.Sfail = self.input.Sfail
+        self.hillslope.Cfail = self.input.Cfail
         self.hillslope.Sc = self.input.Sc
         self.hillslope.updatedt = 0
 
@@ -139,12 +133,13 @@ class Model(object):
                 self.force.next_wave = self.input.tEnd + 1.e5
 
         if self.input.carb:
-            self.force.next_carb = self.input.tStart + self.input.tCarb
+
+            self.next_carbStep = self.input.tStart + self.input.tCarb
             self.oldsed = np.zeros(len(self.elevation))
             if self.carbTIN is not None:
                 self.prop = np.zeros((self.totPts,self.carbTIN.nbSed))
         else:
-            self.force.next_carb = self.input.tEnd + 1.e5
+            self.next_carbStep = self.input.tEnd + 1.e5
             self.prop = np.zeros((self.totPts,1))
 
     def rebuild_mesh(self, verbose=False):
@@ -201,6 +196,7 @@ class Model(object):
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
         self.flow.xgrid = None
         self.flow.sedload = None
+        self.flow.flowdensity = None
         self.flow.domain = None
         self.hillslope.updatedt = 0
 
@@ -212,15 +208,12 @@ class Model(object):
     def run_to_time(self, tEnd, profile=False, verbose=False):
         """
         Run the simulation to a specified point in time (tEnd).
-
         Parameters
         ----------
         tEnd : float
             Run the simulation to this many years.
-
         profile : bool
             If True, dump cProfile output to /tmp.
-
         verbose : bool
             If True, output additional debug information.
         """
@@ -232,14 +225,15 @@ class Model(object):
         assert hasattr(self, 'recGrid'), "DEM file has not been loaded. Configure one in your XML file or call the build_mesh function."
 
         if tEnd > self.input.tEnd:
-            if self._rank == 0:
-                print 'Specified end time is greater than the one used in the XML input file and has been adjusted!'
+            print('Specified end time is greater than the one used in the XML input file and has been adjusted!')
             tEnd = self.input.tEnd
 
         # Define non-flow related processes times
         if not self.simStarted:
             self.force.next_rain = self.force.T_rain[0, 0]
             self.force.next_disp = self.force.T_disp[0, 0]
+            self.force.next_carb = self.force.T_carb[0, 0]
+
             self.force.next_display = self.input.tStart
             if self.input.laytime>0:
                 self.force.next_layer = self.input.tStart + self.input.laytime
@@ -260,18 +254,18 @@ class Model(object):
         while self.tNow < tEnd:
             # At most, display output every 5 seconds
             tloop = time.clock() - last_time
-            if self._rank == 0 and time.clock() - last_output >= 5.0:
-                print 'tNow = %s (step took %0.02f seconds)' % (self.tNow, tloop)
+            if time.clock() - last_output >= 5.0:
+                print('tNow = %s (step took %0.02f seconds)' % (self.tNow, tloop))
                 last_output = time.clock()
             last_time = time.clock()
 
             # Load precipitation rate
             if self.force.next_rain <= self.tNow and self.force.next_rain < self.input.tEnd:
                 if self.tNow == self.input.tStart:
-                    self.force.getSea(self.tNow)
+                    ref_elev = buildMesh._get_reference_elevation(self.input, self.recGrid, self.elevation)
+                    self.force.getSea(self.tNow,self.input.udw,ref_elev)
                 self.rain = np.zeros(self.totPts, dtype=float)
                 self.rain[self.inIDs] = self.force.get_Rain(self.tNow, self.elevation, self.inIDs)
-                self._comm.Allreduce(mpi.IN_PLACE, self.rain, op=mpi.MAX)
 
             # Load tectonic grid
             if not self.input.disp3d:
@@ -280,7 +274,6 @@ class Model(object):
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.e6)
                     ldisp[self.inIDs] = self.force.load_Tecto_map(self.tNow,self.inIDs)
-                    self._comm.Allreduce(mpi.IN_PLACE, ldisp, op=mpi.MAX)
                     self.disp = self.force.disp_border(ldisp, self.FVmesh.neighbours,
                                                        self.FVmesh.edge_length, self.recGrid.boundsPt)
                     self.applyDisp = True
@@ -327,8 +320,8 @@ class Model(object):
                             vKe = self.mapero.Ke
                             vTh = self.mapero.thickness
                         # Apply horizontal displacements
-                        self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumhill, self.wavediff, fcum, scum, Ke, Th = self.force.apply_XY_dispacements(
-                            self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumhill, self.wavediff,
+                        self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumhill, self.cumfail, self.wavediff, fcum, scum, Ke, Th = self.force.apply_XY_dispacements(
+                            self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumhill, self.cumfail, self.wavediff,
                             tflex=flexiso, scum=sload, Te=vTh,Ke=vKe, flexure=fflex, strat=fstrat, ero=fero)
                         # Update relevant parameters in deformed TIN
                         if fflex == 1:
@@ -346,7 +339,8 @@ class Model(object):
             # Compute isostatic flexure
             if self.tNow >= self.force.next_flexure:
                 flextime = time.clock()
-                self.force.getSea(self.tNow)
+                ref_elev = buildMesh._get_reference_elevation(self.input, self.recGrid, self.elevation)
+                self.force.getSea(self.tNow,self.input.udw,ref_elev)
                 self.tinFlex = self.flex.get_flexure(self.elevation, self.cumdiff,
                             self.force.sealevel,self.recGrid.boundsPt, initFlex=False)
                 # Get border values
@@ -357,8 +351,7 @@ class Model(object):
                 self.cumflex += self.tinFlex
                 # Update next flexure time
                 self.force.next_flexure += self.input.ftime
-                if self._rank == 0:
-                    print "   - Compute flexural isostasy ", time.clock() - flextime
+                print("   - Compute flexural isostasy %0.02f seconds" % (time.clock() - flextime))
 
             # Compute wavesed parameters
             if self.tNow >= self.force.next_wave:
@@ -377,8 +370,7 @@ class Model(object):
                 self.elevation += waveED
                 self.cumdiff  += waveED
                 self.wavediff  += waveED
-                if self._rank == 0:
-                    print "   - Compute wave-induced sediment transport ", time.clock() - wavetime
+                print("   - Compute wave-induced sediment transport %0.02f seconds" % (time.clock() - wavetime))
                 # Update carbonate active layer
                 if nactlay is not None:
                     self.carbTIN.update_active_layer(nactlay,self.elevation)
@@ -386,16 +378,22 @@ class Model(object):
                 self.force.next_wave += self.input.tWave
 
             # Compute carbonate evolution
-            if self.tNow >= self.force.next_carb:
+            if self.tNow >= self.next_carbStep:
                 carbtime = time.clock()
                 depth = self.elevation-self.force.sealevel
                 if self.carbTIN is not None:
                     # Update erosion/deposition due to river and diffusion on carbTIN
                     self.carbTIN.update_layers(self.cumdiff-self.oldsed,self.elevation)
+
                 # Compute reef growth
                 if self.input.carbonate:
+
+                    # Load carbonate growth rates for species 1 and 2 during a given growth event
+                    if self.force.next_carb <= self.tNow and self.force.next_carb < self.input.tEnd:
+                        self.carbMaxGrowthSp1, self.carbMaxGrowthSp2 = self.force.get_carbGrowth(self.tNow, self.inIDs)
                     self.carbval, self.carbval2 = self.carb.computeCarbonate(self.force.meanH, self.cumdiff-self.oldsed,
-                                                            depth, self.input.tCarb)
+                                                            depth, self.carbMaxGrowthSp1, self.carbMaxGrowthSp2, self.input.tCarb)
+
                     if self.carbval2 is not None:
                         self.cumdiff +=  self.carbval + self.carbval2
                         self.elevation += self.carbval + self.carbval2
@@ -421,6 +419,7 @@ class Model(object):
                 # Update proportion based on top layer
                 if self.prop is not None:
                     ids = np.where(self.carbTIN.layerThick[:,self.carbTIN.step]>0.)[0]
+                    self.prop.fill(0.)
                     self.prop[ids,0] = self.carbTIN.depoThick[ids,self.carbTIN.step,0]/self.carbTIN.layerThick[ids,self.carbTIN.step]
                     if self.input.carbonate:
                         self.prop[ids,1] = self.carbTIN.depoThick[ids,self.carbTIN.step,1]/self.carbTIN.layerThick[ids,self.carbTIN.step]
@@ -429,9 +428,9 @@ class Model(object):
 
                 # Update current cumulative erosion deposition
                 self.oldsed = np.copy(self.cumdiff)
-                self.force.next_carb += self.input.tCarb
-                if self._rank == 0:
-                    print "   - Compute carbonate growth ", time.clock() - carbtime
+                self.next_carbStep += self.input.tCarb
+
+                print("   - Compute carbonate growth %0.02f seconds" % (time.clock() - carbtime))
 
             # Compute stream network
             self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
@@ -443,20 +442,18 @@ class Model(object):
                     outStrata = 1
                 checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow,
                                             self.FVmesh, self.tMesh, self.force, self.flow, self.rain,
-                                            self.elevation, self.fillH, self.cumdiff, self.cumhill, self.wavediff,
+                                            self.elevation, self.fillH, self.cumdiff, self.cumhill, self.cumfail, self.wavediff,
                                             self.outputStep, self.prop, self.mapero, self.cumflex)
 
                 if self.straTIN is not None and self.outputStep % self.input.tmesh==0:
                     meshtime = time.clock()
-                    self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep,self._rank)
-                    if self._rank == 0:
-                        print "   - Write sediment mesh output", time.clock() - meshtime
+                    self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep)
+                    print("   - Write sediment mesh output %0.02f seconds" % (time.clock() - meshtime))
 
                 if self.carbTIN is not None and self.outputStep % self.input.tmesh==0:
                     meshtime = time.clock()
-                    self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep,self._rank)
-                    if self._rank == 0:
-                        print "   - Write carbonate mesh output", time.clock() - meshtime
+                    self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep)
+                    print("   - Write carbonate mesh output %0.02f seconds" % (time.clock() - meshtime))
 
                 # Update next display time
                 last_output = time.clock()
@@ -471,42 +468,29 @@ class Model(object):
                 if self.straTIN is not None:
                     self.straTIN.step += 1
                 if self.strata:
-                    self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
-                        self._rank, outStrata, self.outputStep-1)
+                    sub = self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                        self.recGrid.boundsPt,outStrata, self.outputStep-1)
+                    self.elevation += sub
+                    self.cumdiff += sub
                 outStrata = 0
 
             # Get the maximum time before updating one of the above processes / components
             tStop = min([self.force.next_display, self.force.next_layer, self.force.next_flexure,
                         tEnd, self.force.next_wave, self.force.next_disp, self.force.next_rain,
-                        self.force.next_carb])
+                        self.next_carbStep])
 
-            self.tNow, self.elevation, self.cumdiff, self.cumhill = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
+            self.tNow, self.elevation, self.cumdiff, self.cumhill, self.cumfail = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
                               self.FVmesh, self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.straTIN, self.mapero,  \
-                              self.cumdiff, self.cumhill, self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
-
-            # Update carbonate/pelagic stratigraphic layers
-            # if self.carbTIN is not None:
-            #     self.prop.fill(0.)
-            #     self.carbTIN.update_layers(self.cumdiff-oldsed,self.carbval,self.carbval2,self.pelaval,self.elevation)
-            #     ids = np.where(self.cumdiff>oldsed)[0]
-            #     tmpsum = self.carbval+self.carbval2+self.pelaval
-            #     tmpsum[ids] += self.cumdiff[ids]-oldsed[ids]
-            #     ids2 = np.where(tmpsum>0.)[0]
-            #     self.prop[ids,0] = (self.cumdiff[ids]-oldsed[ids]) / tmpsum[ids]
-            #     self.prop[ids2,1] = self.carbval[ids2] / tmpsum[ids2]
-            #     self.prop[ids2,2] = self.carbval2[ids2] / tmpsum[ids2]
-            #     self.prop[ids2,3] = self.pelaval[ids2] / tmpsum[ids2]
-            #     self.cumdiff += self.pelaval + self.carbval + self.carbval2
-            #     self.elevation += self.pelaval + self.carbval + self.carbval2
+                              self.cumdiff, self.cumhill, self.cumfail, self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 
         tloop = time.clock() - last_time
-        if self._rank == 0:
-            print 'tNow = %s (%0.02f seconds)' % (self.tNow, tloop)
+        print('tNow = %s (%0.02f seconds)' % (self.tNow, tloop))
 
         # Isostatic flexure
         if self.input.flexure:
             flextime = time.clock()
-            self.force.getSea(self.tNow)
+            ref_elev = buildMesh._get_reference_elevation(self.input, self.recGrid, self.elevation)
+            self.force.getSea(self.tNow,self.input.udw,ref_elev)
             self.tinFlex = self.flex.get_flexure(self.elevation, self.cumdiff,
                         self.force.sealevel,self.recGrid.boundsPt,initFlex=False)
             # Get border values
@@ -517,40 +501,33 @@ class Model(object):
             self.cumflex += self.tinFlex
             # Update next flexure time
             self.force.next_flexure += self.input.ftime
-            if self._rank == 0:
-                print "   - Compute flexural isostasy ", time.clock() - flextime
+            print("   - Compute flexural isostasy %0.02f seconds" % (time.clock() - flextime))
 
         # Create checkpoint files and write HDF5 output
         if self.input.udw == 0 or self.tNow == self.input.tEnd or self.tNow == self.force.next_display:
             checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
                                 self.FVmesh, self.tMesh, self.force, self.flow, self.rain, \
-                                self.elevation, self.fillH, self.cumdiff, self.cumhill, self.wavediff, \
+                                self.elevation, self.fillH, self.cumdiff, self.cumhill, self.cumfail, self.wavediff, \
                                 self.outputStep, self.prop, self.mapero, self.cumflex)
             self.force.next_display += self.input.tDisplay
             self.outputStep += 1
             if self.straTIN is not None:
-                self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
+                self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1)
             if self.carbTIN is not None:
-                self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1,self._rank)
+                self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1)
                 self.carbTIN.step += 1
 
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += self.input.laytime
-            self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
-                                    self._rank, 1, self.outputStep-1)
-
-        # Finalise SWAN model run
-        if self.input.waveOn and self.tNow == self.input.tEnd:
-            swan.model.final(self.fcomm)
+            sub = self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                                    self.recGrid.boundsPt,1, self.outputStep-1)
+            self.elevation += sub
+            self.cumdiff += sub
 
         if profile:
             pr.disable()
-            s = StringIO.StringIO()
+            s = io.StringIO()
             sortby = 'cumulative'
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.dump_stats('/tmp/profile-%d' % pid)
-
-    def ncpus(self):
-        """Return the number of CPUs used to generate the results."""
-        return 1

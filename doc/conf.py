@@ -164,8 +164,7 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
         return MagicMock()
 
-MOCK_MODULES = ['gflex', 'h5py', 'ipyparallel', 'matplotlib', 'mpi4py',
-    'mpi4py.MPI', 'pandas', 'pyBadlands.libUtils',
+MOCK_MODULES = ['gflex', 'h5py', 'ipyparallel', 'matplotlib', 'pandas', 'pyBadlands.libUtils',
     'pyBadlands.libUtils.sfd', 'scipy', 'scipy.interpolate', 'scipy.ndimage',
     'scipy.ndimage.filters', 'scipy.spatial', 'triangle']
 

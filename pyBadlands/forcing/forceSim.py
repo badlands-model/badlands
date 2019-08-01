@@ -14,7 +14,6 @@ import os
 import numpy
 import pandas
 import triangle
-import mpi4py.MPI as mpi
 from pyBadlands.libUtils import ORmodel
 from scipy.ndimage.filters import gaussian_filter
 from scipy import interpolate
@@ -116,7 +115,8 @@ class forceSim:
                  orographic = None, orographiclin = None, rbgd = None, rmin = None, rmax = None, rzmax = None,
                  windx = None, windy = None, tauc = None, tauf = None, nm = None, cw = None, hw = None,
                  ortime = None, MapDisp = None, TimeDisp = None, regX = None, regY = None, rivPos = None,
-                 rivTime = None, rivQws = None, riverRck=None, rivNb = 0, rockNb = 0, Tdisplay = 0.):
+                 rivTime = None, rivQws = None, riverRck=None, rivNb = 0, rockNb = 0, Tdisplay = 0.,
+                 carbValSp1 = None, carbValSp2 = None, TimeCarb = None):
 
         self.regX = regX
         self.regY = regY
@@ -189,6 +189,10 @@ class forceSim:
         self.meanS = None
         self.wavPerc = None
 
+        self.carbValSp1 = carbValSp1
+        self.carbValSp2 = carbValSp2
+        self.T_carb = TimeCarb
+
         if self.seafile != None:
             self._build_Sea_function()
 
@@ -223,7 +227,7 @@ class forceSim:
         self.seaval = seadata.values[:,1]
         self.seaFunc = interpolate.interp1d(self.seatime, self.seaval, kind='linear')
 
-    def getSea(self, time):
+    def getSea(self, time, udw, z0):
         """
         Computes for a given time the sea level according to input file parameters.
 
@@ -233,14 +237,24 @@ class forceSim:
             Requested time for which to compute sea level elevation.
         """
 
-        if self.seafile == None:
-            self.sealevel = self.sea0
+        if udw == 0:
+            if self.seafile == None:
+                self.sealevel = self.sea0
+            else:
+                if time < self.seatime.min():
+                    time = self.seatime.min()
+                if time > self.seatime.max():
+                    time = self.seatime.max()
+                self.sealevel = self.seaFunc(time)
         else:
-            if time < self.seatime.min():
-                time = self.seatime.min()
-            if time > self.seatime.max():
-                time = self.seatime.max()
-            self.sealevel = self.seaFunc(time)
+            if self.seafile == None:
+                self.sealevel = z0 + self.sea0
+            else:
+                if time < self.seatime.min():
+                    time = self.seatime.min()
+                if time > self.seatime.max():
+                    time = self.seatime.max()
+                self.sealevel = z0 + self.seaFunc(time)
 
         return
 
@@ -294,6 +308,42 @@ class forceSim:
         self.tXY = tXY
         self.tree = cKDTree(self.tXY)
         self.dx = self.tXY[1,0] - self.tXY[0,0]
+
+    def get_carbGrowth(self, time, inIDs):
+
+        """
+        Get carbonate growth value for a given period and perform interpolation from regular grid to unstructured TIN one.
+
+        Parameters
+        ----------
+        time : float
+            Requested time interval rain map to load.
+
+        elev : float
+            Unstructured grid (TIN) Z coordinates.
+
+        inDs : integer
+            List of unstructured vertices contained in each partition.
+
+        Returns
+        -------
+        tinCarbSp1, tinCarbSp2
+            Numpy arrays containing the updated carbonate
+            growth rates for the local domain.
+        """
+
+        events = numpy.where( (self.T_carb[:,1] - time) <= 0)[0]
+        event = len(events)
+
+        if not (time >= self.T_carb[event,0]) and not (time < self.T_carb[event,1]):
+            raise ValueError('Problem finding the carbonate events!')
+
+        tinCarbSp1 = self.carbValSp1[event]
+        tinCarbSp2 = self.carbValSp2[event]
+
+        self.next_carb = self.T_carb[event,1]
+
+        return tinCarbSp1, tinCarbSp2
 
     def get_Rain(self, time, elev, inIDs):
         """
@@ -518,11 +568,6 @@ class forceSim:
             List of stratigraphic vertices contained in each partition.
         """
 
-        # Initialise MPI communications
-        comm = mpi.COMM_WORLD
-        rank = comm.Get_rank()
-        size = comm.Get_size()
-
         self.tXY = tXY
         totPts = len(tXY[:,0])
         dispX = numpy.zeros(totPts, dtype=float)
@@ -543,7 +588,7 @@ class forceSim:
         if not (time >= self.T_disp[event,0]) and not (time < self.T_disp[event,1]):
             raise ValueError('Problem finding the 3D displacements map to load!')
 
-        if self.time3d > 0.:
+        if self.time3d and (self.time3d > 0.):
             if time + self.time3d > self.T_disp[event,1]:
                 self.next_disp = self.T_disp[event,1]
             else:
@@ -571,9 +616,6 @@ class forceSim:
             dispX[inIDs] = interpolate.interpn( (self.regX, self.regY), disprX, dpXY, method='linear')
             dispY[inIDs] = interpolate.interpn( (self.regX, self.regY), disprY, dpXY, method='linear')
             dispZ[inIDs] = interpolate.interpn( (self.regX, self.regY), disprZ, dpXY, method='linear')
-            comm.Allreduce(mpi.IN_PLACE, dispX, op=mpi.MAX)
-            comm.Allreduce(mpi.IN_PLACE, dispY, op=mpi.MAX)
-            comm.Allreduce(mpi.IN_PLACE, dispZ, op=mpi.MAX)
             update = True
 
             if strata:
@@ -581,8 +623,6 @@ class forceSim:
                 sdispY.fill(-1.e6)
                 sdispX[insIDs] = interpolate.interpn( (self.regX, self.regY), disprX, dpsXY, method='linear')
                 sdispY[insIDs] = interpolate.interpn( (self.regX, self.regY), disprY, dpsXY, method='linear')
-                comm.Allreduce(mpi.IN_PLACE, sdispX, op=mpi.MAX)
-                comm.Allreduce(mpi.IN_PLACE, sdispY, op=mpi.MAX)
 
         if self.time3d > 0. and (self.injected_disps is not None or self.Map_disp[event] != None):
             rate = (self.next_disp - time) / (self.T_disp[event,1] - self.T_disp[event,0])
@@ -603,7 +643,7 @@ class forceSim:
         else:
             return update
 
-    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, hcum, wcum, tflex=None, scum=None,
+    def apply_XY_dispacements(self, area, fixIDs, telev, tcum, hcum, fcum, wcum, tflex=None, scum=None,
                                       Te=None, Ke=None, flexure=0, strat=0, ero=0):
         """
         Apply horizontal displacements and check if any points need to be merged.
@@ -701,10 +741,11 @@ class forceSim:
 
         # Delete outside domain points if any
         if len(tID) > 0:
-            self.tXY = numpy.delete(self.tXY, tID, 0)
+            self.tXY = numpy.delete(tXY, tID, 0)
             elev = numpy.delete(telev, tID, 0)
             cum = numpy.delete(tcum, tID, 0)
             hum = numpy.delete(hcum, tID, 0)
+            fum = numpy.delete(fcum, tID, 0)
             if wcum is not None:
                 wum = numpy.delete(wcum, tID, 0)
             if flexure == 1:
@@ -719,10 +760,11 @@ class forceSim:
                     mKe[:,k] = numpy.delete(Ke[:,k], tID, 0)
                     mTe[:,k] = numpy.delete(Te[:,k], tID, 0)
         else:
-            self.tXY = tXY
+            self.tXY = numpy.copy(tXY)
             elev = telev
             cum = tcum
             hum = hcum
+            fum = fcum
             if wcum is not None:
                 wum = hwum
             if flexure == 1:
@@ -737,6 +779,7 @@ class forceSim:
         # Create KDTree with deformed points and find points which needs to be merged
         tree = cKDTree(self.tXY)
         pairs = tree.query_pairs(self.merge3d)
+
         # For points which require merging define a new point and
         # interpolate parameters based on merged points
         if len(pairs) > 0:
@@ -755,6 +798,7 @@ class forceSim:
                 z_vals = elev[indices][:,:,0]
                 cum_vals = cum[indices][:,:,0]
                 hum_vals = hum[indices][:,:,0]
+                fum_vals = fum[indices][:,:,0]
                 if wcum is not None:
                     wum_vals = wum[indices][:,:,0]
                 if flexure == 1:
@@ -765,6 +809,7 @@ class forceSim:
                 z_vals = elev[indices]
                 cum_vals = cum[indices]
                 hum_vals = hum[indices]
+                fum_vals = fum[indices]
                 if wcum is not None:
                     wum_vals = wum[indices]
                 if flexure == 1:
@@ -774,6 +819,7 @@ class forceSim:
             z_avg = numpy.average(z_vals, weights=weights,axis=1)
             cum_avg = numpy.average(cum_vals, weights=weights,axis=1)
             hum_avg = numpy.average(hum_vals, weights=weights,axis=1)
+            fum_avg = numpy.average(fum_vals, weights=weights,axis=1)
             if wcum is not None:
                 wum_avg = numpy.average(wum_vals, weights=weights,axis=1)
             if flexure == 1:
@@ -797,6 +843,7 @@ class forceSim:
             newelev = numpy.delete(elev, mergedIDs, 0)
             newcum = numpy.delete(cum, mergedIDs, 0)
             newhcum = numpy.delete(hum, mergedIDs, 0)
+            newfcum = numpy.delete(fum, mergedIDs, 0)
             if wcum is not None:
                 newwcum = numpy.delete(wum, mergedIDs, 0)
             if flexure == 1:
@@ -814,6 +861,7 @@ class forceSim:
             newelev = numpy.concatenate((newelev, z_avg), axis=0)
             newcum = numpy.concatenate((newcum, cum_avg), axis=0)
             newhcum = numpy.concatenate((newhcum, hum_avg), axis=0)
+            newfcum = numpy.concatenate((newfcum, fum_avg), axis=0)
             if wcum is not None:
                 newwcum = numpy.concatenate((newwcum, wum_avg), axis=0)
             if flexure == 1:
@@ -831,6 +879,7 @@ class forceSim:
             newelev = elev
             newcum = cum
             newhcum = hum
+            newfcum = fum
             if wcum is not None:
                 newwcum = wum
             if flexure == 1:
@@ -853,6 +902,7 @@ class forceSim:
                 zvals = elev[ids][:,:,0]
                 cumvals = cum[ids][:,:,0]
                 humvals = hum[ids][:,:,0]
+                fumvals = fum[ids][:,:,0]
                 if wcum is not None:
                     wumvals = wum[ids][:,:,0]
                 if flexure == 1:
@@ -863,6 +913,7 @@ class forceSim:
                 zvals = elev[ids]
                 cumvals = cum[ids]
                 humvals = hum[ids]
+                fumvals = fum[ids]
                 if wcum is not None:
                     wumvals = wum[ids]
                 if flexure == 1:
@@ -882,6 +933,7 @@ class forceSim:
             zavg = numpy.average(zvals, weights=weights,axis=1)
             cumavg = numpy.average(cumvals, weights=weights,axis=1)
             humavg = numpy.average(humvals, weights=weights,axis=1)
+            fumavg = numpy.average(fumvals, weights=weights,axis=1)
             if wcum is not None:
                 wumavg = numpy.average(wumvals, weights=weights,axis=1)
             if flexure == 1:
@@ -897,6 +949,7 @@ class forceSim:
             newelev = numpy.concatenate((newelev, zavg), axis=0)
             newcum = numpy.concatenate((newcum, cumavg), axis=0)
             newhcum = numpy.concatenate((newhcum, humavg), axis=0)
+            newfcum = numpy.concatenate((newfcum, fumavg), axis=0)
             if wcum is not None:
                 newwcum = numpy.concatenate((newwcum, wumavg), axis=0)
             if flexure == 1:
@@ -922,4 +975,4 @@ class forceSim:
         if wcum is None:
             newwcum = None
 
-        return newTIN, newelev, newcum, newhcum, newwcum, newcumf, newscum, newKe, newTe
+        return newTIN, newelev, newcum, newhcum, newfcum, newwcum, newcumf, newscum, newKe, newTe
