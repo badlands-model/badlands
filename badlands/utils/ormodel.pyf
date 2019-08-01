@@ -1,0 +1,28 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module ormodel ! in 
+    interface  ! in :ormodel
+        subroutine compute(pyelev,pydx,pywindx,pywindy,pyminrain,pymaxrain,pybackrain,pynm,pycw,pyhw,pytauc,pytauf,pyrain,pynx,pyny) ! in :ormodel:ormodel.f90
+            use classoro
+            real dimension(pynx,pyny),intent(in) :: pyelev
+            real intent(in) :: pydx
+            real intent(in) :: pywindx
+            real intent(in) :: pywindy
+            real intent(in) :: pyminrain
+            real intent(in) :: pymaxrain
+            real intent(in) :: pybackrain
+            real intent(in) :: pynm
+            real intent(in) :: pycw
+            real intent(in) :: pyhw
+            real intent(in) :: pytauc
+            real intent(in) :: pytauf
+            real dimension(pynx,pyny),intent(out),depend(pynx,pyny) :: pyrain
+            integer, optional,check(shape(pyelev,0)==pynx),depend(pyelev) :: pynx=shape(pyelev,0)
+            integer, optional,check(shape(pyelev,1)==pyny),depend(pyelev) :: pyny=shape(pyelev,1)
+        end subroutine compute
+    end interface 
+end python module ormodel
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

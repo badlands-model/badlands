@@ -1,0 +1,47 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module waveseds ! in 
+    interface  ! in :waveseds
+        subroutine airymodel(pdx,pdd,ph0,pdepth,psrc,pinland,pshadow,pc,pl,ptravel,pwaveh,pnumrow,pnumcol) ! in :waveseds:waveseds.f90
+            real(kind=8) intent(in) :: pdx
+            real(kind=8) intent(in) :: pdd
+            real(kind=8) intent(in) :: ph0
+            real(kind=8) dimension(pnumrow,pnumcol),intent(in) :: pdepth
+            real(kind=8) dimension(pnumrow,pnumcol),intent(in),depend(pnumrow,pnumcol) :: psrc
+            integer dimension(pnumrow,pnumcol),intent(in),depend(pnumrow,pnumcol) :: pinland
+            integer intent(in) :: pshadow
+            real(kind=8) dimension(pnumrow,pnumcol),intent(out),depend(pnumrow,pnumcol) :: pc
+            real(kind=8) dimension(pnumrow,pnumcol),intent(out),depend(pnumrow,pnumcol) :: pl
+            real(kind=8) dimension(pnumrow,pnumcol),intent(out),depend(pnumrow,pnumcol) :: ptravel
+            real(kind=8) dimension(pnumrow,pnumcol),intent(out),depend(pnumrow,pnumcol) :: pwaveh
+            integer, optional,check(shape(pdepth,0)==pnumrow),depend(pdepth) :: pnumrow=shape(pdepth,0)
+            integer, optional,check(shape(pdepth,1)==pnumcol),depend(pdepth) :: pnumcol=shape(pdepth,1)
+        end subroutine airymodel
+        subroutine wavtransport(pyits,pydepth,pyhent,pytransx,pytransy,pydz,pydist,pynrow,pyncol) ! in :waveseds:waveseds.f90
+            integer intent(in) :: pyits
+            real(kind=8) dimension(pynrow,pyncol),intent(in) :: pydepth
+            real(kind=8) dimension(pynrow,pyncol),intent(in),depend(pynrow,pyncol) :: pyhent
+            real(kind=8) dimension(pynrow,pyncol),intent(in),depend(pynrow,pyncol) :: pytransx
+            real(kind=8) dimension(pynrow,pyncol),intent(in),depend(pynrow,pyncol) :: pytransy
+            real(kind=8) dimension(pynrow,pyncol),intent(out),depend(pynrow,pyncol) :: pydz
+            real(kind=8) dimension(pynrow,pyncol),intent(out),depend(pynrow,pyncol) :: pydist
+            integer, optional,check(shape(pydepth,0)==pynrow),depend(pydepth) :: pynrow=shape(pydepth,0)
+            integer, optional,check(shape(pydepth,1)==pyncol),depend(pydepth) :: pyncol=shape(pydepth,1)
+        end subroutine wavtransport
+        subroutine wavdiffusion(oelevpy,dzpy,coeffpy,maxthpy,tsteppy,nsteppy,depopy,numrowpy,numcolpy) ! in :waveseds:waveseds.f90
+            real(kind=8) dimension(numrowpy,numcolpy),intent(in) :: oelevpy
+            real(kind=8) dimension(numrowpy,numcolpy),intent(in),depend(numrowpy,numcolpy) :: dzpy
+            real(kind=8) intent(in) :: coeffpy
+            real(kind=8) intent(in) :: maxthpy
+            real(kind=8) intent(in) :: tsteppy
+            integer intent(in) :: nsteppy
+            real(kind=8) dimension(numrowpy,numcolpy),intent(out),depend(numrowpy,numcolpy) :: depopy
+            integer, optional,check(shape(oelevpy,0)==numrowpy),depend(oelevpy) :: numrowpy=shape(oelevpy,0)
+            integer, optional,check(shape(oelevpy,1)==numcolpy),depend(oelevpy) :: numcolpy=shape(oelevpy,1)
+        end subroutine wavdiffusion
+    end interface 
+end python module waveseds
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

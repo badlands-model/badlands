@@ -1,0 +1,96 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module pdalgo ! in 
+    interface  ! in :pdalgo
+        subroutine marine_distribution(elevation,seavol,sealevel,border,depids,diffsed,pydnodes,pyids,pyrocknb) ! in :pdalgo:pdalgo.f90
+            use classpd
+            real(kind=8) dimension(pydnodes),intent(in) :: elevation
+            real(kind=8) dimension(pydnodes,pyrocknb),intent(in),depend(pydnodes) :: seavol
+            real(kind=8) intent(in) :: sealevel
+            integer dimension(pydnodes),intent(in),depend(pydnodes) :: border
+            integer dimension(pyids),intent(in) :: depids
+            real(kind=8) dimension(pydnodes,pyrocknb),intent(out),depend(pydnodes,pyrocknb) :: diffsed
+            integer, optional,check(len(elevation)>=pydnodes),depend(elevation) :: pydnodes=len(elevation)
+            integer, optional,check(len(depids)>=pyids),depend(depids) :: pyids=len(depids)
+            integer, optional,check(shape(seavol,1)==pyrocknb),depend(seavol) :: pyrocknb=shape(seavol,1)
+        end subroutine marine_distribution
+        subroutine pitparams(pyngbs,pyarea,pydiff,pyprop,fillth,epsilon,pybounds,pydnodes) ! in :pdalgo:pdalgo.f90
+            use classpd
+            integer dimension(pydnodes,20),intent(in) :: pyngbs
+            real(kind=8) dimension(pydnodes),intent(in),depend(pydnodes) :: pyarea
+            integer intent(in) :: pydiff
+            real(kind=8) intent(in) :: pyprop
+            real(kind=8) intent(in) :: fillth
+            real(kind=8) intent(in) :: epsilon
+            integer intent(in) :: pybounds
+            integer, optional,check(shape(pyngbs,0)==pydnodes),depend(pyngbs) :: pydnodes=shape(pyngbs,0)
+        end subroutine pitparams
+        subroutine pitfilling(elevation,allfill,sealevel,demh,pydnodes) ! in :pdalgo:pdalgo.f90
+            use classpd
+            real(kind=8) dimension(pydnodes),intent(in) :: elevation
+            integer intent(in) :: allfill
+            real(kind=8) intent(in) :: sealevel
+            real(kind=8) dimension(pydnodes),intent(out),depend(pydnodes) :: demh
+            integer, optional,check(len(elevation)>=pydnodes),depend(elevation) :: pydnodes=len(elevation)
+        end subroutine pitfilling
+        subroutine getactlay(alay,layth,laysd,alays,nbpts,nblay,nbsed) ! in :pdalgo:pdalgo.f90
+            use classpd
+            real(kind=8) dimension(nbpts),intent(in) :: alay
+            real(kind=8) dimension(nbpts,nblay),intent(in),depend(nbpts) :: layth
+            real(kind=8) dimension(nbpts,nblay,nbsed),intent(in),depend(nbpts,nblay) :: laysd
+            real(kind=8) dimension(nbpts,nbsed),intent(out),depend(nbpts,nbsed) :: alays
+            integer, optional,check(len(alay)>=nbpts),depend(alay) :: nbpts=len(alay)
+            integer, optional,check(shape(layth,1)==nblay),depend(layth) :: nblay=shape(layth,1)
+            integer, optional,check(shape(laysd,2)==nbsed),depend(laysd) :: nbsed=shape(laysd,2)
+        end subroutine getactlay
+        subroutine getactlay2(alay,layth,laysd,alays,nbpts,nblay,nbsed) ! in :pdalgo:pdalgo.f90
+            use classpd
+            real(kind=8) intent(in) :: alay
+            real(kind=8) dimension(nbpts,nblay),intent(in) :: layth
+            real(kind=8) dimension(nbpts,nblay,nbsed),intent(in),depend(nbpts,nblay) :: laysd
+            real(kind=8) dimension(nbpts,nbsed),intent(out),depend(nbpts,nbsed) :: alays
+            integer, optional,check(shape(layth,0)==nbpts),depend(layth) :: nbpts=shape(layth,0)
+            integer, optional,check(shape(layth,1)==nblay),depend(layth) :: nblay=shape(layth,1)
+            integer, optional,check(shape(laysd,2)==nbsed),depend(laysd) :: nbsed=shape(laysd,2)
+        end subroutine getactlay2
+        subroutine updatestrati(lays,layh,eros,depo,newh,news,nbpts,nblay,nbsed) ! in :pdalgo:pdalgo.f90
+            use classpd
+            real(kind=8) dimension(nbpts,nblay,nbsed),intent(in) :: lays
+            real(kind=8) dimension(nbpts,nblay),intent(in),depend(nbpts,nblay) :: layh
+            real(kind=8) dimension(nbpts,nbsed),intent(in),depend(nbpts,nbsed) :: eros
+            real(kind=8) dimension(nbpts,nbsed),intent(in),depend(nbpts,nbsed) :: depo
+            real(kind=8) dimension(nbpts,nblay),intent(out),depend(nbpts,nblay) :: newh
+            real(kind=8) dimension(nbpts,nblay,nbsed),intent(out),depend(nbpts,nblay,nbsed) :: news
+            integer, optional,check(shape(lays,0)==nbpts),depend(lays) :: nbpts=shape(lays,0)
+            integer, optional,check(shape(lays,1)==nblay),depend(lays) :: nblay=shape(lays,1)
+            integer, optional,check(shape(lays,2)==nbsed),depend(lays) :: nbsed=shape(lays,2)
+        end subroutine updatestrati
+        subroutine updatecstrati(lays,layh,eros,depo,newh,news,nbpts,nblay,nbsed) ! in :pdalgo:pdalgo.f90
+            use classpd
+            real(kind=8) dimension(nbpts,nblay,nbsed),intent(in) :: lays
+            real(kind=8) dimension(nbpts,nblay),intent(in),depend(nbpts,nblay) :: layh
+            real(kind=8) dimension(nbpts),intent(in),depend(nbpts) :: eros
+            real(kind=8) dimension(nbpts),intent(in),depend(nbpts) :: depo
+            real(kind=8) dimension(nbpts,nblay),intent(out),depend(nbpts,nblay) :: newh
+            real(kind=8) dimension(nbpts,nblay),intent(out),depend(nbpts,nblay) :: news
+            integer, optional,check(shape(lays,0)==nbpts),depend(lays) :: nbpts=shape(lays,0)
+            integer, optional,check(shape(lays,1)==nblay),depend(lays) :: nblay=shape(lays,1)
+            integer, optional,check(shape(lays,2)==nbsed),depend(lays) :: nbsed=shape(lays,2)
+        end subroutine updatecstrati
+        subroutine stratcarb(lays,layh,clastic,newh,news,nbpts,nblay,nbsed) ! in :pdalgo:pdalgo.f90
+            use classpd
+            real(kind=8) dimension(nbpts,nblay,nbsed),intent(in) :: lays
+            real(kind=8) dimension(nbpts,nblay),intent(in),depend(nbpts,nblay) :: layh
+            real(kind=8) dimension(nbpts),intent(in),depend(nbpts) :: clastic
+            real(kind=8) dimension(nbpts,nblay),intent(out),depend(nbpts,nblay) :: newh
+            real(kind=8) dimension(nbpts,nblay,nbsed),intent(out),depend(nbpts,nblay,nbsed) :: news
+            integer, optional,check(shape(lays,0)==nbpts),depend(lays) :: nbpts=shape(lays,0)
+            integer, optional,check(shape(lays,1)==nblay),depend(lays) :: nblay=shape(lays,1)
+            integer, optional,check(shape(lays,2)==nbsed),depend(lays) :: nbsed=shape(lays,2)
+        end subroutine stratcarb
+    end interface 
+end python module pdalgo
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

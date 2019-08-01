@@ -1,0 +1,34 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module fvframe ! in 
+    interface  ! in :fvframe
+        subroutine build(pyoids,pygids,pytx,pyty,pytedge,pytelmt,pyvx,pyvy,pyvedge,pyvarea,pyngbs,pyvlenght,pydlenght,pymaxngbh,pygnodes,pyonodes,pydnodes,pydedges,pydelems,pyvnodes,pyvedges) ! in :fvframe:fvframe.f90
+            use classfv
+            integer dimension(pyonodes),intent(in) :: pyoids
+            integer dimension(pygnodes),intent(in) :: pygids
+            real(kind=8) dimension(pydnodes),intent(in) :: pytx
+            real(kind=8) dimension(pydnodes),intent(in),depend(pydnodes) :: pyty
+            integer dimension(pydedges,2),intent(in) :: pytedge
+            integer dimension(pydelems,3),intent(in) :: pytelmt
+            real(kind=8) dimension(pyvnodes),intent(in) :: pyvx
+            real(kind=8) dimension(pyvnodes),intent(in),depend(pyvnodes) :: pyvy
+            integer dimension(pyvedges,2),intent(in) :: pyvedge
+            real(kind=8) dimension(pydnodes),intent(out),depend(pydnodes) :: pyvarea
+            integer dimension(pydnodes,20),intent(out),depend(pydnodes) :: pyngbs
+            real(kind=8) dimension(pydnodes,20),intent(out),depend(pydnodes) :: pyvlenght
+            real(kind=8) dimension(pydnodes,20),intent(out),depend(pydnodes) :: pydlenght
+            integer intent(out) :: pymaxngbh
+            integer, optional,check(len(pygids)>=pygnodes),depend(pygids) :: pygnodes=len(pygids)
+            integer, optional,check(len(pyoids)>=pyonodes),depend(pyoids) :: pyonodes=len(pyoids)
+            integer, optional,check(len(pytx)>=pydnodes),depend(pytx) :: pydnodes=len(pytx)
+            integer, optional,check(shape(pytedge,0)==pydedges),depend(pytedge) :: pydedges=shape(pytedge,0)
+            integer, optional,check(shape(pytelmt,0)==pydelems),depend(pytelmt) :: pydelems=shape(pytelmt,0)
+            integer, optional,check(len(pyvx)>=pyvnodes),depend(pyvx) :: pyvnodes=len(pyvx)
+            integer, optional,check(shape(pyvedge,0)==pyvedges),depend(pyvedge) :: pyvedges=shape(pyvedge,0)
+        end subroutine build
+    end interface 
+end python module fvframe
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

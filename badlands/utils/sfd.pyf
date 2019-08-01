@@ -1,0 +1,148 @@
+python module sfd
+interface
+  subroutine dirview(pyElev, pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, sealimit, pyBase, pyRcv, pylocalNb, pyglobalNb)
+    intent(c) dirview                    ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    double precision intent(in) :: sealimit
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyElev(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    integer intent(out) :: pyBase(pyglobalNb)
+    integer intent(out) :: pyRcv(pyglobalNb)
+  end subroutine dirview
+
+  subroutine directions(pyElev, pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, pyBase, pyRcv, pyMaxh, pyMaxDep, pylocalNb, pyglobalNb)
+    intent(c) directions                 ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyElev(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    integer intent(out) :: pyBase(pyglobalNb)
+    integer intent(out) :: pyRcv(pyglobalNb)
+    double precision intent(out) :: pyMaxh(pyglobalNb)
+    double precision intent(out) :: pyMaxDep(pyglobalNb)
+  end subroutine directions
+
+  subroutine directions_base(pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, pyBase, pyRcv, pylocalNb, pyglobalNb)
+    intent(c) directions_base            ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    integer intent(out) :: pyBase(pyglobalNb)
+    integer intent(out) :: pyRcv(pyglobalNb)
+  end subroutine directions_base
+
+  subroutine diffusion(pyZ, pyBord, pyNgbs, pyEdge, pyDist, pyGIDs, pyDiff, pylocalNb, pyglobalNb)
+    intent(c) diffusion                  ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyDiff(pyglobalNb)
+  end subroutine diffusion
+
+  subroutine diffnlcfl(pySc, pyKd, pyZ, pyBord, pyNgbs, pyDist, pyGIDs, pyCFL, pylocalNb, pyglobalNb)
+    intent(c) diffnlcfl                  ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pySc(1)
+    double precision intent(in) :: pyKd(1)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyCFL(1)
+  end subroutine diffnlcfl
+
+  subroutine diffusionnl(pySc, pyZ, pyBord, pyNgbs, pyEdge, pyDist, pyGIDs, pyDiff, pylocalNb, pyglobalNb)
+    intent(c) diffusionnl                  ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pySc(1)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyDiff(pyglobalNb)
+  end subroutine diffusionnl
+
+  subroutine diffusionero(pyZ, pyBord, pyNgbs, pyEdge, pyDist, pyGIDs, pyEro, pylocalNb, pyglobalNb)
+    intent(c) diffusionero               ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyEro(pyglobalNb)
+  end subroutine diffusionero
+
+  subroutine diffusionmarine(pyZ, pyBord, pyDep, pyNgbs, pyEdge, pyDist, pyGIDs, pyDiff, pylocalNb, pyglobalNb)
+    intent(c) diffusionmarine            ! directions is a C function
+    intent(c)                            ! all foo arguments are
+                                         ! considered as C based
+
+    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
+    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
+    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in) :: pyBord(pyglobalNb)
+    integer intent(in) :: pyDep(pyglobalNb)
+    integer intent(in) :: pyNgbs(pyglobalNb, 20)
+    double precision intent(in) :: pyZ(pyglobalNb)
+    double precision intent(in) :: pyEdge(pyglobalNb, 20)
+    double precision intent(in) :: pyDist(pyglobalNb, 20)
+
+    double precision intent(out) :: pyDiff(pyglobalNb)
+  end subroutine diffusionmarine
+
+end interface
+end python module sfd

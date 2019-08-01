@@ -1,0 +1,261 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module flowalgo ! in 
+    interface  ! in :flowalgo
+        subroutine overlap(pyx,pyy,pyxst,pyyst,pyxed,pyyed,pypart,pynodes) ! in :flowalgo:flowalgo.f90
+            real(kind=8) dimension(pynodes),intent(in) :: pyx
+            real(kind=8) dimension(pynodes),intent(in),depend(pynodes) :: pyy
+            real(kind=8) intent(in) :: pyxst
+            real(kind=8) intent(in) :: pyyst
+            real(kind=8) intent(in) :: pyxed
+            real(kind=8) intent(in) :: pyyed
+            integer dimension(pynodes),intent(out),depend(pynodes) :: pypart
+            integer, optional,check(len(pyx)>=pynodes),depend(pyx) :: pynodes=len(pyx)
+        end subroutine overlap
+        subroutine build(pybase,pyrcv,pydelta,pydonors,pystackorder,pybasenb,pydeltanb,pynodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer dimension(pybasenb),intent(in) :: pybase
+            integer dimension(pynodesnb),intent(in) :: pyrcv
+            integer dimension(pydeltanb),intent(in) :: pydelta
+            integer dimension(pynodesnb),intent(out),depend(pynodesnb) :: pydonors
+            integer dimension(pynodesnb),intent(out),depend(pynodesnb) :: pystackorder
+            integer, optional,check(len(pybase)>=pybasenb),depend(pybase) :: pybasenb=len(pybase)
+            integer, optional,check(len(pydelta)>=pydeltanb),depend(pydelta) :: pydeltanb=len(pydelta)
+            integer, optional,check(len(pyrcv)>=pynodesnb),depend(pyrcv) :: pynodesnb=len(pyrcv)
+        end subroutine build
+        subroutine eroparams(typefct,m,n,mt,nt,kt,kw,b,bsfct) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer :: typefct
+            real(kind=8) intent(in) :: m
+            real(kind=8) intent(in) :: n
+            real(kind=8) intent(in) :: mt
+            real(kind=8) intent(in) :: nt
+            real(kind=8) intent(in) :: kt
+            real(kind=8) intent(in) :: kw
+            real(kind=8) intent(in) :: b
+            integer :: bsfct
+        end subroutine eroparams
+        subroutine discharge(sea,pystack,pyrcv,pyelev,pydischarge,pydis,pylay,pylnodesnb,pygnodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) intent(in) :: sea
+            integer dimension(pylnodesnb),intent(in) :: pystack
+            integer dimension(pygnodesnb),intent(in) :: pyrcv
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyelev
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pydischarge
+            real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pydis
+            real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pylay
+            integer, optional,check(len(pystack)>=pylnodesnb),depend(pystack) :: pylnodesnb=len(pystack)
+            integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
+        end subroutine discharge
+        subroutine parameters(pystack,pyrcv,pydischarge,pyxy,pybid0,pychi,pybasinid,pylnodesnb,pygnodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer dimension(pylnodesnb),intent(in) :: pystack
+            integer dimension(pygnodesnb),intent(in) :: pyrcv
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pydischarge
+            real(kind=8) dimension(pygnodesnb,2),intent(in),depend(pygnodesnb) :: pyxy
+            integer intent(in) :: pybid0
+            real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pychi
+            integer dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pybasinid
+            integer, optional,check(len(pystack)>=pylnodesnb),depend(pystack) :: pylnodesnb=len(pystack)
+            integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
+        end subroutine parameters
+        subroutine basinparameters(pystack,pyrcv,pyelev,pywath,pyarea,pybasinid,pyvolume,pylnodesnb,pygnodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer dimension(pylnodesnb),intent(in) :: pystack
+            integer dimension(pygnodesnb),intent(in) :: pyrcv
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyelev
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pywath
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyarea
+            integer dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pybasinid
+            real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pyvolume
+            integer, optional,check(len(pystack)>=pylnodesnb),depend(pystack) :: pylnodesnb=len(pystack)
+            integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
+        end subroutine basinparameters
+        subroutine basindrainage(orderpits,pitid,pyrcv,pids,fillh,sea,pydrain,pitnb,pygnodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer dimension(pitnb),intent(in) :: orderpits
+            integer dimension(pygnodesnb),intent(in) :: pitid
+            integer dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyrcv
+            integer dimension(pitnb),intent(in),depend(pitnb) :: pids
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: fillh
+            real(kind=8) intent(in) :: sea
+            integer dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pydrain
+            integer, optional,check(len(orderpits)>=pitnb),depend(orderpits) :: pitnb=len(orderpits)
+            integer, optional,check(len(pitid)>=pygnodesnb),depend(pitid) :: pygnodesnb=len(pitid)
+        end subroutine basindrainage
+        subroutine basindrainageall(orderpits,pitid,pyrcv,pids,pydrain,pitnb,pygnodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer dimension(pitnb),intent(in) :: orderpits
+            integer dimension(pygnodesnb),intent(in) :: pitid
+            integer dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyrcv
+            integer dimension(pitnb),intent(in),depend(pitnb) :: pids
+            integer dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pydrain
+            integer, optional,check(len(orderpits)>=pitnb),depend(orderpits) :: pitnb=len(orderpits)
+            integer, optional,check(len(pitid)>=pygnodesnb),depend(pitid) :: pygnodesnb=len(pitid)
+        end subroutine basindrainageall
+        subroutine flowcfl(pyids,pyrcv,pyxy,pyelev,pydischarge,cero,cfl_dt,pylnodesnb,pygnodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer dimension(pylnodesnb),intent(in) :: pyids
+            integer dimension(pygnodesnb),intent(in) :: pyrcv
+            real(kind=8) dimension(pygnodesnb,2),intent(in),depend(pygnodesnb) :: pyxy
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyelev
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pydischarge
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: cero
+            real(kind=8) intent(out) :: cfl_dt
+            integer, optional,check(len(pyids)>=pylnodesnb),depend(pyids) :: pylnodesnb=len(pyids)
+            integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
+        end subroutine flowcfl
+        subroutine diffmarine(pyz,pybord,pydepoh,pyngbs,pyedge,pydist,pycoeff,pygids,slvl,pymaxth,tstep,pydiff,mindt,pylocalnb,pyglobalnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) dimension(pyglobalnb),intent(in) :: pyz
+            integer dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pybord
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pydepoh
+            integer dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pyngbs
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pyedge
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pydist
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pycoeff
+            integer dimension(pylocalnb),intent(in) :: pygids
+            real(kind=8) intent(in) :: slvl
+            real(kind=8) intent(in) :: pymaxth
+            real(kind=8) intent(in) :: tstep
+            real(kind=8) dimension(pyglobalnb),intent(out),depend(pyglobalnb) :: pydiff
+            real(kind=8) intent(out) :: mindt
+            integer, optional,check(len(pygids)>=pylocalnb),depend(pygids) :: pylocalnb=len(pygids)
+            integer, optional,check(len(pyz)>=pyglobalnb),depend(pyz) :: pyglobalnb=len(pyz)
+        end subroutine diffmarine
+        subroutine difffailure(pyz,pybord,pydepoh,pyngbs,pyedge,pydist,pycoeff,pygids,pymaxth,tstep,pydiff,mindt,pylocalnb,pyglobalnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) dimension(pyglobalnb),intent(in) :: pyz
+            integer dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pybord
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pydepoh
+            integer dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pyngbs
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pyedge
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pydist
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pycoeff
+            integer dimension(pylocalnb),intent(in) :: pygids
+            real(kind=8) intent(in) :: pymaxth
+            real(kind=8) intent(in) :: tstep
+            real(kind=8) dimension(pyglobalnb),intent(out),depend(pyglobalnb) :: pydiff
+            real(kind=8) intent(out) :: mindt
+            integer, optional,check(len(pygids)>=pylocalnb),depend(pygids) :: pylocalnb=len(pygids)
+            integer, optional,check(len(pyz)>=pyglobalnb),depend(pyz) :: pyglobalnb=len(pyz)
+        end subroutine difffailure
+        subroutine diffsedmarine(pyz,pybord,pydepo,pydepoh,slvl,pymaxth,pycoeff,pyngbs,pyedge,pydist,pygids,pydiff,sumdiff,pylocalnb,pyglobalnb,pyrocknb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) dimension(pyglobalnb),intent(in) :: pyz
+            integer dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pybord
+            real(kind=8) dimension(pyglobalnb,pyrocknb),intent(in),depend(pyglobalnb) :: pydepo
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pydepoh
+            real(kind=8) intent(in) :: slvl
+            real(kind=8) intent(in) :: pymaxth
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pycoeff
+            integer dimension(pylocalnb,20),intent(in) :: pyngbs
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pyedge
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pydist
+            integer dimension(pylocalnb),intent(in),depend(pylocalnb) :: pygids
+            real(kind=8) dimension(pyglobalnb,pyrocknb),intent(out),depend(pyglobalnb,pyrocknb) :: pydiff
+            real(kind=8) dimension(pyglobalnb),intent(out),depend(pyglobalnb) :: sumdiff
+            integer, optional,check(shape(pyngbs,0)==pylocalnb),depend(pyngbs) :: pylocalnb=shape(pyngbs,0)
+            integer, optional,check(len(pyz)>=pyglobalnb),depend(pyz) :: pyglobalnb=len(pyz)
+            integer, optional,check(shape(pydepo,1)==pyrocknb),depend(pydepo) :: pyrocknb=shape(pydepo,1)
+        end subroutine diffsedmarine
+        subroutine diffsedhillslope(pyz,pybord,difflay,maxlayh,pycoeff,pyngbs,pyedge,pydist,pygids,sumdiff,ero,depo,pylocalnb,pyglobalnb,pyrocknb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) dimension(pyglobalnb),intent(in) :: pyz
+            integer dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pybord
+            real(kind=8) dimension(pyglobalnb,pyrocknb),intent(in),depend(pyglobalnb) :: difflay
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: maxlayh
+            real(kind=8) dimension(pyglobalnb),intent(in),depend(pyglobalnb) :: pycoeff
+            integer dimension(pylocalnb,20),intent(in) :: pyngbs
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pyedge
+            real(kind=8) dimension(pyglobalnb,20),intent(in),depend(pyglobalnb) :: pydist
+            integer dimension(pylocalnb),intent(in),depend(pylocalnb) :: pygids
+            real(kind=8) dimension(pyglobalnb),intent(out),depend(pyglobalnb) :: sumdiff
+            real(kind=8) dimension(pyglobalnb,pyrocknb),intent(out),depend(pyglobalnb,pyrocknb) :: ero
+            real(kind=8) dimension(pyglobalnb,pyrocknb),intent(out),depend(pyglobalnb,pyrocknb) :: depo
+            integer, optional,check(shape(pyngbs,0)==pylocalnb),depend(pyngbs) :: pylocalnb=shape(pyngbs,0)
+            integer, optional,check(len(pyz)>=pyglobalnb),depend(pyz) :: pyglobalnb=len(pyz)
+            integer, optional,check(shape(difflay,1)==pyrocknb),depend(difflay) :: pyrocknb=shape(difflay,1)
+        end subroutine diffsedhillslope
+        subroutine slumpero(pystack,pyrcv,pyxy,pyelev,pysfail,borders,pyero,pylnodesnb,pygnodesnb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            integer dimension(pylnodesnb),intent(in) :: pystack
+            integer dimension(pygnodesnb),intent(in) :: pyrcv
+            real(kind=8) dimension(pygnodesnb,2),intent(in),depend(pygnodesnb) :: pyxy
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyelev
+            real(kind=8) intent(in) :: pysfail
+            integer dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: borders
+            real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pyero
+            integer, optional,check(len(pystack)>=pylnodesnb),depend(pystack) :: pylnodesnb=len(pystack)
+            integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
+        end subroutine slumpero
+        subroutine streampower(sedfluxcrit,pystack,pyrcv,pitid,pitvol1,pitdrain,pyxy,pyarea,pymaxh,pymaxd,pydischarge,pyfillh,pyelev,pyriv,cero,actlay,perc_dep,slp_cr,sea,db,dt,borders,pydepo,pyero,sedfluxes,pydensity,pylnodesnb,pygnodesnb,pyrocknb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) intent(in) :: sedfluxcrit
+            integer dimension(pylnodesnb),intent(in) :: pystack
+            integer dimension(pygnodesnb),intent(in) :: pyrcv
+            integer dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pitid
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pitvol1
+            integer dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pitdrain
+            real(kind=8) dimension(pygnodesnb,2),intent(in),depend(pygnodesnb) :: pyxy
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyarea
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pymaxh
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pymaxd
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pydischarge
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyfillh
+            real(kind=8) dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: pyelev
+            real(kind=8) dimension(pygnodesnb,pyrocknb),intent(in),depend(pygnodesnb) :: pyriv
+            real(kind=8) dimension(pygnodesnb,pyrocknb),intent(in),depend(pygnodesnb,pyrocknb) :: cero
+            real(kind=8) dimension(pygnodesnb,pyrocknb),intent(in),depend(pygnodesnb,pyrocknb) :: actlay
+            real(kind=8) intent(in) :: perc_dep
+            real(kind=8) intent(in) :: slp_cr
+            real(kind=8) intent(in) :: sea
+            real(kind=8) intent(in) :: db
+            real(kind=8) intent(in) :: dt
+            integer dimension(pygnodesnb),intent(in),depend(pygnodesnb) :: borders
+            real(kind=8) dimension(pygnodesnb,pyrocknb),intent(out),depend(pygnodesnb,pyrocknb) :: pydepo
+            real(kind=8) dimension(pygnodesnb,pyrocknb),intent(out),depend(pygnodesnb,pyrocknb) :: pyero
+            real(kind=8) dimension(pygnodesnb,pyrocknb),intent(out),depend(pygnodesnb,pyrocknb) :: sedfluxes
+            real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pydensity
+            integer, optional,check(len(pystack)>=pylnodesnb),depend(pystack) :: pylnodesnb=len(pystack)
+            integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
+            integer, optional,check(shape(pyriv,1)==pyrocknb),depend(pyriv) :: pyrocknb=shape(pyriv,1)
+        end subroutine streampower
+        subroutine getid1(volc,vol,alldrain,pit,sumvol,ids,ids2,newnb,newnb2,ptsnb,sednb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) dimension(ptsnb,sednb),intent(in) :: volc
+            real(kind=8) dimension(ptsnb),intent(in),depend(ptsnb) :: vol
+            integer dimension(ptsnb),intent(in),depend(ptsnb) :: alldrain
+            integer dimension(ptsnb),intent(in),depend(ptsnb) :: pit
+            real(kind=8) dimension(ptsnb),intent(out),depend(ptsnb) :: sumvol
+            integer dimension(ptsnb),intent(out),depend(ptsnb) :: ids
+            integer dimension(ptsnb),intent(out),depend(ptsnb) :: ids2
+            integer intent(out) :: newnb
+            integer intent(out) :: newnb2
+            integer, optional,check(shape(volc,0)==ptsnb),depend(volc) :: ptsnb=shape(volc,0)
+            integer, optional,check(shape(volc,1)==sednb),depend(volc) :: sednb=shape(volc,1)
+        end subroutine getid1
+        subroutine getids(fillh,elev,depo,vol,seal,ids,ids2,ids3,perc,newnb,newnb2,newnb3,ndepo,ptsnb,sednb) ! in :flowalgo:flowalgo.f90
+            use classfv
+            real(kind=8) dimension(ptsnb),intent(in) :: fillh
+            real(kind=8) dimension(ptsnb),intent(in),depend(ptsnb) :: elev
+            real(kind=8) dimension(ptsnb,sednb),intent(in),depend(ptsnb) :: depo
+            real(kind=8) dimension(ptsnb),intent(in),depend(ptsnb) :: vol
+            real(kind=8) intent(in) :: seal
+            integer dimension(ptsnb),intent(out),depend(ptsnb) :: ids
+            integer dimension(ptsnb),intent(out),depend(ptsnb) :: ids2
+            integer dimension(ptsnb),intent(out),depend(ptsnb) :: ids3
+            real(kind=8) dimension(ptsnb,sednb),intent(out),depend(ptsnb,sednb) :: perc
+            integer intent(out) :: newnb
+            integer intent(out) :: newnb2
+            integer intent(out) :: newnb3
+            real(kind=8) dimension(ptsnb,sednb),intent(out),depend(ptsnb,sednb) :: ndepo
+            integer, optional,check(len(fillh)>=ptsnb),depend(fillh) :: ptsnb=len(fillh)
+            integer, optional,check(shape(depo,1)==sednb),depend(depo) :: sednb=shape(depo,1)
+        end subroutine getids
+    end interface 
+end python module flowalgo
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

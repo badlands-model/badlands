@@ -1,0 +1,9 @@
+numpy
+pandas
+scikit-image
+pyevtk
+sphinx_rtd_theme
+sphinxcontrib-napoleon
+sphinxcontrib-inlinesyntaxhighlight
+sphinxemoji
+mock
