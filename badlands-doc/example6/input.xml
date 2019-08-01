@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BALAD:input xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:BALAD="http://bibucket.com/git/xsd/XSDBALAD" xmlns:xi="http://www.w3.org/2001/XInclude"
+	xsi:schemaLocation="http://bibucket.com/git/xsd/XSDBALAD
+	bibucket.com/git/xsd/XSDBALAD/schema-BALAD.xsd">
+
+	<struct_geometry>
+		<regular_grid>paleodata/paleomap.csv</regular_grid>
+		<delaunay_area>625000000</delaunay_area>
+		<delaunay_angle>25</delaunay_angle>
+    <refine_area>0</refine_area>
+    <ra>
+      <xmin>1.03e6</xmin>
+      <ymin>5.17e5</ymin>
+      <xmax>5.89e6</xmax>
+      <ymax>4.96e6</ymax>
+      <r_area>50000000</r_area>
+    </ra>
+	</struct_geometry>
+
+	<struct_time>
+		<time_start>-150.e6</time_start>
+		<time_end>-110.e6</time_end>
+		<display_interval>500000.</display_interval>
+	</struct_time>
+
+	<struct_ocean>
+    <ocean_file>paleodata/Haq87.csv</ocean_file>
+  </struct_ocean>
+
+	<struct_geodyn>
+      <interval_nb>4</interval_nb>
+      <disp>
+        <disp_start>-149.e6</disp_start>
+        <disp_end>-139.e6</disp_end>
+        <disp_file>paleodata/norm149-139.csv</disp_file>
+      </disp>
+      <disp>
+        <disp_start>-139.e6</disp_start>
+        <disp_end>-129.e6</disp_end>
+        <disp_file>paleodata/norm139-129.csv</disp_file>
+      </disp>
+      <disp>
+        <disp_start>-129.e6</disp_start>
+        <disp_end>-119.e6</disp_end>
+        <disp_file>paleodata/norm129-119.csv</disp_file>
+      </disp>
+      <disp>
+        <disp_start>-119.e6</disp_start>
+        <disp_end>-109.e6</disp_end>
+        <disp_file>paleodata/norm119-109.csv</disp_file>
+      </disp>
+    </struct_geodyn>
+
+	<struct_rainfall>
+    <rain_nb>2</rain_nb>
+    <rain>
+      <rain_start>-150.e6</rain_start>
+      <rain_end>-120.e6</rain_end>
+      <rain_file>paleodata/rain1.csv</rain_file>
+    </rain>
+    <rain>
+      <rain_start>-120.e6</rain_start>
+      <rain_end>-100.e6</rain_end>
+      <rain_file>paleodata/rain2.csv</rain_file>
+    </rain>
+	</struct_rainfall>
+
+  <struct_detachment>
+    <spl_m>0.5</spl_m>
+    <spl_n>1.0</spl_n>
+    <Cerodibility>7.5e-8</Cerodibility>
+  </struct_detachment>
+
+  <struct_linear_diff>
+    <coef_linear_aerial>0.001</coef_linear_aerial>
+    <coef_linear_marine>0.005</coef_linear_marine>
+  </struct_linear_diff>
+
+	<struct_flex>
+    <flex_dt>250000.</flex_dt>
+    <flex_dx>25000.</flex_dx>
+    <sed_dens>2700.</sed_dens>
+    <mantle_dens>3500</mantle_dens>
+    <flex_thick>20000</flex_thick>
+		<flex_order>2</flex_order>
+    <nb_Pfields>3</nb_Pfields>
+    <pressure_val>0.0 160.0 330.0</pressure_val>
+    <porosity_val>0.6 0.5 0.3</porosity_val>
+  </struct_flex>
+
+	<output_directory>paleoAUS</output_directory>
+
+</BALAD:input>

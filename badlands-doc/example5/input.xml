@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BALAD:input xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:BALAD="http://bibucket.com/git/xsd/XSDBALAD" xmlns:xi="http://www.w3.org/2001/XInclude"
+  xsi:schemaLocation="http://bibucket.com/git/xsd/XSDBALAD
+  bibucket.com/git/xsd/XSDBALAD/schema-BALAD.xsd">
+
+  <struct_geometry>
+    <regular_grid>data/nodes.csv</regular_grid>
+    <delaunay_area>200000</delaunay_area>
+    <delaunay_angle>25</delaunay_angle>
+    <refine_area>0</refine_area>
+    <boundN>0</boundN>
+    <boundS>0</boundS>
+    <boundE>0</boundE>
+    <boundW>0</boundW>
+  </struct_geometry>
+
+  <struct_time>
+    <time_start>0.</time_start>
+    <time_end>55000.</time_end>
+    <display_interval>5000.</display_interval>
+    <time_step>2</time_step>
+  </struct_time>
+
+  <struct_ocean>
+    <ocean_file>data/sealevel.csv</ocean_file>
+  </struct_ocean>
+
+  <struct_geodyn>
+    <fields_3D>1</fields_3D>
+    <merge_dist>300.0</merge_dist>
+      <interval_nb>3</interval_nb>
+      <disp>
+        <disp_start>0</disp_start>
+        <disp_end>4999</disp_end>
+        <disp_file>data/idisp0.csv</disp_file>
+      </disp>
+      <disp>
+        <disp_start>4999</disp_start>
+        <disp_end>9998</disp_end>
+        <disp_file>data/idisp1.csv</disp_file>
+      </disp>
+      <disp>
+        <disp_start>9998</disp_start>
+        <disp_end>14997</disp_end>
+        <disp_file>data/idisp2.csv</disp_file>
+      </disp>
+  </struct_geodyn>
+
+  <struct_rainfall>
+    <rain_nb>1</rain_nb>
+    <rain>
+      <rain_start>0</rain_start>
+      <rain_end>2200000</rain_end>
+      <rain_file>data/rain2.csv</rain_file>
+    </rain>
+  </struct_rainfall>
+
+  <struct_detachment>
+    <spl_m>0.5</spl_m>
+      <spl_n>1.0</spl_n>
+      <Cerodibility>2.5e-6</Cerodibility>
+  </struct_detachment>
+
+  <struct_linear_diff>
+    <coef_linear_aerial>1.e-3</coef_linear_aerial>
+    <coef_linear_marine>5.e-3</coef_linear_marine>
+  </struct_linear_diff>
+
+  <output_directory>pullapart</output_directory>
+
+</BALAD:input>

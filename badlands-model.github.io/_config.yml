@@ -1,0 +1,22 @@
+# Permalinks
+#
+# Use of `relative_permalinks` ensures post links from the index work properly.
+permalink:           pretty
+relative_permalinks: true
+
+# Setup
+title:               Badlands
+tagline:             'Basin and Landscape Dynamics'
+description:         'A parallel TIN-based landscape evolution model, built to simulate topography development at various space and time scales. The University of Sydney <a href="https://www.facebook.com/sydneyunigeo" target="_blank">School of Geosciences</a>.'
+url:                 http://badlands-model.github.io
+baseurl:             ''
+paginate:            5
+
+# About/contact
+author:
+  name:              Tristan Salles
+  url:               about.me/tristan.b.salles
+  email:             tristan.salles@sydney.edu.au
+
+# Custom vars
+version:             1.0.0

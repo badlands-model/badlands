@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BALAD:input xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:BALAD="http://bibucket.com/git/xsd/XSDBALAD" xmlns:xi="http://www.w3.org/2001/XInclude"
+	xsi:schemaLocation="http://bibucket.com/git/xsd/XSDBALAD
+	bibucket.com/git/xsd/XSDBALAD/schema-BALAD.xsd">
+
+	<struct_geometry>
+		<regular_grid>data/fill.csv</regular_grid>
+		<delaunay_area>1000</delaunay_area>
+		<delaunay_angle>25</delaunay_angle>
+		<refine_area>1</refine_area>
+		<ra>
+			<xmin>100</xmin>
+			<ymin>100</ymin>
+			<xmax>2300</xmax>
+			<ymax>2300</ymax>
+			<r_area>50</r_area>
+		</ra>
+		<fill_heigth>1</fill_heigth>
+	</struct_geometry>
+
+	<struct_time>
+		<time_start>0.</time_start>
+		<time_end>100000.</time_end>
+		<display_interval>50.</display_interval>
+		<time_step>0.1</time_step>
+	</struct_time>
+
+	<struct_rainfall>
+      <rain_nb>1</rain_nb>
+      <rain>
+        <rain_start>0</rain_start>
+        <rain_end>1000000</rain_end>
+        <rain_file>data/rainv.csv</rain_file>
+      </rain>
+	</struct_rainfall>
+
+	<struct_detachment>
+		<spl_m>0.5</spl_m>
+    	<spl_n>1.0</spl_n>
+    	<Cerodibility>4.e-5</Cerodibility>
+	</struct_detachment>
+
+	<struct_linear_diff>
+		<coef_linear_aerial>1.e-2</coef_linear_aerial>
+		<coef_linear_marine>5.e-1</coef_linear_marine>
+	</struct_linear_diff>
+
+	<output_directory>fill</output_directory>
+
+</BALAD:input>

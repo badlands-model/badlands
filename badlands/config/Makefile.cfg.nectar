@@ -1,0 +1,40 @@
+# Executable name
+EXE=badlands 
+
+# Shared library name
+SHAREFLAGS=-shared -Wl,-soname,libBADLANDS.so.1
+PLUGLIB= libBADLANDS.so.1.0.1
+PLUGSLN= libBADLANDS.so.1
+SHARELIB= libBADLANDS.so
+BADLANDS_C = mpicc
+BADLANDS_F = mpif90
+
+# Rules to make library
+AR = ar -rcs
+
+# Fortran optimisation flags
+FCFLAGS= -m64 -O3 -cpp -lstdc++ -cpp -fPIC
+#FCFLAGS= -m64 -O0 -traceback -g -cpp -Warn all  -lstdc++ -check bounds -fPIC -ftrapuv
+
+CFLAGS = -m64 -O3 -w -fno-common -fPIC
+
+# Linked libraries
+FOX=/usr/local/fox/bin
+FOXFLAGS= $$($(FOX)/FoX-config --fcflags)
+LDFOXFLAGS=$$($(FOX)/FoX-config --libs)
+
+HDF5=/usr/local/hdf5
+H5LDFLAGS = -L${HDF5}/lib 
+H5FLAGS = -I${HDF5}/include
+H5LIBS =  -lhdf5_fortran -lhdf5  -lhdf5hl_fortran -lhdf5_hl -lz 
+
+ZOLTAN=/usr/local/zoltan
+ZOLTANLDFLAGS = -L${ZOLTAN}/lib 
+ZOLTANFLAGS = -I${ZOLTAN}/include
+ZOLTANLIBS =  -lzoltan 
+
+METIS=/usr/local/metis
+METISLDFLAGS = -L${METIS}/lib 
+METISLIBS =  -lmetis
+
+

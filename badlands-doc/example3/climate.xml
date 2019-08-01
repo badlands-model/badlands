@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BADLANDS:input xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:BADLANDS="http://bibucket.com/git/xsd/XSDBADLANDS" xmlns:xi="http://www.w3.org/2001/XInclude"
+	xsi:schemaLocation="http://bibucket.com/git/xsd/XSDBADLANDS
+	bibucket.com/git/xsd/XSDBADLANDS/schema-BADLANDS.xsd">
+
+	<struct_geometry>
+		<regular_grid>data/climate_nodes.csv</regular_grid>
+		<delaunay_area>160000</delaunay_area>
+		<delaunay_angle>25</delaunay_angle>
+		<refine_area>1</refine_area>
+		<ra>
+			<xmin>400</xmin>
+			<ymin>400</ymin>
+			<xmax>79600</xmax>
+			<ymax>39600</ymax>
+			<r_area>80000</r_area>
+		</ra>
+		<boundN>0</boundN>
+		<boundS>0</boundS>
+		<boundE>0</boundE>
+		<boundW>0</boundW>
+	</struct_geometry>
+
+	<struct_time>
+		<time_start>0.</time_start>
+		<time_end>50000000.</time_end>
+		<display_interval>50000.</display_interval>
+	</struct_time>
+
+	<struct_geodyn>
+      <interval_nb>1</interval_nb>
+      <disp>
+        <disp_start>0</disp_start>
+        <disp_end>50000000.0</disp_end>
+        <disp_file>data/climate_uplift.csv</disp_file>
+      </disp>
+    </struct_geodyn>
+
+	<struct_rainfall>
+      <rain_nb>2</rain_nb>
+      <rain>
+        <rain_start>0</rain_start>
+        <rain_end>15000000</rain_end>
+        <rain_file>data/climate_rain_uniform.csv</rain_file>
+      </rain>
+      <rain>
+        <rain_start>15000000</rain_start>
+        <rain_end>50000000</rain_end>
+        <rain_file>data/climate_rain_gradient.csv</rain_file>
+      </rain>
+	</struct_rainfall>
+
+	<struct_detachment>
+		<spl_m>0.5</spl_m>
+    	<spl_n>1.0</spl_n>
+    	<Cerodibility>1.e-5</Cerodibility>
+    	<pureErosion>1</pureErosion>
+	</struct_detachment>
+
+	<struct_linear_diff>
+		<coef_linear_aerial>0.5</coef_linear_aerial>
+		<coef_linear_marine>0.5</coef_linear_marine>
+	</struct_linear_diff>
+
+	<output_directory>climate</output_directory>
+
+</BADLANDS:input>

@@ -1,0 +1,45 @@
+# Executable name
+EXE=badlands
+
+# Shared library name
+SHAREFLAGS=-dynamiclib -install_name libBADLANDS.1.so -compatibility_version 1.0 -current_version 1.0.0
+PLUGLIB= libBADLANDS.1.0.1.so
+PLUGSLN= libBADLANDS.1.so
+SHARELIB= libBADLANDS.so
+BADLANDS_C = mpicc
+BADLANDS_F = mpif90
+
+# Rules to make library
+AR = ar -rcs
+
+# Fortran optimisation flags
+FCFLAGS=-cpp -O2 -ip -fpe0 -openmp
+#FCFLAGS=-funroll-loops --param max-unroll-times=2 -cpp -ftree-vectorize -ffast-math -lstdc++ 
+#FCFLAGS= -O0 -g  -Wall -fbacktrace -lstdc++ -cpp -fcheck=bounds -finit-real=nan\
+-ffpe-trap=zero,overflow,invalid -ffree-form -fno-common\
+-Wtabs -Wunused-parameter -Wuninitialized  -ffree-line-length-none \
+-fdump-fortran-optimized -fdump-tree-original 
+
+CFLAGS = -O2 -ip -fpe0 -openmp
+
+# Linked libraries
+FOX=/home/562/tbs562/codes/intel/fox/bin
+FOXFLAGS= $$($(FOX)/FoX-config --fcflags)
+LDFOXFLAGS=$$($(FOX)/FoX-config --libs)
+
+HDF5=/apps/hdf5/1.8.13p
+H5LDFLAGS = -L${HDF5}/lib -L${HDF5}/lib/INTEL
+H5FLAGS = -I${HDF5}/INTEL/include
+H5LIBS =  -lhdf5_fortran -lhdf5  -lhdf5hl_fortran -lhdf5_hl -lz 
+
+ZOLTAN=/home/562/tbs562/codes/intel/zoltan
+ZOLTANLDFLAGS = -L${ZOLTAN}/lib 
+ZOLTANFLAGS = -I${ZOLTAN}/include
+ZOLTANLIBS =  -lzoltan $OMPI_FLIBS
+
+METIS=/apps/metis/5.0.2
+METISLDFLAGS = -L${METIS}/lib 
+METISLIBS =  -lmetis 
+
+
+

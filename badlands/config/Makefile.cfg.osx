@@ -1,0 +1,48 @@
+EXE=badlands
+
+# Shared library name
+SHAREFLAGS=-dynamiclib -install_name libBADLANDS.1.dylib -compatibility_version 1.0 -current_version 1.0.0
+PLUGLIB= libBADLANDS.1.0.1.dylib
+PLUGSLN= libBADLANDS.1.dylib
+SHARELIB= libBADLANDS.dylib
+#BADLANDS_C = /usr/local/mpich/bin/mpicc
+#BADLANDS_F = /usr/local/mpich/bin/mpif90
+BADLANDS_C = /usr/local/badlands/mpich/bin/mpicc
+BADLANDS_F = /usr/local/badlands/mpich/bin/mpif90
+
+# Rules to make library
+AR = ar -rcs
+
+# Fortran optimisation flags
+FCFLAGS= -O3 -m64 -mcmodel=small -ffree-line-length-none -fopenmp -cpp
+#FCFLAGS= -cpp
+#FCFLAGS=-funroll-loops --param max-unroll-times=2 -cpp -ftree-vectorize -ffast-math -lstdc++
+#FCFLAGS= -O0 -g  -Wall -fbacktrace -lstdc++ -cpp -fcheck=bounds -finit-real=nan\
+	-ffpe-trap=zero,overflow,invalid -ffree-form -fno-common\
+	-Wtabs -Wunused-parameter -Wuninitialized  -ffree-line-length-none \
+	-fdump-fortran-optimized -fdump-tree-original
+
+CFLAGS = -O3
+
+# Linked libraries
+FOX=/usr/local/badlands/FoX/bin
+#FOX=/usr/local/xml/bin
+FOXFLAGS= $$($(FOX)/FoX-config --fcflags)
+LDFOXFLAGS=$$($(FOX)/FoX-config --libs)
+
+HDF5=/usr/local/badlands/hdf5
+#HDF5=/usr/local/hdf5
+H5LDFLAGS = -L${HDF5}/lib
+H5FLAGS = -I${HDF5}/include
+H5LIBS =  -lhdf5_fortran -lhdf5  -lhdf5hl_fortran -lhdf5_hl -lz
+
+ZOLTAN=/Users/tristan/suite/zoltan
+#ZOLTAN=/usr/local/zoltan
+ZOLTANLDFLAGS = -L${ZOLTAN}/lib
+ZOLTANFLAGS = -I${ZOLTAN}/include
+ZOLTANLIBS =  -lzoltan
+
+METIS=/Users/tristan/suite/parmetis
+#METIS=/usr/local/parmetis
+METISLDFLAGS = -L${METIS}/lib
+METISLIBS =  -lmetis

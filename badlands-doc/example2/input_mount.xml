@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BADLANDS:input xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:BADLANDS="http://bibucket.com/git/xsd/XSDBADLANDS" xmlns:xi="http://www.w3.org/2001/XInclude"
+	xsi:schemaLocation="http://bibucket.com/git/xsd/XSDBADLANDS
+	bibucket.com/git/xsd/XSDBADLANDS/schema-BADLANDS.xsd">
+
+	<struct_geometry>
+		<regular_grid>data/mount.csv</regular_grid>
+		<delaunay_area>40000</delaunay_area>
+		<delaunay_angle>25</delaunay_angle>
+		<refine_area>1</refine_area>
+		<ra>
+			<xmin>6000</xmin>
+			<ymin>6000</ymin>
+			<xmax>18000</xmax>
+			<ymax>18000</ymax>
+			<r_area>10000</r_area>
+		</ra>
+	</struct_geometry>
+
+	<struct_time>
+		<time_start>0.</time_start>
+		<time_end>500000.</time_end>
+		<display_interval>1000.</display_interval>
+	</struct_time>
+
+	<struct_ocean>
+    	<ocean_file>data/sealvl.csv</ocean_file>
+  </struct_ocean>
+
+	<struct_rainfall>
+      <rain_nb>1</rain_nb>
+      <rain>
+        <rain_start>0</rain_start>
+        <rain_end>1000000</rain_end>
+        <rain_file>data/rain.csv</rain_file>
+      </rain>
+	</struct_rainfall>
+
+	<struct_detachment>
+		<spl_m>0.5</spl_m>
+    <spl_n>1.0</spl_n>
+    <Cerodibility>1.e-5</Cerodibility>
+	</struct_detachment>
+
+	<struct_linear_diff>
+		<coef_linear_aerial>3.e-1</coef_linear_aerial>
+		<coef_linear_marine>5.e-1</coef_linear_marine>
+	</struct_linear_diff>
+
+	<output_directory>mount</output_directory>
+
+</BADLANDS:input>
