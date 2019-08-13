@@ -1,7 +1,6 @@
 Badlands - Basin & Landscape Dynamics
 =====
 
-![Docker Cloud Automated build](https://img.shields.io/docker/cloud/automated/badlands-model/badlands)
 [![PyPI](https://img.shields.io/pypi/v/badlands)](https://pypi.org/project/badlands)
 [![Documentation Status](https://readthedocs.org/projects/badlands/badge/?version=latest)](https://badlands.readthedocs.io/en/latest/?badge=latest)      [![DOI](https://zenodo.org/badge/51286954.svg)](https://zenodo.org/badge/latestdoi/51286954)
 
