@@ -1235,7 +1235,6 @@ borders, pyDepo, pyEro, sedFluxes, pyDensity, pylNodesNb, pygNodesNb, pyRockNb)
 
         ! In case the depression is not filled
         elseif(tmpdist+totdist<=pitVol(tmpID))then
-        !if(tmpdist+totdist<=pitVol(tmpID))then
           do r = 1, pyRockNb
             pyDepo(tmpID,r) = pyDepo(tmpID,r) + pitDep(r)
           enddo

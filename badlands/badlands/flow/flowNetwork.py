@@ -553,6 +553,7 @@ class flowNetwork:
                                                                 elev,fillH,Acell)
         self.pitID = pitID
         self.pitVolume = pitVolume
+        self.pitVolume[self.pitVolume<=0] = 0.
 
         # Find the depression node IDs
         pIDs = numpy.where(self.pitVolume>=0.)[0]

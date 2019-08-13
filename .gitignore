@@ -21,3 +21,5 @@ __MACOSX
 doc/_build/
 tags
 doc/env/
+*.egg
+badlands/badlands.egg-info
