@@ -191,19 +191,22 @@ subroutine parameters(pyStack, pyRcv, pyDischarge, pyXY, pyBid0, pyChi, pyBasinI
   do n = 1, pylNodesNb
     donor = pyStack(n) + 1
     recvr = pyRcv(donor) + 1
+    if(recvr == 0) donor = recvr
     if(donor == recvr) bID = bID + 1
-    pyBasinID(donor) = bID
-    disch1 = pyDischarge(donor)
-    disch2 = pyDischarge(recvr)
-    if( donor /= recvr .and. disch1 > 0. .and. disch2 > 0.)then
-        dist = sqrt( (pyXY(donor,1) - pyXY(recvr,1))**2.0 + &
-            (pyXY(donor,2) - pyXY(recvr,2))**2.0 )
-        if(spl_n > 0)then
-          pyChi(donor) = pyChi(recvr) + 0.5*((1./disch2)**slp2 + &
-            (1./(disch1))**slp2) * dist
-        else
-          pyChi(donor) = 0.
-        endif
+    if(donor>0)then
+      pyBasinID(donor) = bID
+      disch1 = pyDischarge(donor)
+      disch2 = pyDischarge(recvr)
+      if( donor /= recvr .and. disch1 > 0. .and. disch2 > 0.)then
+          dist = sqrt( (pyXY(donor,1) - pyXY(recvr,1))**2.0 + &
+              (pyXY(donor,2) - pyXY(recvr,2))**2.0 )
+          if(spl_n > 0)then
+            pyChi(donor) = pyChi(recvr) + 0.5*((1./disch2)**slp2 + &
+              (1./(disch1))**slp2) * dist
+          else
+            pyChi(donor) = 0.
+          endif
+      endif
     endif
   enddo
 

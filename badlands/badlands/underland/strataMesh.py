@@ -278,9 +278,10 @@ class strataMesh():
         depIDs = numpy.where(localCum>0.)[0]
         subs = self.depoLayer(self.ids[depIDs], localCum)
         subsi = numpy.reshape(subs,(len(self.ygrid),len(self.xgrid)))
-        subs_flexure = RegularGridInterpolator((self.ygrid, self.xgrid), subsi)
+        subs_values = RegularGridInterpolator((self.ygrid, self.xgrid), subsi)
         sub_poro = numpy.zeros(len(self.xyTIN[:,0]))
-        sub_poro[boundsPt:] = subs_flexure((self.xyTIN[boundsPt:,1],self.xyTIN[boundsPt:,0]))
+        sub_poro[boundsPt:] = subs_values((self.xyTIN[boundsPt:,1],self.xyTIN[boundsPt:,0]))
+        sub_poro[sub_poro>0.] = 0.
 
         # Update stratal erosion
         eroIDs = numpy.where(localCum<0.)[0]
@@ -366,14 +367,17 @@ class strataMesh():
             self.stratPoro[ids,self.step] = self.poro0
             cumThick = numpy.cumsum(self.stratThick[ids,self.step::-1],axis=1)[:,::-1]
             poro = self.poro0*numpy.exp(-self.poroC*cumThick/1000.)
+            poro[poro<0.1] = 0.1
             #tmpid = numpy.where(self.stratPoro[ids,:self.step+1]<poro)[0]
             tmp1,tmp2 = numpy.where(numpy.logical_and(self.stratPoro[ids,:self.step+1]<poro,self.stratThick[ids,:self.step+1]>0.))
             if len(tmp1)>0:
                  poro[tmp1,tmp2] = self.stratPoro[ids[tmp1],tmp2]
             nh = self.stratThick[ids,:self.step+1]*(1.-self.stratPoro[ids,:self.step+1])/(1.-poro)
             nh = numpy.minimum(self.stratThick[ids,:self.step+1],nh)
+            nh[nh<0.] = 0.
             # Subsidence due to porosity change
             subs[ids] = numpy.sum(nh-self.stratThick[ids,:self.step+1],axis=1)
+            subs[subs>0.] = 0.
             # Update layer thickness
             self.stratThick[ids,:self.step+1] = nh
             # Update porosity

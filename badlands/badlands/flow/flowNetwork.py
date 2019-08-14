@@ -518,7 +518,7 @@ class flowNetwork:
 
         return
 
-    def compute_parameters(self):
+    def compute_parameters(self,elevation,sealevel):
         """
         Calculates the catchment IDs and the Chi parameter (Willett 2014).
         """
@@ -529,11 +529,15 @@ class flowNetwork:
             cumbase[i+1] = len(numpy.array_split(self.base, 1)[i])+cumbase[i]+1
 
         # Compute discharge using libUtils
-        chi, basinID = flowalgo.parameters(self.localstack,self.receivers,
-                                               self.discharge,self.xycoords,cumbase[0])
+        idsl = numpy.where(elevation<sealevel)[0]
+        rcv = numpy.copy(self.receivers)
+        rcv[idsl] = -1
+        chi, basinID = flowalgo.parameters(self.localstack,rcv,
+                                           self.discharge,self.xycoords,cumbase[0])
 
         self.chi = chi
-        self.basinID = basinID
+        self.basinID = numpy.copy(basinID)
+        self.basinID[idsl] = -1
 
         return
 
@@ -674,6 +678,8 @@ class flowNetwork:
             if newdt>1.:
                 newdt = float(round(newdt-0.5,0))
             newdt = max(self.mindt,newdt)
+            if newdt > dt:
+                newdt = dt
 
             if verbose:
                 print("   - Compute depressions connectivity ", time.clock() - time1)

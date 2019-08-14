@@ -345,10 +345,11 @@ class Model(object):
                         fero = 0
                         vKe = None
                         vTh = None
-                        if self.input.erolays >= 0:
-                            fero = 1
-                            vKe = self.mapero.Ke
-                            vTh = self.mapero.thickness
+                        if self.input.erolays is not None:
+                            if self.input.erolays >= 0:
+                                fero = 1
+                                vKe = self.mapero.Ke
+                                vTh = self.mapero.thickness
                         # Apply horizontal displacements
                         self.recGrid.tinMesh, self.elevation, self.cumdiff, self.cumhill, self.cumfail, self.wavediff, fcum, scum, Ke, Th = self.force.apply_XY_dispacements(
                             self.recGrid.areaDel, self.fixIDs, self.elevation, self.cumdiff, self.cumhill, self.cumfail, self.wavediff,
@@ -462,6 +463,18 @@ class Model(object):
 
                 print("   - Compute carbonate growth %0.02f seconds" % (time.clock() - carbtime))
 
+            # Update next stratal layer time
+            if self.tNow >= self.force.next_layer:
+                self.force.next_layer += self.input.laytime
+                if self.straTIN is not None:
+                    self.straTIN.step += 1
+                if self.strata:
+                    sub = self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                        self.recGrid.boundsPt,outStrata, self.outputStep)
+                    self.elevation += sub
+                    self.cumdiff += sub
+                outStrata = 0
+
             # Compute stream network
             self.fillH, self.elevation = buildFlux.streamflow(self.input, self.FVmesh, self.recGrid, self.force, self.hillslope, \
                                               self.flow, self.elevation, self.lGIDs, self.rain, self.tNow, verbose)
@@ -492,18 +505,6 @@ class Model(object):
                 if self.carbTIN is not None:
                     self.carbTIN.step += 1
 
-            # Update next stratal layer time
-            if self.tNow >= self.force.next_layer:
-                self.force.next_layer += self.input.laytime
-                if self.straTIN is not None:
-                    self.straTIN.step += 1
-                if self.strata:
-                    sub = self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
-                        self.recGrid.boundsPt,outStrata, self.outputStep-1)
-                    self.elevation += sub
-                    self.cumdiff += sub
-                outStrata = 0
-
             # Get the maximum time before updating one of the above processes / components
             tStop = min([self.force.next_display, self.force.next_layer, self.force.next_flexure,
                         tEnd, self.force.next_wave, self.force.next_disp, self.force.next_rain,
@@ -533,6 +534,14 @@ class Model(object):
             self.force.next_flexure += self.input.ftime
             print("   - Compute flexural isostasy %0.02f seconds" % (time.clock() - flextime))
 
+        # Update next stratal layer time
+        if self.tNow >= self.force.next_layer:
+            self.force.next_layer += self.input.laytime
+            sub = self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
+                                    self.recGrid.boundsPt,1, self.outputStep)
+            self.elevation += sub
+            self.cumdiff += sub
+
         # Create checkpoint files and write HDF5 output
         if self.input.udw == 0 or self.tNow == self.input.tEnd or self.tNow == self.force.next_display:
             checkPoints.write_checkpoints(self.input, self.recGrid, self.lGIDs, self.inIDs, self.tNow, \
@@ -546,11 +555,3 @@ class Model(object):
             if self.carbTIN is not None:
                 self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep-1)
                 self.carbTIN.step += 1
-
-        # Update next stratal layer time
-        if self.tNow >= self.force.next_layer:
-            self.force.next_layer += self.input.laytime
-            sub = self.strata.buildStrata(self.elevation, self.cumdiff, self.force.sealevel,
-                                    self.recGrid.boundsPt,1, self.outputStep-1)
-            self.elevation += sub
-            self.cumdiff += sub

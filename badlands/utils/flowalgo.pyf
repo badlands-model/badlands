@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module flowalgo ! in 
+python module flowalgo ! in
     interface  ! in :flowalgo
         subroutine overlap(pyx,pyy,pyxst,pyyst,pyxed,pyyed,pypart,pynodes) ! in :flowalgo:flowalgo.f90
             real(kind=8) dimension(pynodes),intent(in) :: pyx
@@ -254,7 +254,7 @@ python module flowalgo ! in
             integer, optional,check(len(fillh)>=ptsnb),depend(fillh) :: ptsnb=len(fillh)
             integer, optional,check(shape(depo,1)==sednb),depend(depo) :: sednb=shape(depo,1)
         end subroutine getids
-    end interface 
+    end interface
 end python module flowalgo
 
 ! This file was auto-generated with f2py (version:2).

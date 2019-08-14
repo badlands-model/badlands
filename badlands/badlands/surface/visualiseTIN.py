@@ -95,7 +95,7 @@ def output_cellsIDs(lGIDs, inIDs, visXlim, visYlim, coords, cells):
 
 def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill, cumfail,
                cells, rainOn, eroOn, erodibility, area, waveOn, waveH, waveS, wavediff,
-               rockOn, prop):
+               rockOn, prop, sealevel):
     """
     This function writes for each processor the **hdf5** file containing surface information.
 
@@ -132,6 +132,8 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
         f["cells"][:,:] = cells
 
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        discharge[elevation<sealevel] = 0.
+        discharge[discharge<1.] = 1.
         f["discharge"][:,0] = discharge
 
         if rainOn:
@@ -177,7 +179,7 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
 
 def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill, cumfail,
                        cumflex, cells, rainOn, eroOn, erodibility, area, waveOn, waveH,  waveS, wavediff,
-                       rockOn, prop):
+                       rockOn, prop, sealevel):
     """
     This function writes for each processor the **hdf5** file containing surface information
     with flexural isostasy turned on.
@@ -227,6 +229,8 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
         f["cells"][:,:] = cells
 
         f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        discharge[elevation<sealevel] = 0.
+        discharge[discharge<1.] = 1.
         f["discharge"][:,0] = discharge
 
         if rainOn:

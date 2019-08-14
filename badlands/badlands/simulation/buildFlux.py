@@ -137,7 +137,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         tNow: simulation time step.
         tEnd: simulation end time.
         verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
-        
+
     Returns
     -------
     tNow
@@ -219,7 +219,16 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     if verbose:
         print('CFL for hillslope and flow ',hillslope.CFL,flow.CFL,CFLtime)
     CFLtime = min(CFLtime, tEnd - tNow)
-    CFLtime = max(input.minDT, CFLtime)
+    if input.minDT > 1:
+        if CFLtime < input.minDT:
+            if input.minDT > tEnd - tNow:
+                CFLtime = tEnd - tNow
+            else:
+                CFLtime = max(input.minDT, CFLtime)
+        else:
+            CFLtime = max(input.minDT, CFLtime)
+    else:
+        CFLtime = max(input.minDT, CFLtime)
     CFLtime = min(input.maxDT, CFLtime)
     if verbose:
         print(" -   Get CFL time step ", time.clock() - walltime)
@@ -233,6 +242,14 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     timestep, sedchange, erosion, deposition = flow.compute_sedflux(FVmesh.control_volumes, elevation, rain, fillH,
                                           CFLtime, activelay, eroCk, force.rivQs, force.sealevel, input.perc_dep,
                                           input.slp_cr, FVmesh.neighbours, verbose=False)
+
+    if timestep < CFLtime:
+        if input.minDT > tEnd - tNow:
+            CFLtime = tEnd - tNow
+        else:
+            CFLtime = max(input.minDT, CFLtime)
+    else:
+        CFLtime = max(input.minDT, CFLtime)
 
     if verbose:
         print(" -   Get stream fluxes ", time.clock() - walltime)
