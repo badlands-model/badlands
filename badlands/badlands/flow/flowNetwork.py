@@ -528,7 +528,7 @@ class flowNetwork:
         for i in range(1):
             cumbase[i+1] = len(numpy.array_split(self.base, 1)[i])+cumbase[i]+1
 
-        # Compute discharge using libUtils
+        # Compute discharge using libUtils 
         idsl = numpy.where(elevation<sealevel)[0]
         rcv = numpy.copy(self.receivers)
         rcv[idsl] = -1

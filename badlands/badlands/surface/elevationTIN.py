@@ -228,7 +228,7 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
 def assign_parameter_pit(neighbours, area, diffnb, prop, boundPts, fillTH=1., epsilon=1.e-6):
     """
     This function defines the global variables used in the **pit filling algorithm** described in
-    the :code:`pit_stack_PD` function_.
+    the :code:`pit_stack` function_.
 
     Args:
         neighbours: numpy integer-type array containing for each nodes its neigbhours IDs.
@@ -240,7 +240,7 @@ def assign_parameter_pit(neighbours, area, diffnb, prop, boundPts, fillTH=1., ep
         fillTH: limit the filling algorithm to a specific height to prevent complete filling of depression (default: 1. m).
         epsilon: force the creation of a minimal slope instead of a flat area to ensure continuous flow pathways (default: 1.e-6 m).
 
-    .. _function: https://badlands.readthedocs.io/en/latest/api.html#surface.elevationTIN.pit_stack_PD
+    .. _function: https://badlands.readthedocs.io/en/latest/api.html#surface.elevationTIN.pit_stack
 
     Tip:
         Planchon and Darboux, 2001: A Fast, Simple and Versatile Algorithm to Fill the Depressions of Digital Elevation Models - Catena,
@@ -251,7 +251,7 @@ def assign_parameter_pit(neighbours, area, diffnb, prop, boundPts, fillTH=1., ep
     pdalgo.pitparams(neighbours, area, diffnb, prop, fillTH, epsilon, boundPts)
 
 
-def pit_stack_PD(elev, allFill, sealevel):
+def pit_stack(elev, allFill, sealevel):
     """
     This function calls a **pit filling algorithm** to compute depression-less elevation grid.
 
@@ -272,7 +272,7 @@ def pit_stack_PD(elev, allFill, sealevel):
 
     Caution:
         The Planchon & Darboux (2001) algorithm is not as efficient as priority-queue approaches such as the one
-        proposed in Barnes et al. (2014).
+        proposed in Barnes et al. (2014) and we now use this latest algorithm.
 
         Barnes, Lehman & Mulla 2014: An Efficient Assignment of Drainage Direction Over Flat Surfaces in Raster Digital Elevation Models -
         Computers & Geosciences, doi: 10.1016/`j.cageo.2013.01.009`_.

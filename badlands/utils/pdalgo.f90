@@ -191,13 +191,14 @@ subroutine pitfilling(elevation,allfill,sealevel,demH,pydnodes)
 
   real(kind=8),intent(out) :: demH(pydnodes)
 
-  ! Initialisation phase
-  call initialisePD(elevation,demH,pydnodes)
-
   ! Filling phase
   if(allfill == 0)then
-    call fillPD(elevation,sealevel,demH,pydnodes)
+    ! call fillPD(elevation,sealevel,demH,pydnodes)
+    call fillBarnes(elevation,sealevel,demH,pydnodes)
   else
+    ! call fillBarnes(elevation,sealevel,demH,pydnodes)
+    ! Initialisation phase
+    call initialisePD(elevation,demH,pydnodes)
     call allfillPD(elevation,demH,pydnodes)
   endif
 

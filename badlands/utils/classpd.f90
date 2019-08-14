@@ -37,7 +37,102 @@ module classpd
     integer, parameter :: max_it_cyc = 500000
     real(kind=8), parameter :: diff_res = 1.e-2
 
+    ! Queue node definition: index and elevation
+    type node
+      integer :: id
+      real(kind=8) :: Z
+    end type
+
+    ! Definition of priority queue
+    type pqueue
+      type(node), allocatable :: buf(:)
+      integer :: n = 0
+    contains
+      procedure :: PQpop
+      procedure :: PQpush
+      procedure :: shiftdown
+    end type
+
+    type (pqueue) :: priorityqueue
+
 contains
+
+    subroutine shiftdown(this, a)
+    !*****************************************************************************
+    ! This function sort the queue based on increasing elevations priority
+
+      class (pqueue)  :: this
+      integer :: a, parent, child
+
+      associate (x => this%buf)
+      parent = a
+
+      do while(parent*2 <= this%n)
+        child = parent*2
+        if (child + 1 <= this%n) then
+          if (x(child+1)%Z < x(child)%Z ) then
+            child = child +1
+          end if
+        end if
+
+        if (x(parent)%Z > x(child)%Z) then
+          x([child, parent]) = x([parent, child])
+          parent = child
+        else
+          exit
+        end if
+      end do
+      end associate
+
+    end subroutine shiftdown
+
+    function PQpop(this) result (res)
+    !*****************************************************************************
+    ! This function pops first values in a priority queue
+
+      class(pqueue) :: this
+      type(node)   :: res
+
+      res = this%buf(1)
+      this%buf(1) = this%buf(this%n)
+      this%n = this%n - 1
+
+      call this%shiftdown(1)
+
+    end function PQpop
+
+    subroutine PQpush(this, Z, id)
+    !*****************************************************************************
+    ! This function pushes new values in a priority queue
+
+      class(pqueue), intent(inout) :: this
+      real(kind=8) :: Z
+      integer  :: id
+
+      type(node)  :: x
+      type(node), allocatable  :: tmp(:)
+      integer :: ii
+
+      x%Z = Z
+      x%id = id
+      this%n = this%n +1
+
+      if (.not.allocated(this%buf)) allocate(this%buf(1))
+      if (size(this%buf)<this%n) then
+        allocate(tmp(2*size(this%buf)))
+        tmp(1:this%n-1) = this%buf
+        call move_alloc(tmp, this%buf)
+      end if
+
+      this%buf(this%n) = x
+      ii = this%n
+      do
+        ii = ii / 2
+        if (ii==0) exit
+        call this%shiftdown(ii)
+      end do
+
+    end subroutine PQpush
 
     subroutine defineparameters
 
@@ -72,6 +167,62 @@ contains
       enddo
 
     end subroutine initialisePD
+
+    subroutine fillBarnes(elevation, sealevel, demH, pydnodes)
+
+      logical :: change
+      integer :: pydnodes, n, k, p
+      real(kind=8),intent(in) :: sealevel
+      real(kind=8),intent(in) :: elevation(pydnodes)
+      real(kind=8),intent(inout) :: demH(pydnodes)
+
+
+      type (node)  :: pt
+      logical :: flag(pydnodes)
+      real(kind=8) :: fill(pydnodes)
+
+
+      ! Push edges to priority queue
+      flag = .False.
+      fill = elevation
+      do k = 1, bds
+        call priorityqueue%PQpush(fill(k),k)
+        flag(k) = .True.
+      enddo
+
+      ! Use priority queue to remove pits
+      do while(priorityqueue%n >0)
+        pt = priorityqueue%PQpop()
+        k = pt%id
+        demH(k) = fill(k)
+        loop: do p = 1, 20
+          if( neighbours(k,p) < 0 ) exit loop
+          n = neighbours(k,p)+1
+          if(.not. flag(n))then
+            flag(n) = .True.
+            fill(n) = max(fill(n),fill(k)+eps)
+            call priorityqueue%PQpush(fill(n), n)
+          endif
+        enddo loop
+      enddo
+
+      ! Limit elevation based on maximum filling thickness
+      do k = 1, pydnodes
+        if(elevation(k)>=sealevel)then
+          if(demH(k)-elevation(k)>fill_TH) demH(k) = elevation(k) + fill_TH
+        else
+          ! demH(k) = elevation(k)
+          if(demH(k)>sealevel)then
+              demH(k) = min(demH(k),sealevel+fill_TH)
+          else
+            demH(k) = elevation(k)
+          endif
+        endif
+      enddo
+
+      return
+
+    end subroutine fillBarnes
 
     subroutine fillPD(elevation, sealevel, demH, pydnodes)
 
