@@ -24,3 +24,4 @@ doc/env/
 *.egg
 badlands/badlands.egg-info
 *.gz
+badlands/docs/_build

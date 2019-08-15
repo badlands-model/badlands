@@ -36,6 +36,14 @@ This screencast illustrates some of the code's features...
 
 .. toctree::
    :maxdepth: 3
+   :name: Hand's on!
+   :caption: Hand's on!
+
+   install.rst
+   examples.rst
+
+.. toctree::
+   :maxdepth: 3
    :name: Capabilities
    :caption: Capabilities
 

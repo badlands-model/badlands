@@ -419,6 +419,8 @@ class xmlParser:
             element = tecto.find('time3d')
             if element is not None:
                 self.time3d = float(element.text)
+                if self.time3d < self.minDT:
+                    raise ValueError('The value of time3d cannot be lower than mindt.')
             else:
                 self.time3d = 0.
             element = None
