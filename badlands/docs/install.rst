@@ -120,24 +120,23 @@ We have created a **Python3 Package** that should handle all dependencies for yo
    sudo pip3 install badlands
    sudo pip3 install badlands-companion
 
-PyPI packages should install the following dependencies:
+PyPI packages should install the following dependencies (`requirements.txt`_):
 
-* tribad
-* numpy>=1.15.0
-* h5py>=2.8.0
-* six>=1.11.0
-* setuptools>=38.4.0
-* pandas>=0.24
-* scipy>=1.2
-* scikit-image>=0.15
-* gFlex>=1.1.0
-* matplotlib>=3.0
-* plotly==4.0.0
-* scikit-fuzzy
-* cmocean
-* pyevtk
-* netcdf4
-* colorlover
++-----------------+----------------------+----------------------+
+| * tribad        | * numpy>=1.15.0      | * pandas>=0.24       |
++-----------------+----------------------+----------------------+
+| * h5py>=2.8.0   | * setuptools>=38.4.0 | * scipy>=1.2         |
++-----------------+----------------------+----------------------+
+| * six>=1.11.0   | * scikit-image>=0.15 | * gFlex>=1.1.0       |
++-----------------+----------------------+----------------------+
+| * plotly==4.0.0 | * matplotlib>=3.0    | * scikit-fuzzy       |
++-----------------+----------------------+----------------------+
+| * cmocean       | * pyevtk             | * netcdf4            |
++-----------------+----------------------+----------------------+
+| * colorlover    |                      |                      |
++-----------------+----------------------+----------------------+
+
+.. _`requirements.txt`: https://github.com/badlands-model/badlands-companion/blob/master/requirements.txt
 
 +---------------------------------+
 | Git installation                |
