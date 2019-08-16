@@ -107,6 +107,60 @@ Python package
   :alt: PyPI
 
 
++---------------------------------+
+| PyPI installation               |
++---------------------------------+
+
+If you would like a native local build, you will need to download, install and compile the **badlands** code and relevant dependencies.
+
+We have created a **Python3 Package** that should handle all dependencies for you. And the recommended install is through the `PyPI package`_:
+
+.. code:: bash
+
+   sudo pip3 install badlands
+   sudo pip3 install badlands-companion
+
+PyPI packages should install the following dependencies:
+
+* tribad
+* numpy>=1.15.0
+* h5py>=2.8.0
+* six>=1.11.0
+* setuptools>=38.4.0
+* pandas>=0.24
+* scipy>=1.2
+* scikit-image>=0.15
+* gFlex>=1.1.0
+* matplotlib>=3.0
+* plotly==4.0.0
+* scikit-fuzzy
+* cmocean
+* pyevtk
+* netcdf4
+* colorlover
+
++---------------------------------+
+| Git installation                |
++---------------------------------+
+
+Alternatively you can install **badlands** from the GitHub source:
+
+First, clone **badlands** & **badlands-companion** using git:
+
+.. code:: bash
+
+   git clone https://github.com/badlands-model/badlands.git
+   git clone https://github.com/badlands-model/badlands-companion.git
+
+Then, cd to the respective folder and run the install command:
+
+.. code:: bash
+
+  cd badlands/badlands
+  sudo python3 setup.py install
 
 
-deede
+.. code:: bash
+
+  cd ../../badlands-companion
+  sudo python3 setup.py install
