@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'badlands'
-copyright = '2014-2019, Badlands Documentation Contributors'
+copyright = '2019, Badlands Group - University of Sydney.'
 author = 'Tristan Salles'
 
 # The version info for the project you're documenting, acts as replacement for

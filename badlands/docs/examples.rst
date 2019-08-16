@@ -142,6 +142,25 @@ To assist users during the pre and post-processing phases, a series of Python cl
 3. easily design their own notebooks and further improve the proposed workflow.
 
 
+To install the **companion** functions on your local environment, we provide a Python Package:
+
+.. image:: https://img.shields.io/pypi/v/badlands-companion
+  :target: https://pypi.org/project/badlands-companion
+  :alt: PyPI
+
+.. code:: bash
+
+  pip install badlands-companion
+
+In case where the installation does not work, a local installation can be done:
+
+.. code:: bash
+
+  git clone https://github.com/badlands-model/badlands-companion.git
+  cd badlands-companion
+  python3 setup.py install
+
+
 Pre-processing classes
 ^^^^^^^^^^^^^^^^^^^^^^
 

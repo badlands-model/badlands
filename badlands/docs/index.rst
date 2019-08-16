@@ -5,9 +5,17 @@ Getting started with badlands
 built to simulate landscape development, sediment transport and sedimentary basins formation
 from upstream regions down to marine environments.
 
+.. image:: https://img.shields.io/pypi/v/badlands
+  :target: https://pypi.org/project/badlands
+  :alt: PyPI
+
 .. image:: https://readthedocs.org/projects/badlands/badge/?version=latest
   :target: https://badlands.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
+
+.. image:: https://img.shields.io/docker/pulls/badlandsmodel/pybadlands-demo-dev
+  :target: https://cloud.docker.com/u/badlandsmodel/repository/docker/badlandsmodel/badlands
+  :alt: Docker Pulls
 
 ----------
 
