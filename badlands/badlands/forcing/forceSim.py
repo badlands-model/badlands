@@ -490,14 +490,36 @@ class forceSim:
         dispX = numpy.zeros(totPts, dtype=float)
         dispY = numpy.zeros(totPts, dtype=float)
         dispZ = numpy.zeros(totPts, dtype=float)
-        dpXY = tXY[inIDs,:]
+
+        xx = tXY[inIDs,0]
+        xx[xx<self.regX.min() ] = self.regX.min()
+        xx[xx>self.regX.max() ] = self.regX.max()
+
+        yy = tXY[inIDs,1]
+        yy[yy<self.regY.min() ] = self.regY.min()
+        yy[yy>self.regY.max() ] = self.regY.max()
+
+        dpXY = np.zeros((len(inIDs),2))
+        dpXY[:,0] = xx[inIDs]
+        dpXY[:,1] = yy[inIDs]
 
         if strata:
             totsPts = len(sXY[:,0])
             sdispX = numpy.zeros(totsPts, dtype=float)
             sdispY = numpy.zeros(totsPts, dtype=float)
             sdispZ = numpy.zeros(totsPts, dtype=float)
-            dpsXY = sXY[insIDs,:]
+
+            sxx = sXY[insIDs,0]
+            sxx[sxx<self.regX.min() ] = self.regX.min()
+            sxx[sxx>self.regX.max() ] = self.regX.max()
+
+            syy = sXY[insIDs,1]
+            syy[syy<self.regY.min() ] = self.regY.min()
+            syy[syy>self.regY.max() ] = self.regY.max()
+
+            dpsXY = np.zeros((len(insIDs),2))
+            dpsXY[:,0] = sxx[insIDs]
+            dpsXY[:,1] = syy[insIDs]
 
         events = numpy.where( (self.T_disp[:,1] - time) <= 0)[0]
         event = len(events)
