@@ -79,13 +79,13 @@ Manley K.: *Modeling Landscape Evolution of the Tweed Caldera Drainage Basin Und
 East M.: *Sediment fates across mixed carbonate-siliciclastic margins: The interplay of climate, sea level and carbonate growth over geologic timescales*, **Honours Thesis**, University of Sydney, 2018.
 
 
-Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level change and sediment transfer from source to sink*, **PhD Thesis**, University of Sydney, 2019.
+Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level change and sediment transfer from source to sink*, **PhD Thesis**, `20665`_, University of Sydney, 2019.
 
 
 .. _`1534`: https://scholar.colorado.edu/honr_theses/1534
 
 
-
+.. _`20665`: http://hdl.handle.net/2123/20665
 .. _`doi:10.1016/j.softx.2016.08.005`:  https://doi.org/10.1016/j.softx.2016.08.005
 .. _`doi:10.1016/j.cageo.2016.03.011`:  https://doi.org/10.1016/j.cageo.2016.03.011
 .. _`doi:10.5194/gmd-11-2093-2018`:  https://doi.org/10.5194/gmd-11-2093-2018
