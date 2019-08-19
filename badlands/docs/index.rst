@@ -26,7 +26,7 @@ What's in the box?
 Badlands is an open-source Python-based code and can be used to simulate:
 
 * hillslope processes (*linear* & *non-linear* diffusion),
-* fluvial incision (*Stream Power Law*, *Transport Capacity Law*)
+* fluvial incision (*Stream Power Law*, *Transport Capacity Law*),
 * sediment transport and deposition,
 * wave-induced longshore drift transport,
 * reef growth and carbonate platform formation,
