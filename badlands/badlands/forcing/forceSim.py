@@ -490,36 +490,15 @@ class forceSim:
         dispX = numpy.zeros(totPts, dtype=float)
         dispY = numpy.zeros(totPts, dtype=float)
         dispZ = numpy.zeros(totPts, dtype=float)
-
-        xx = tXY[inIDs,0]
-        xx[xx<self.regX.min() ] = self.regX.min()
-        xx[xx>self.regX.max() ] = self.regX.max()
-
-        yy = tXY[inIDs,1]
-        yy[yy<self.regY.min() ] = self.regY.min()
-        yy[yy>self.regY.max() ] = self.regY.max()
-
         dpXY = numpy.zeros((len(inIDs),2))
-        dpXY[:,0] = xx
-        dpXY[:,1] = yy
+        dpXY = tXY[inIDs,:]
 
         if strata:
             totsPts = len(sXY[:,0])
             sdispX = numpy.zeros(totsPts, dtype=float)
             sdispY = numpy.zeros(totsPts, dtype=float)
             sdispZ = numpy.zeros(totsPts, dtype=float)
-
-            sxx = sXY[insIDs,0]
-            sxx[sxx<self.regX.min() ] = self.regX.min()
-            sxx[sxx>self.regX.max() ] = self.regX.max()
-
-            syy = sXY[insIDs,1]
-            syy[syy<self.regY.min() ] = self.regY.min()
-            syy[syy>self.regY.max() ] = self.regY.max()
-
-            dpsXY = numpy.zeros((len(insIDs),2))
-            dpsXY[:,0] = sxx
-            dpsXY[:,1] = syy
+            dpsXY = sXY[insIDs,:]
 
         events = numpy.where( (self.T_disp[:,1] - time) <= 0)[0]
         event = len(events)
@@ -689,111 +668,37 @@ class forceSim:
         # interpolate parameters based on merged points
         if len(pairs) > 0:
             pairIDs = numpy.array(list(pairs))
-            nonfixIDs = numpy.where(numpy.logical_and( pairIDs[:,0] >= fixIDs, pairIDs[:,1] >= fixIDs))[0]
-            mXY = numpy.empty(shape=[len(nonfixIDs),2], dtype=float)
-            mXY[:,0] = 0.5*(self.tXY[pairIDs[nonfixIDs,0],0] + self.tXY[pairIDs[nonfixIDs,1],0])
-            mXY[:,1] = 0.5*(self.tXY[pairIDs[nonfixIDs,0],1] + self.tXY[pairIDs[nonfixIDs,1],1])
-            mergedIDs = numpy.unique(pairIDs[nonfixIDs,:].flatten())
-            distances, indices = tree.query(mXY, k=3)
-            weights = 1.0 / distances**2
-            onIDs = numpy.where(distances[:,0] == 0)[0]
-            if len(onIDs) > 0:
-                raise ValueError('Problem: IDs after merging is on previous vertex position.')
-            if len(elev[indices].shape) == 3:
-                z_vals = elev[indices][:,:,0]
-                cum_vals = cum[indices][:,:,0]
-                hum_vals = hum[indices][:,:,0]
-                fum_vals = fum[indices][:,:,0]
-                if wcum is not None:
-                    wum_vals = wum[indices][:,:,0]
-                if flexure == 1:
-                    cumf_vals = cumf[indices][:,:,0]
-                if strat == 1:
-                    scum_vals = stcum[indices][:,:,0]
-            else:
-                z_vals = elev[indices]
-                cum_vals = cum[indices]
-                hum_vals = hum[indices]
-                fum_vals = fum[indices]
-                if wcum is not None:
-                    wum_vals = wum[indices]
-                if flexure == 1:
-                    cumf_vals = cumf[indices]
-                if strat == 1:
-                    scum_vals = stcum[indices]
-            z_avg = numpy.average(z_vals, weights=weights,axis=1)
-            cum_avg = numpy.average(cum_vals, weights=weights,axis=1)
-            hum_avg = numpy.average(hum_vals, weights=weights,axis=1)
-            fum_avg = numpy.average(fum_vals, weights=weights,axis=1)
+            nonfixIDs = numpy.where(pairIDs[:,1] >= fixIDs)
+            tXY = numpy.copy(self.tXY)
+            self.tXY = numpy.delete(tXY, pairIDs[nonfixIDs,1], 0)
+            elev = numpy.delete(elev, pairIDs[nonfixIDs,1], 0)
+            cum = numpy.delete(cum, pairIDs[nonfixIDs,1], 0)
+            hum = numpy.delete(hum, pairIDs[nonfixIDs,1], 0)
+            fum = numpy.delete(fum, pairIDs[nonfixIDs,1], 0)
             if wcum is not None:
-                wum_avg = numpy.average(wum_vals, weights=weights,axis=1)
+                wum = numpy.delete(wum, pairIDs[nonfixIDs,1], 0)
             if flexure == 1:
-                cumf_avg = numpy.average(cumf_vals, weights=weights,axis=1)
+                cumf = numpy.delete(cumf, pairIDs[nonfixIDs,1], 0)
             if strat == 1:
-                scum_avg = numpy.average(scum_vals, weights=weights,axis=1)
-            if ero == 1:
-                Te_avg = numpy.zeros((len(z_avg),lay))
-                Ke_avg = numpy.zeros((len(z_avg),lay))
-                for k in range(lay):
-                    if len(mTe[indices,k].shape) == 3:
-                        Te_vals = mTe[indices,k][:,:,0]
-                        Ke_vals = mKe[indices,k][:,:,0]
-                    else:
-                        Te_vals = mTe[indices,k]
-                        Ke_vals = mKe[indices,k]
-                    Te_avg[:,k] = numpy.average(Te_vals, weights=weights,axis=1)
-                    Ke_avg[:,k] = Ke_vals[indices[0]]
-            # Delete points that have been merged
-            newXY = numpy.delete(self.tXY, mergedIDs, 0)
-            newelev = numpy.delete(elev, mergedIDs, 0)
-            newcum = numpy.delete(cum, mergedIDs, 0)
-            newhcum = numpy.delete(hum, mergedIDs, 0)
-            newfcum = numpy.delete(fum, mergedIDs, 0)
-            if wcum is not None:
-                newwcum = numpy.delete(wum, mergedIDs, 0)
-            if flexure == 1:
-                newcumf = numpy.delete(cumf, mergedIDs, 0)
-            if strat == 1:
-                newscum = numpy.delete(stcum, mergedIDs, 0)
-            if ero == 1:
-                newKe = numpy.zeros((len(newcum),lay))
-                newTe = numpy.zeros((len(newcum),lay))
-                for k in range(lay):
-                    newKe[:,k] = numpy.delete(mKe[:,k], mergedIDs, 0)
-                    newTe[:,k] = numpy.delete(mTe[:,k], mergedIDs, 0)
-            # Add new points to the deformed TIN
-            newXY = numpy.concatenate((newXY, mXY), axis=0)
-            newelev = numpy.concatenate((newelev, z_avg), axis=0)
-            newcum = numpy.concatenate((newcum, cum_avg), axis=0)
-            newhcum = numpy.concatenate((newhcum, hum_avg), axis=0)
-            newfcum = numpy.concatenate((newfcum, fum_avg), axis=0)
-            if wcum is not None:
-                newwcum = numpy.concatenate((newwcum, wum_avg), axis=0)
-            if flexure == 1:
-                newcumf = numpy.concatenate((newcumf, cumf_avg), axis=0)
-            if strat == 1:
-                newscum = numpy.concatenate((newscum, scum_avg), axis=0)
-            if ero == 1:
-                nKe = numpy.zeros((len(newcum),lay))
-                nTe = numpy.zeros((len(newcum),lay))
-                for k in range(lay):
-                    nKe[:,k] = numpy.concatenate((newKe[:,k], Ke_avg[:,k]), axis=0)
-                    nTe[:,k] = numpy.concatenate((newTe[:,k], Te_avg[:,k]), axis=0)
-        else:
-            newXY = self.tXY
-            newelev = elev
-            newcum = cum
-            newhcum = hum
-            newfcum = fum
-            if wcum is not None:
-                newwcum = wum
-            if flexure == 1:
-                newcumf = cumf
-            if strat == 1:
-                newscum = stcum
-            if ero == 1:
-                nKe = mKe
-                nTe = mTe
+                stcum = numpy.delete(stcum, pairIDs[nonfixIDs,1], 0)
+
+            # Create KDTree with deformed points and find points which needs to be merged
+            tree = cKDTree(self.tXY)
+
+        newXY = self.tXY
+        newelev = elev
+        newcum = cum
+        newhcum = hum
+        newfcum = fum
+        if wcum is not None:
+            newwcum = wum
+        if flexure == 1:
+            newcumf = cumf
+        if strat == 1:
+            newscum = stcum
+        if ero == 1:
+            nKe = mKe
+            nTe = mTe
 
         # Based on new points build the triangulation
         newTIN = triangle.triangulate( {'vertices':newXY},'Da'+str(area))

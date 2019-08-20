@@ -252,7 +252,7 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     walltime = time.clock()
     FVmesh = FVmethod.FVmethod(recGrid.tinMesh['vertices'], recGrid.tinMesh['triangles'],
                                recGrid.tinMesh['edges'])
-
+                               
     # Perform partitioning by equivalent domain splitting
     partitionIDs, RowProc, ColProc = partitionTIN.simple(recGrid.tinMesh['vertices'][:, 0],
                                                          recGrid.tinMesh['vertices'][:, 1])

@@ -112,7 +112,7 @@ void directions(double pyElev[], double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], dou
 
 void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[][MAX_NEIGHBOURS],
     double pyDist[][MAX_NEIGHBOURS], int pyGIDs[], int pyBase[],
-    int pyRcv[], int pylocalNb, int pyglobalNb)
+    int pyRcv[], int pyglobalNb)
 {
     int i;
 
@@ -122,7 +122,7 @@ void directions_base(double pyZ[], int pyNgbs[][MAX_NEIGHBOURS], double pyEdge[]
     }
 
     int k;
-    for (k = 0; k < pylocalNb; k++) {
+    for (k = 0; k < pyglobalNb; k++) {
         int gid = pyGIDs[k];
         int lowestID = gid;
         double diffD = 0.;

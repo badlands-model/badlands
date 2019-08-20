@@ -39,14 +39,13 @@ interface
     double precision intent(out) :: pyMaxDep(pyglobalNb)
   end subroutine directions
 
-  subroutine directions_base(pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, pyBase, pyRcv, pylocalNb, pyglobalNb)
+  subroutine directions_base(pyZ, pyNgbs, pyEdge, pyDist, pyGIDs, pyBase, pyRcv, pyglobalNb)
     intent(c) directions_base            ! directions is a C function
     intent(c)                            ! all foo arguments are
                                          ! considered as C based
 
-    integer intent(in), depend(pyGIDs) :: pylocalNb=len(pyGIDs)
-    integer intent(in), depend(pyNgbs) :: pyglobalNb=len(pyNgbs)
-    integer intent(in) :: pyGIDs(pylocalNb)
+    integer intent(in), depend(pyGIDs) :: pyglobalNb=len(pyGIDs)
+    integer intent(in) :: pyGIDs(pyglobalNb)
     integer intent(in) :: pyNgbs(pyglobalNb, 20)
     double precision intent(in) :: pyZ(pyglobalNb)
     double precision intent(in) :: pyEdge(pyglobalNb, 20)
