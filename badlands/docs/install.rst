@@ -55,11 +55,11 @@ Docker_ is a type of lightweight virtualisation, and is the preferred method for
    :alt: capability
    :align: center
 
-Simply search for `badlandsmodel/badlands`_ within Kitematic, and then click **'CREATE'** to launch a container. You will eventually wish to modify your container settings (again through Kitematic) to enable local folder volume mapping, which will allow you to access your local drives within your container.
+Search for `badlands by badlandsmodel`_ within Kitematic (see figure above), and then click **'CREATE'** to launch a container. You will eventually wish to modify your container settings (again through Kitematic) to enable local folder volume mapping, which will allow you to access your local drives within your container.
 
 .. _Docker: https://www.docker.com/products/docker-desktop
 
-.. _`badlandsmodel/badlands`: https://cloud.docker.com/u/badlandsmodel/repository/docker/badlandsmodel/badlands
+.. _`badlands by badlandsmodel`: https://cloud.docker.com/u/badlandsmodel/repository/docker/badlandsmodel/badlands
 
 For Linux users, and those who prefer the command line, the following minimal command should be sufficient to access the badlands Jupyter Notebook examples:
 
