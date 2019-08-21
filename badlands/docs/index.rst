@@ -9,7 +9,7 @@ Getting started with badlands
   :target: https://badlands.readthedocs.io/en/latest/?badge=latest
   :alt: Documentation Status
 
-.. image:: https://img.shields.io/docker/pulls/badlandsmodel/pybadlands-demo-dev
+.. image:: https://img.shields.io/docker/pulls/badlandsmodel/pybadlands-demo-serial
   :target: https://cloud.docker.com/u/badlandsmodel/repository/docker/badlandsmodel/badlands
   :alt: Docker Pulls
 
