@@ -10,7 +10,7 @@ Badlands - Basin & Landscape Dynamics
 [![Documentation Status](https://readthedocs.org/projects/badlands/badge/?version=latest)](https://badlands.readthedocs.io/en/latest/?badge=latest)      [![DOI](https://zenodo.org/badge/51286954.svg)](https://zenodo.org/badge/latestdoi/51286954)
 
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/badlandsmodel/pybadlands-demo-dev)](https://cloud.docker.com/u/badlandsmodel/repository/docker/badlandsmodel/badlands)
+[![Docker Pulls](https://img.shields.io/docker/pulls/badlandsmodel/pybadlands-demo-serial)](https://cloud.docker.com/u/badlandsmodel/repository/docker/badlandsmodel/badlands)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/badlands-model/badlands-docker/binder?filepath=StartHere.ipynb)
 
 <div align="center">
