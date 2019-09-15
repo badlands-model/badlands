@@ -64,7 +64,7 @@ class stratiWedge():
         if rstep > 0:
             if os.path.exists(rfolder):
                 folder = rfolder+'/h5/'
-                fileCPU = 'stratal.time%s.p*.hdf5'%rstep
+                fileCPU = 'stratal.time%s.hdf5'%rstep
                 restartncpus = len(glob.glob1(folder,fileCPU))
                 if restartncpus == 0:
                     raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')

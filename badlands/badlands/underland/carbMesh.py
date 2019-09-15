@@ -67,7 +67,7 @@ class carbMesh():
         if rstep > 0:
             if os.path.exists(rfolder):
                 folder = rfolder+'/h5/'
-                fileCPU = 'stratal.time%s.p*.hdf5'%rstep
+                fileCPU = 'stratal.time%s.hdf5'%rstep
                 restartncpus = len(glob.glob1(folder,fileCPU))
                 if restartncpus == 0:
                     raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
@@ -77,7 +77,7 @@ class carbMesh():
             if restartncpus != size:
                 raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
 
-            df = h5py.File('%s/h5/stratal.time%s.p%s.hdf5'%(rfolder, rstep, rank), 'r')
+            df = h5py.File('%s/h5/stratal.time%s.hdf5'%(rfolder, rstep), 'r')
 
             paleoDepth = numpy.array((df['/paleoDepth']))
             eroLay =  paleoDepth.shape[1]

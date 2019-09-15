@@ -257,32 +257,30 @@ class raster2TIN:
 
         if os.path.exists(restartFolder):
             folder = restartFolder+'/h5/'
-            fileCPU = 'tin.time%s.p*.hdf5'%timestep
+            fileCPU = 'tin.time%s.hdf5'%timestep
             restartncpus = len(glob.glob1(folder,fileCPU))
             if restartncpus == 0:
                 raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
         else:
             raise ValueError('The restart folder is missing or the given path is incorrect.')
 
-
-        for i in range(0, restartncpus):
-            df = h5py.File('%s/h5/tin.time%s.p%s.hdf5'%(restartFolder, timestep, i), 'r')
-            coords = numpy.array((df['/coords']))
-            cumdiff = numpy.array((df['/cumdiff']))
-            cumhill = numpy.array((df['/cumhill']))
-            cumfail = numpy.array((df['/cumfail']))
-            if i == 0:
-                x, y, z = numpy.hsplit(coords, 3)
-                c = cumdiff
-                h = cumhill
-                f = cumfail
-            else:
-                c = numpy.append(c, cumdiff)
-                h = numpy.append(h, cumhill)
-                f = numpy.append(f, cumfail)
-                x = numpy.append(x, coords[:,0])
-                y = numpy.append(y, coords[:,1])
-                z = numpy.append(z, coords[:,2])
+        df = h5py.File('%s/h5/tin.time%s.hdf5'%(restartFolder, timestep), 'r')
+        coords = numpy.array((df['/coords']))
+        cumdiff = numpy.array((df['/cumdiff']))
+        cumhill = numpy.array((df['/cumhill']))
+        cumfail = numpy.array((df['/cumfail']))
+        if i == 0:
+            x, y, z = numpy.hsplit(coords, 3)
+            c = cumdiff
+            h = cumhill
+            f = cumfail
+        else:
+            c = numpy.append(c, cumdiff)
+            h = numpy.append(h, cumhill)
+            f = numpy.append(f, cumfail)
+            x = numpy.append(x, coords[:,0])
+            y = numpy.append(y, coords[:,1])
+            z = numpy.append(z, coords[:,2])
 
         XY = numpy.column_stack((x,y))
         tree = cKDTree(XY)
@@ -355,7 +353,7 @@ class raster2TIN:
 
         if os.path.exists(restartFolder):
             folder = restartFolder+'/h5/'
-            fileCPU = 'tin.time%s.p*.hdf5'%timestep
+            fileCPU = 'tin.time%s.hdf5'%timestep
             restartncpus = len(glob.glob1(folder,fileCPU))
             if restartncpus == 0:
                 raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
@@ -363,27 +361,26 @@ class raster2TIN:
             raise ValueError('The restart folder is missing or the given path is incorrect.')
 
 
-        for i in range(0, restartncpus):
-            df = h5py.File('%s/h5/tin.time%s.p%s.hdf5'%(restartFolder, timestep, i), 'r')
-            coords = numpy.array((df['/coords']))
-            cumdiff = numpy.array((df['/cumdiff']))
-            cumhill = numpy.array((df['/cumhill']))
-            cumfail = numpy.array((df['/cumfail']))
-            cumflex = numpy.array((df['/cumflex']))
-            if i == 0:
-                x, y, z = numpy.hsplit(coords, 3)
-                c = cumdiff
-                h = cumhill
-                s = cumfail
-                f = cumflex
-            else:
-                c = numpy.append(c, cumdiff)
-                h = numpy.append(h, cumhill)
-                s = numpy.append(s, cumfail)
-                f = numpy.append(f, cumflex)
-                x = numpy.append(x, coords[:,0])
-                y = numpy.append(y, coords[:,1])
-                z = numpy.append(z, coords[:,2])
+        df = h5py.File('%s/h5/tin.time%s.hdf5'%(restartFolder, timestep), 'r')
+        coords = numpy.array((df['/coords']))
+        cumdiff = numpy.array((df['/cumdiff']))
+        cumhill = numpy.array((df['/cumhill']))
+        cumfail = numpy.array((df['/cumfail']))
+        cumflex = numpy.array((df['/cumflex']))
+        if i == 0:
+            x, y, z = numpy.hsplit(coords, 3)
+            c = cumdiff
+            h = cumhill
+            s = cumfail
+            f = cumflex
+        else:
+            c = numpy.append(c, cumdiff)
+            h = numpy.append(h, cumhill)
+            s = numpy.append(s, cumfail)
+            f = numpy.append(f, cumflex)
+            x = numpy.append(x, coords[:,0])
+            y = numpy.append(y, coords[:,1])
+            z = numpy.append(z, coords[:,2])
 
         XY = numpy.column_stack((x,y))
         tree = cKDTree(XY)

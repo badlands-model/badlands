@@ -74,7 +74,7 @@ class strataMesh():
         if rstep > 0:
             if os.path.exists(rfolder):
                 folder = rfolder+'/h5/'
-                fileCPU = 'sed.time%s.p*.hdf5'%(rstep)
+                fileCPU = 'sed.time%s.hdf5'%(rstep)
                 restartncpus = len(glob.glob1(folder,fileCPU))
                 if restartncpus == 0:
                     raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
