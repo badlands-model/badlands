@@ -269,18 +269,10 @@ class raster2TIN:
         cumdiff = numpy.array((df['/cumdiff']))
         cumhill = numpy.array((df['/cumhill']))
         cumfail = numpy.array((df['/cumfail']))
-        if i == 0:
-            x, y, z = numpy.hsplit(coords, 3)
-            c = cumdiff
-            h = cumhill
-            f = cumfail
-        else:
-            c = numpy.append(c, cumdiff)
-            h = numpy.append(h, cumhill)
-            f = numpy.append(f, cumfail)
-            x = numpy.append(x, coords[:,0])
-            y = numpy.append(y, coords[:,1])
-            z = numpy.append(z, coords[:,2])
+        x, y, z = numpy.hsplit(coords, 3)
+        c = cumdiff
+        h = cumhill
+        f = cumfail
 
         XY = numpy.column_stack((x,y))
         tree = cKDTree(XY)
@@ -367,21 +359,12 @@ class raster2TIN:
         cumhill = numpy.array((df['/cumhill']))
         cumfail = numpy.array((df['/cumfail']))
         cumflex = numpy.array((df['/cumflex']))
-        if i == 0:
-            x, y, z = numpy.hsplit(coords, 3)
-            c = cumdiff
-            h = cumhill
-            s = cumfail
-            f = cumflex
-        else:
-            c = numpy.append(c, cumdiff)
-            h = numpy.append(h, cumhill)
-            s = numpy.append(s, cumfail)
-            f = numpy.append(f, cumflex)
-            x = numpy.append(x, coords[:,0])
-            y = numpy.append(y, coords[:,1])
-            z = numpy.append(z, coords[:,2])
-
+        x, y, z = numpy.hsplit(coords, 3)
+        c = cumdiff
+        h = cumhill
+        s = cumfail
+        f = cumflex
+    
         XY = numpy.column_stack((x,y))
         tree = cKDTree(XY)
         distances, indices = tree.query(tXY, k=3)

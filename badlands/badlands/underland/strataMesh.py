@@ -289,7 +289,7 @@ class strataMesh():
 
         if write>0:
             self.layerMesh(selev[self.ids])
-            self.write_hdf5_stratal(outstep)
+            self.write_hdf5_stratal(outstep-1)
 
         self.step += 1
 

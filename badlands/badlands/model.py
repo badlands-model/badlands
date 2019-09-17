@@ -334,7 +334,8 @@ class Model(object):
                         fstrat = 0
                         sload = None
                         if self.input.udw == 1 and self.tNow == self.input.tStart and self.strata is not None:
-                            self.strata.oldload = np.zeros(len(self.elevation), dtype=float)
+                            if self.strata.oldload is None:
+                                self.strata.oldload = np.zeros(len(self.elevation), dtype=float)
                         if self.strata is not None:
                             if self.strata.oldload is None:
                                 self.strata.oldload = np.zeros(len(self.elevation), dtype=float)
