@@ -1090,7 +1090,7 @@ borders, pyDepo, pyEro, sedFluxes, pyDensity, pylNodesNb, pygNodesNb, pyRockNb)
             width = width_kw * (pyDischarge(donor))**width_b
             if(width>0)then
               do r = 1, pyRockNb
-                SPL(r) = -Cero(donor,r) * frck(r) * totflx/width * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
+                SPL(r) = -Cero(donor,r) * frck(r) * totflx/(dt * width) * fct * (pyDischarge(donor))**spl_m * (slp)**spl_n
                 totspl = totspl + SPL(r)
               enddo
             else
