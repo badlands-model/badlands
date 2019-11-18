@@ -25,7 +25,7 @@ Salles, T., X. Ding and G. Brocard: *pyBadlands: A framework to simulate sedimen
 Papers that use the code
 ------------------------
 
-Salles T., N. Flament and D. Müller: *Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period*, **Geochem. Geophys. Geosyst.**, `doi:10.1002/2016GC006617`_, 2017.
+Salles T., N. Flament and D. Müller: *Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period*, **Geochem. Geophys. Geosyst.**, `doi:10.1002/2016GC006617`_, 2017.
 
 
 Salles T., X. Ding, J.M. Webster, A. Vila-Concejo, G. Brocard and J. Pall: *A unified framework for modelling sediment fate from source to sink and its interactions with reef systems over geological times*, **Scientific Report**, `doi:10.1038/s41598-018-23519-8`_, 2018.
@@ -37,25 +37,30 @@ Ding X., T. Salles, N. Flament and P. Rey: *Quantitative stratigraphic analysis 
 Pechlivanidou S., P. Cowie, G. Duclaux, N. Nixon, R. Gawthorpe, T. Salles: *Tipping the balance: Shifts in sediment production in an active rift setting*, **Geology**, `doi:10.1130/G45589.1`_, 2019.
 
 
-Chandra, R., D. Azam, A. Kapoor and D. Müller: *Surrogate-assisted Bayesian inversion for landscape and basin evolution models*, **Geoscientific Model Development** Discuss., `doi:10.5194/gmd-2018-315`_, in review, 2019.
+Chandra, R., D. Azam, A. Kapoor and D. Müller: *Surrogate-assisted Bayesian inversion for landscape and basin evolution models*, **Geoscientific Model Development** Discuss., `doi:10.5194/gmd-2018-315`_, in review, 2019.
 
 
 Rochette P., R. Alaç, P. Beck, G. Brocard, A. J. Cavosie, V. Debaille, B. Devouard, F. Jourdan, B. Mougel, F. Moustard, F. Moynier, S. Nomade, G. R. Osinski, B. Reynard and J. Cornec: *Pantasma: Evidence for a Pleistocene circa 14 km diameter impact crater in Nicaragua*, **Meteoritic & Planetary Science**,  `doi:10.1111/maps.13244`_, 2019.
 
 
-Chandra R., D. Azam , D. Müller, T. Salles, S. Cripps: *A Bayesian inference approach for parameter uncertainty quantification in Badlands*, **Computers & Geosciences**, `doi:10.1016/j.cageo.2019.06.012`_, 2019.
+Chandra R., D. Azam , D. Müller, T. Salles, S. Cripps: *A Bayesian inference approach for parameter uncertainty quantification in Badlands*, **Computers & Geosciences**, `doi:10.1016/j.cageo.2019.06.012`_, 2019.
 
 
 Salles T., P. Rey, E. Bertuzzo: *Mapping landscape connectivity under tectonic and climatic forcing*, **Earth Surface Dynamics**, `doi:10.5194/esurf-2019-32`_, 2019.
 
 
-Zahirovic S. , T. Salles, D. Müller, M. Gurnis, W. Cao, C. Braz, L. Harrington, Y. Ibrahim, R. Garrett, S. Williams, A. Chen, M. Hou and J. G. Ogg: *From Paleogeographic maps to Evolving Deep‐time Digital Earth models*, **Acta Geologica Sinica**, `doi:10.1111/1755-6724.14250`_, 2019.
+Zahirovic S. , T. Salles, D. Müller, M. Gurnis, W. Cao, C. Braz, L. Harrington, Y. Ibrahim, R. Garrett, S. Williams, A. Chen, M. Hou and J. G. Ogg: *From Paleogeographic maps to Evolving Deep‐time Digital Earth models*, **Acta Geologica Sinica**, `doi:10.1111/1755-6724.14250`_, 2019.
 
 
 Suo Y., Li S., Jin C., Zhang Y., Zhou J., Li X., Wang P., Liu Z., Wang X. and Somerville I.: *Eastward tectonic migration and transition of the Jurassic-Cretaceous Andean-type continental margin along Southeast China*, **Earth-Science Reviews**, `doi:10.1016/j.earscirev.2019.102884`_, 2019.
 
 
-Chang C. and L. Liu: *Distinct responses of intraplate sedimentation to different subsidence mechanisms: Insights from forward landscape evolution simulations*, **JGR: Earth Surface**, `doi:10.1029/2018JF004905`_, 2019.
+Chang C. and Liu L.: *Distinct responses of intraplate sedimentation to different subsidence mechanisms: Insights from forward landscape evolution simulations*, **JGR: Earth Surface**, `doi:10.1029/2018JF004905`_, 2019.
+
+Wang H., Gurnis M. and Skogseid J.: *Continent-wide drainage reorganization in North America driven by mantle flow*, **Earth and Planetary Science Letters**, `doi:10.1016/j.epsl.2019.115910`_, 2019.
+
+Yang X. and Smith G.: *Gippsland Basin 3D forward modelling in Badlands*, **ASEG Extended Abstracts**, 1, 1-5, `doi:10.1080/22020586.2019.12073104`_, 2019.
+
 
 
 Honours & PhD theses
@@ -82,6 +87,9 @@ East M.: *Sediment fates across mixed carbonate-siliciclastic margins: The inter
 Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level change and sediment transfer from source to sink*, **PhD Thesis**, `20665`_, University of Sydney, 2019.
 
 
+Clinton-Gray C.: *The interplay of tectonics, eustasy and surface processes on the North slope of Alaska since the Jurassic*, **Honours Thesis**, University of Sydney, 2019.
+
+
 .. _`1534`: https://scholar.colorado.edu/honr_theses/1534
 
 
@@ -101,3 +109,5 @@ Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level chang
 .. _`doi:10.1111/1755-6724.14250`:  https://doi.org/10.1111/1755-6724.14250
 .. _`doi:10.1016/j.earscirev.2019.102884`:  https://doi.org/10.1016/j.earscirev.2019.102884
 .. _`doi:10.1029/2018JF004905`:  https://doi.org/10.1029/2018JF004905
+.. _`doi:10.1016/j.epsl.2019.115910`:  https://doi.org/10.1016/j.epsl.2019.115910
+.. _`doi:10.1080/22020586.2019.12073104`:  https://doi.org/10.1080/22020586.2019.12073104
