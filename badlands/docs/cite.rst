@@ -57,9 +57,18 @@ Suo Y., Li S., Jin C., Zhang Y., Zhou J., Li X., Wang P., Liu Z., Wang X. and So
 
 Chang C. and Liu L.: *Distinct responses of intraplate sedimentation to different subsidence mechanisms: Insights from forward landscape evolution simulations*, **JGR: Earth Surface**, `doi:10.1029/2018JF004905`_, 2019.
 
+
+Chandra, R.,  Müller D., Azam, D., Deo, R., Butterworth, N., Salles, T. and Cripps, S.: *Multicore parallel tempering Bayeslands for basin and landscape evolution*, **Geochem. Geophys. Geosyst.**, 20, `doi:10.1029/2019GC008465`_, 2019.
+
+
 Wang H., Gurnis M. and Skogseid J.: *Continent-wide drainage reorganization in North America driven by mantle flow*, **Earth and Planetary Science Letters**, `doi:10.1016/j.epsl.2019.115910`_, 2019.
 
+
 Yang X. and Smith G.: *Gippsland Basin 3D forward modelling in Badlands*, **ASEG Extended Abstracts**, 1, 1-5, `doi:10.1080/22020586.2019.12073104`_, 2019.
+
+
+Chandra R., Azam D. and Müller D.: *Probabilistic modelling of sedimentary basin evolution using Bayeslands*,  **ASEG Extended Abstracts**, 1, 1-5, `doi:10.1080/22020586.2019.12073181`_, 2019.
+
 
 
 
@@ -109,5 +118,7 @@ Clinton-Gray C.: *The interplay of tectonics, eustasy and surface processes on t
 .. _`doi:10.1111/1755-6724.14250`:  https://doi.org/10.1111/1755-6724.14250
 .. _`doi:10.1016/j.earscirev.2019.102884`:  https://doi.org/10.1016/j.earscirev.2019.102884
 .. _`doi:10.1029/2018JF004905`:  https://doi.org/10.1029/2018JF004905
+.. _`doi:10.1029/2019GC008465`:  https://doi.org/10.1029/2019GC008465
 .. _`doi:10.1016/j.epsl.2019.115910`:  https://doi.org/10.1016/j.epsl.2019.115910
 .. _`doi:10.1080/22020586.2019.12073104`:  https://doi.org/10.1080/22020586.2019.12073104
+.. _`doi:10.1080/22020586.2019.12073181`:  https://doi.org/10.1080/22020586.2019.12073181
