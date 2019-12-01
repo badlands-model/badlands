@@ -79,7 +79,7 @@ class Model(object):
         """
 
         np.seterr(divide='ignore',invalid='ignore')
-
+        
         # Only the first node should create a unique output dir
         self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=True)
         self.tNow = self.input.tStart
