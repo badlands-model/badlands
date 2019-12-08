@@ -70,7 +70,7 @@ Yang X. and Smith G.: *Gippsland Basin 3D forward modelling in Badlands*, **ASEG
 Chandra R., Azam D. and Müller D.: *Probabilistic modelling of sedimentary basin evolution using Bayeslands*,  **ASEG Extended Abstracts**, 1, 1-5, `doi:10.1080/22020586.2019.12073181`_, 2019.
 
 
-Fernandes V. M., Roberts G. G., White N. and Whittaker A. C.: *Continental‐scale landscape evolution: A history of North American topography*, **Journal of Geophysical Research: Earth Surface**, 124, `doi:10.1029/2018JF004979`_ 2019.
+Fernandes V. M., Roberts G. G., White N. and Whittaker A. C.: *Continental‐scale landscape evolution: A history of North American topography*, **Journal of Geophysical Research: Earth Surface**, 124, `doi:10.1029/2018JF004979`_, 2019.
 
 Honours & PhD theses
 --------------------
