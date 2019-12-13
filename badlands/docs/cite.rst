@@ -72,6 +72,10 @@ Chandra R., Azam D. and Müller D.: *Probabilistic modelling of sedimentary basi
 
 Fernandes V. M., Roberts G. G., White N. and Whittaker A. C.: *Continental‐scale landscape evolution: A history of North American topography*, **JGR: Earth Surface**, 124, `doi:10.1029/2018JF004979`_, 2019.
 
+
+Ding X., T. Salles, N. Flament, C. Mallard and P. Rey: *Drainage and sedimentary responses to dynamic topography*, **Geophysical Research Letters**, `doi:10.1029/2019GL084400`_, 2019.
+
+
 Honours & PhD theses
 --------------------
 
@@ -94,9 +98,6 @@ East M.: *Sediment fates across mixed carbonate-siliciclastic margins: The inter
 
 
 Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level change and sediment transfer from source to sink*, **PhD Thesis**, `20665`_, University of Sydney, 2019.
-
-
-Clinton-Gray C.: *The interplay of tectonics, eustasy and surface processes on the North slope of Alaska since the Jurassic*, **Honours Thesis**, University of Sydney, 2019.
 
 
 .. _`1534`: https://scholar.colorado.edu/honr_theses/1534
@@ -123,6 +124,7 @@ Clinton-Gray C.: *The interplay of tectonics, eustasy and surface processes on t
 .. _`doi:10.1080/22020586.2019.12073104`:  https://doi.org/10.1080/22020586.2019.12073104
 .. _`doi:10.1080/22020586.2019.12073181`:  https://doi.org/10.1080/22020586.2019.12073181
 .. _`doi:10.1029/2018JF004979`:  https://doi.org/10.1029/2018JF004979
+.. _`doi:10.1029/2019GL084400`:  https://doi.org/10.1029/2019GL084400
 
 
 
