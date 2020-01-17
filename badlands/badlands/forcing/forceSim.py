@@ -506,11 +506,12 @@ class forceSim:
         if not (time >= self.T_disp[event,0]) and not (time < self.T_disp[event,1]):
             raise ValueError('Problem finding the 3D displacements map to load!')
 
-        if self.time3d and (self.time3d > 0.):
-            if time + self.time3d > self.T_disp[event,1]:
-                self.next_disp = self.T_disp[event,1]
-            else:
-                self.next_disp = self.time3d + time
+        if self.time3d is not None: 
+            if self.time3d > 0.:
+               if time + self.time3d > self.T_disp[event,1]:
+                   self.next_disp = self.T_disp[event,1]
+               else:
+                   self.next_disp = self.time3d + time
         else:
             self.next_disp = self.T_disp[event,1]
 
@@ -542,15 +543,16 @@ class forceSim:
                 sdispX[insIDs] = interpolate.interpn( (self.regX, self.regY), disprX, dpsXY, method='linear')
                 sdispY[insIDs] = interpolate.interpn( (self.regX, self.regY), disprY, dpsXY, method='linear')
 
-        if self.time3d > 0. and (self.injected_disps is not None or self.Map_disp[event] != None):
-            rate = (self.next_disp - time) / (self.T_disp[event,1] - self.T_disp[event,0])
-            assert rate > 0
-            dispX = dispX * rate
-            dispY = dispY * rate
-            dispZ = dispZ * rate
-            if strata:
-                sdispX = sdispX * rate
-                sdispY = sdispY * rate
+        if self.time3d is not None:
+           if self.time3d > 0. and (self.injected_disps is not None or self.Map_disp[event] != None):
+               rate = (self.next_disp - time) / (self.T_disp[event,1] - self.T_disp[event,0])
+               assert rate > 0
+               dispX = dispX * rate
+               dispY = dispY * rate
+               dispZ = dispZ * rate
+               if strata:
+                   sdispX = sdispX * rate
+                   sdispY = sdispY * rate
 
         self.dispX = dispX
         self.dispY = dispY
