@@ -124,57 +124,57 @@ def write_hdf5(folder, h5file, step, coords, elevation, rain, discharge, cumdiff
     with h5py.File(h5file, "w") as f:
 
         # Write node coordinates and elevation
-        f.create_dataset('coords',shape=(len(elevation),3), dtype='float32', compression='gzip')
+        f.create_dataset('coords',shape=(len(elevation),3), dtype='float64', compression='gzip')
         f["coords"][:,:2] = coords
         f["coords"][:,2] = elevation
 
         f.create_dataset('cells',shape=(len(cells[:,0]),3), dtype='int32', compression='gzip')
         f["cells"][:,:] = cells
 
-        f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         discharge[elevation<sealevel] = 0.
         discharge[discharge<1.] = 1.
         f["discharge"][:,0] = discharge
 
         if rainOn:
-            f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["precipitation"][:,0] = rain
 
         if eroOn:
-                f.create_dataset('erodibility',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                f.create_dataset('erodibility',shape=(len(discharge), 1), dtype='float64', compression='gzip')
                 f["erodibility"][:,0] = erodibility
 
-        f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
 
-        f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["cumhill"][:,0] = cumhill
 
-        f.create_dataset('cumfail',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('cumfail',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["cumfail"][:,0] = cumfail
 
-        f.create_dataset('area',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('area',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["area"][:,0] = area
 
         if waveOn:
-            f.create_dataset('waveH',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('waveH',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["waveH"][:,0] = waveH
-            f.create_dataset('waveS',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('waveS',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["waveS"][:,0] = waveS
-            f.create_dataset('cumwave',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('cumwave',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["cumwave"][:,0] = wavediff
 
         if rockOn:
             nbSed = prop.shape[1]
             for k in range(nbSed):
                 if k == 0:
-                    f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                    f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float64', compression='gzip')
                     f["depClastic"][:,0] = prop[:,k]
                 elif k == 1:
-                    f.create_dataset('depSpecies1',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                    f.create_dataset('depSpecies1',shape=(len(discharge), 1), dtype='float64', compression='gzip')
                     f["depSpecies1"][:,0] = prop[:,k]
                 elif k == 2:
-                    f.create_dataset('depSpecies2',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                    f.create_dataset('depSpecies2',shape=(len(discharge), 1), dtype='float64', compression='gzip')
                     f["depSpecies2"][:,0] = prop[:,k]
 
 def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge, cumdiff, cumhill, cumfail,
@@ -221,60 +221,60 @@ def write_hdf5_flexure(folder, h5file, step, coords, elevation, rain, discharge,
     with h5py.File(h5file, "w") as f:
 
         # Write node coordinates and elevation
-        f.create_dataset('coords',shape=(len(elevation),3), dtype='float32', compression='gzip')
+        f.create_dataset('coords',shape=(len(elevation),3), dtype='float64', compression='gzip')
         f["coords"][:,:2] = coords
         f["coords"][:,2] = elevation
 
         f.create_dataset('cells',shape=(len(cells[:,0]),3), dtype='int32', compression='gzip')
         f["cells"][:,:] = cells
 
-        f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         discharge[elevation<sealevel] = 0.
         discharge[discharge<1.] = 1.
         f["discharge"][:,0] = discharge
 
         if rainOn:
-            f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('precipitation',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["precipitation"][:,0] = rain
 
         if eroOn:
-            f.create_dataset('erodibility',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('erodibility',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["erodibility"][:,0] = erodibility
 
-        f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('cumdiff',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["cumdiff"][:,0] = cumdiff
 
-        f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('cumhill',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["cumhill"][:,0] = cumhill
 
-        f.create_dataset('cumfail',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('cumfail',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["cumfail"][:,0] = cumfail
 
-        f.create_dataset('cumflex',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('cumflex',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["cumflex"][:,0] = cumflex
 
-        f.create_dataset('area',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('area',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["area"][:,0] = area
 
         if waveOn:
-            f.create_dataset('waveH',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('waveH',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["waveH"][:,0] = waveH
-            f.create_dataset('waveS',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('waveS',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["waveS"][:,0] = waveS
-            f.create_dataset('cumwave',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+            f.create_dataset('cumwave',shape=(len(discharge), 1), dtype='float64', compression='gzip')
             f["cumwave"][:,0] = wavediff
 
         if rockOn:
             nbSed = prop.shape[1]
             for k in range(nbSed):
                 if k == 0:
-                    f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                    f.create_dataset('depClastic',shape=(len(discharge), 1), dtype='float64', compression='gzip')
                     f["depClastic"][:,0] = prop[:,k]
                 elif k == 1:
-                    f.create_dataset('depSpecies1',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                    f.create_dataset('depSpecies1',shape=(len(discharge), 1), dtype='float64', compression='gzip')
                     f["depSpecies1"][:,0] = prop[:,k]
                 elif k == 2:
-                    f.create_dataset('depSpecies2',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+                    f.create_dataset('depSpecies2',shape=(len(discharge), 1), dtype='float64', compression='gzip')
                     f["depSpecies2"][:,0] = prop[:,k]
 
 def _write_xdmf(folder, xdmffile, xmffile, step):

@@ -253,6 +253,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
 
     if verbose:
         print(" -   Get stream fluxes ", time.clock() - walltime)
+
     ed = np.sum(sedchange,axis=1)
     elevation += ed
     cumdiff += ed
@@ -308,9 +309,6 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
                 elevation += diffmarine*maxstep
                 cumdiff += diffmarine*maxstep
             it += 1
-
-        if verbose:
-            print(" -   Get river sediment marine fluxes ", time.clock() - walltime)
 
     # Compute slope failures
     if hillslope.Sfail > 0.:
@@ -376,6 +374,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
         cumhill[flow.insideIDs] += cdiff[flow.insideIDs]
     else:
         straTIN.update_layers(erosion, deposition, elevation, verbose)
+
         # Get the active layer thickness to erode using diffusion
         maxlayh = -cdiff
         maxlayh[maxlayh<1.] = 1.
@@ -386,7 +385,8 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
                                         maxlayh, FVmesh.edge_length, lGIDs)
         if input.btype == 'outlet':
             tdiff[flow.insideIDs[0],:] = 0.
-        # # Update dataset
+
+        # Update dataset
         elevation += tdiff
         cumdiff += tdiff
         cumhill += tdiff
@@ -420,5 +420,4 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
 
     if verbose:
         print(" - Flow computation ", time.clock() - flow_time)
-
     return tNow,elevation,cumdiff,cumhill,cumfail

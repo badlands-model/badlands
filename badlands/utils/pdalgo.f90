@@ -341,7 +341,6 @@ subroutine updatestrati(layS,layH,eros,depo,newH,newS,nbPts,nbLay,nbSed)
 
   newS = layS
   newH = layH
-
   do n = 1, nbPts
     do s = 1,nbSed
       ero = -eros(n,s)
@@ -349,7 +348,7 @@ subroutine updatestrati(layS,layH,eros,depo,newH,newS,nbPts,nbLay,nbSed)
       if(ero>0.)then
         lp: do k = nbLay,1,-1
           if(newS(n,k,s)>0.)then
-            if(newS(n,k,s)>=ero)then
+            if(newS(n,k,s)>ero)then
               newS(n,k,s) = newS(n,k,s) - ero
               newH(n,k) = newH(n,k) - ero
               exit lp

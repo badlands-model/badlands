@@ -257,12 +257,12 @@ class carbMesh():
         with h5py.File(sh5file, "w") as f:
 
             # Write stratal layers paeleoelevations per cells
-            f.create_dataset('paleoDepth',shape=(len(lGIDs),self.step+1), dtype='float32', compression='gzip')
+            f.create_dataset('paleoDepth',shape=(len(lGIDs),self.step+1), dtype='float64', compression='gzip')
             f["paleoDepth"][lGIDs,:self.step+1] = self.paleoDepth[lGIDs,:self.step+1]
 
             # Write stratal layers thicknesses per cells
             for r in range(self.nbSed):
-                f.create_dataset('depoThickRock'+str(r),shape=(len(lGIDs),self.step+1), dtype='float32', compression='gzip')
+                f.create_dataset('depoThickRock'+str(r),shape=(len(lGIDs),self.step+1), dtype='float64', compression='gzip')
                 f['depoThickRock'+str(r)][lGIDs,:self.step+1] = self.depoThick[lGIDs,:self.step+1,r]
 
         return

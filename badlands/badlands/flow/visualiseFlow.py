@@ -125,7 +125,7 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi,
     with h5py.File(h5file, "w") as f:
 
         # Write node coordinates and elevation
-        f.create_dataset('coords',shape=(len(elevation),3), dtype='float32', compression='gzip')
+        f.create_dataset('coords',shape=(len(elevation),3), dtype='float64', compression='gzip')
         f["coords"][:,:2] = coords
         f["coords"][:,2] = elevation
 
@@ -135,16 +135,16 @@ def write_hdf5(folder, h5file, step, coords, elevation, discharge, chi,
         f.create_dataset('basin',shape=(len(basin), 1), dtype='int32', compression='gzip')
         f["basin"][:,0] = basin
 
-        f.create_dataset('chi',shape=(len(chi), 1), dtype='float32', compression='gzip')
+        f.create_dataset('chi',shape=(len(chi), 1), dtype='float64', compression='gzip')
         f["chi"][:,0] = chi
 
-        f.create_dataset('sedload',shape=(len(sedload), 1), dtype='float32', compression='gzip')
+        f.create_dataset('sedload',shape=(len(sedload), 1), dtype='float64', compression='gzip')
         f["sedload"][:,0] = sedload
 
-        f.create_dataset('flowdensity',shape=(len(sedload), 1), dtype='float32', compression='gzip')
+        f.create_dataset('flowdensity',shape=(len(sedload), 1), dtype='float64', compression='gzip')
         f["flowdensity"][:,0] = flowdensity
 
-        f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float32', compression='gzip')
+        f.create_dataset('discharge',shape=(len(discharge), 1), dtype='float64', compression='gzip')
         f["discharge"][:,0] = discharge/3.154e7
 
 def _write_xdmf(folder, xdmffile, xmffile, step):

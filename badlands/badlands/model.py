@@ -79,7 +79,7 @@ class Model(object):
         """
 
         np.seterr(divide='ignore',invalid='ignore')
-        
+
         # Only the first node should create a unique output dir
         self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=True)
         self.tNow = self.input.tStart
@@ -549,6 +549,17 @@ class Model(object):
                                 self.FVmesh, self.tMesh, self.force, self.flow, self.rain, \
                                 self.elevation, self.fillH, self.cumdiff, self.cumhill, self.cumfail, self.wavediff, \
                                 self.outputStep, self.prop, self.mapero, self.cumflex)
+
+            if self.straTIN is not None and self.outputStep % self.input.tmesh==0:
+                meshtime = time.clock()
+                self.straTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep)
+                print("   - Write sediment mesh output %0.02f seconds" % (time.clock() - meshtime))
+
+            if self.carbTIN is not None and self.outputStep % self.input.tmesh==0:
+                meshtime = time.clock()
+                self.carbTIN.write_hdf5_stratigraphy(self.lGIDs,self.outputStep)
+                print("   - Write carbonate mesh output %0.02f seconds" % (time.clock() - meshtime))
+
             self.force.next_display += self.input.tDisplay
             self.outputStep += 1
             if self.straTIN is not None:

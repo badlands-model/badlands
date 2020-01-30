@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module pdalgo ! in 
+python module pdalgo ! in
     interface  ! in :pdalgo
         subroutine marine_distribution(elevation,seavol,sealevel,border,depids,diffsed,pydnodes,pyids,pyrocknb) ! in :pdalgo:pdalgo.f90
             use classpd
@@ -89,7 +89,7 @@ python module pdalgo ! in
             integer, optional,check(shape(lays,1)==nblay),depend(lays) :: nblay=shape(lays,1)
             integer, optional,check(shape(lays,2)==nbsed),depend(lays) :: nbsed=shape(lays,2)
         end subroutine stratcarb
-    end interface 
+    end interface
 end python module pdalgo
 
 ! This file was auto-generated with f2py (version:2).

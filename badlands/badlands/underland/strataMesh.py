@@ -469,23 +469,23 @@ class strataMesh():
         sh5file = self.folder+'/'+self.h5file+str(outstep)+'.hdf5'
         with h5py.File(sh5file, "w") as f:
             # Write node coordinates
-            f.create_dataset('coords',shape=(self.ptsNb,2), dtype='float32', compression='gzip')
+            f.create_dataset('coords',shape=(self.ptsNb,2), dtype='float64', compression='gzip')
             f["coords"][:,:2] = self.xyi[self.ids]
 
             # Write stratal layers depth per cells
-            f.create_dataset('layDepth',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f.create_dataset('layDepth',shape=(self.ptsNb,self.step+2), dtype='float64', compression='gzip')
             f["layDepth"][:,:self.step+2] = self.stratDepth[self.ids,:self.step+2]
 
             # Write stratal layers elevations per cells
-            f.create_dataset('layElev',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f.create_dataset('layElev',shape=(self.ptsNb,self.step+2), dtype='float64', compression='gzip')
             f["layElev"][:,:self.step+2] = self.stratElev[self.ids,:self.step+2]
 
             # Write stratal layers thicknesses per cells
-            f.create_dataset('layThick',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f.create_dataset('layThick',shape=(self.ptsNb,self.step+2), dtype='float64', compression='gzip')
             f["layThick"][:,:self.step+2] = self.stratThick[self.ids,:self.step+2]
 
             # Write stratal layers porosity per cells
-            f.create_dataset('layPoro',shape=(self.ptsNb,self.step+2), dtype='float32', compression='gzip')
+            f.create_dataset('layPoro',shape=(self.ptsNb,self.step+2), dtype='float64', compression='gzip')
             f["layPoro"][:,:self.step+2] = self.stratPoro[self.ids,:self.step+2]
 
         return

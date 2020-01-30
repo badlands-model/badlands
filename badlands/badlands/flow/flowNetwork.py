@@ -649,7 +649,6 @@ class flowNetwork:
             cdepo, cero, sedload, flowdensity = flowalgo.streampower(self.critdens, self.localstack,self.receivers,self.pitID, \
                      self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
                      elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,sealevel+self.deepb,newdt,self.borders)
-
             if self.depo == 0:
                 volChange = cero
             else:
@@ -704,11 +703,13 @@ class flowNetwork:
                         if len(overfilled) > 0:
                             print('WARNING: overfilling persists after time-step limitation.',len(overfilled))
 
-            # Update river sediment load in m/s
+            # Update river sediment load in m3/s
             sedld = numpy.sum(sedload,axis=1)
             self.sedload = sedld/(newdt*3.154e7)
             den = flowdensity/1000.
             self.flowdensity = den
+            # Sediment volume going out
+            outload = numpy.sum(sedload[self.outsideIDs,:])
 
             # Compute erosion
             erosion = numpy.zeros(cero.shape)
@@ -725,6 +726,7 @@ class flowNetwork:
                 depo = numpy.zeros(cdepo.shape)
                 depo[self.insideIDs,:] = cdepo[self.insideIDs,:]
                 deposition = numpy.zeros(depo.shape)
+                tmpdep = numpy.zeros(depo.shape)
 
                 # Compute alluvial plain deposition
                 plainid,landid,seaid,perc,nplain,nland,nsea,ndepo = flowalgo.getids(fillH,elev,depo,
@@ -733,7 +735,7 @@ class flowNetwork:
 
                 if nplain > 0:
                     plainID = plainid[:nplain]
-                    deposition[plainID,:] = depo[plainID,:]/Acell[plainID].reshape(len(plainID),1)
+                    deposition[plainID,:] += depo[plainID,:]/Acell[plainID].reshape(len(plainID),1)
                     depo[plainID,:] = 0.
                     if verbose:
                         print("   - Compute plain deposition ", time.clock() - time1)
@@ -744,15 +746,14 @@ class flowNetwork:
                     landIDs = landid[:nland]
                     for p in range(len(landIDs)):
                         tmp = numpy.where(self.pitID==landIDs[p])[0]
-
                         if len(tmp) == 1:
-                            deposition[tmp,:] = (fillH[tmp]-elev[tmp])*perc[landIDs[p],:]
+                            tmpdep[tmp,:] = (fillH[tmp]-elev[tmp])*perc[landIDs[p],:]
                         else:
-                            deposition[tmp,:] = (fillH[tmp]-elev[tmp]).reshape(len(tmp),1)*perc[landIDs[p],:]
-                        tmpd = numpy.sum(deposition[tmp,:]*Acell[tmp].reshape(len(Acell[tmp]),1))
+                            tmpdep[tmp,:] = (fillH[tmp]-elev[tmp]).reshape(len(tmp),1)*perc[landIDs[p],:]
+                        tmpd = numpy.sum(tmpdep[tmp,:]*Acell[tmp].reshape(len(Acell[tmp]),1))
                         dfrac = numpy.sum(depo[landIDs[p],:])/tmpd
-                        deposition[tmp,:] *= dfrac
-
+                        tmpdep[tmp,:] *= dfrac
+                        deposition[tmp,:] += tmpdep[tmp,:]
                     depo[landIDs,:] = 0.
                     if verbose:
                         print("   - Compute land pit deposition ", time.clock() - time1)
@@ -773,12 +774,19 @@ class flowNetwork:
 
                 # Is there some remaining deposits?
                 if numpy.any(depo):
-                    print('WARNING: forced deposition is performed during this timestep.')
                     deposition[self.insideIDs,:] += depo[self.insideIDs,:]/Acell[self.insideIDs].reshape(len(self.insideIDs),1)
 
             # Define erosion/deposition changes
-            sedflux[self.insideIDs,:] = erosion[self.insideIDs,:]+deposition[self.insideIDs,:]
+            sedflux[self.insideIDs,:] = erosion[self.insideIDs,:] + deposition[self.insideIDs,:]
 
+            erotot = -numpy.sum(erosion[self.insideIDs,:]*Acell[self.insideIDs].reshape(len(self.insideIDs),1))
+            depotot = numpy.sum(deposition[self.insideIDs,:]*Acell[self.insideIDs].reshape(len(self.insideIDs),1))
+            depotot += outload
+
+            if erotot>depotot and depotot>0.:
+                frac = erotot / depotot
+                deposition[self.insideIDs,:] *= frac
+                sedflux[self.insideIDs,:] = erosion[self.insideIDs,:] + deposition[self.insideIDs,:]
             if verbose:
                 print("   - Total sediment flux time ", time.clock() - time0)
 

@@ -128,7 +128,7 @@ class FVmethod:
         # Get local volume declaration
         vols = numpy.zeros(localPtsNb, dtype=numpy.float)
         vols = self.control_volumes[self.localIDs]
-        volsFLT = vols.astype(numpy.float32)
+        volsFLT = vols.astype(numpy.float64)
 
         # Find each partition contribution to global dataset
         arraylocNb = len(volsFLT)
@@ -193,7 +193,7 @@ class FVmethod:
         edges = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
         edges = self.edge_length[self.localIDs,:self.maxNgbh]
         edges = numpy.ravel(edges)
-        edgesFLT = edges.astype(numpy.float32)
+        edgesFLT = edges.astype(numpy.float64)
 
         # Gather flatten array definition from each region globally
         #globalEdges = numpy.zeros(sum(ngbhNbs),dtype=edgesFLT.dtype)
@@ -221,7 +221,7 @@ class FVmethod:
         vors = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
         vors = self.vor_edges[self.localIDs,:self.maxNgbh]
         vors = numpy.ravel(vors)
-        vorsFLT = vors.astype(numpy.float32)
+        vorsFLT = vors.astype(numpy.float64)
 
         # Gather flatten array definition from each region globally
         globalVors = vorsFLT

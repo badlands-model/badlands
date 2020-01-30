@@ -183,11 +183,11 @@ class eroMesh():
         with h5py.File(eh5file, "w") as f:
 
             # Write erosive layers depth
-            f.create_dataset('elayDepth',shape=(ptsNb,self.layNb), dtype='float32', compression='gzip')
+            f.create_dataset('elayDepth',shape=(ptsNb,self.layNb), dtype='float64', compression='gzip')
             f["elayDepth"][:,:self.layNb] = self.thickness
 
             # Write erodibility for each layers
-            f.create_dataset('elayKe',shape=(ptsNb,self.layNb), dtype='float32', compression='gzip')
+            f.create_dataset('elayKe',shape=(ptsNb,self.layNb), dtype='float64', compression='gzip')
             f["elayKe"][:,:self.layNb] = self.Ke
 
         return

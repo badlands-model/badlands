@@ -1391,12 +1391,12 @@ subroutine getids(fillH,elev,depo,vol,seal,ids,ids2,ids3,perc,newNb,newNb2,newNb
 
       nvol = 0.
       do s = 1, sedNb
-        if(depo(p,s)/vol(p)>1.e-8)then
+        if(depo(p,s)/vol(p)>0.)then
           nvol = nvol+depo(p,s)
         endif
       enddo
       do s = 1, sedNb
-        if(depo(p,s)/vol(p)>1.e-8)then
+        if(depo(p,s)/vol(p)>0.)then
           perc(p,s) = depo(p,s)/nvol
           sumperc = sumperc+perc(p,s)
         else
