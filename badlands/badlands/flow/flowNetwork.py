@@ -737,6 +737,7 @@ class flowNetwork:
                     plainID = plainid[:nplain]
                     deposition[plainID,:] += depo[plainID,:]/Acell[plainID].reshape(len(plainID),1)
                     depo[plainID,:] = 0.
+                    # depo[plainID,:] -= depo[plainID,:]
                     if verbose:
                         print("   - Compute plain deposition ", time.clock() - time1)
                         time1 = time.clock()
@@ -754,6 +755,7 @@ class flowNetwork:
                         dfrac = numpy.sum(depo[landIDs[p],:])/tmpd
                         tmpdep[tmp,:] *= dfrac
                         deposition[tmp,:] += tmpdep[tmp,:]
+                        # depo[tmp,:] -= tmpdep[tmp,:]*Acell[tmp].reshape(len(Acell[tmp]),1)
                     depo[landIDs,:] = 0.
                     if verbose:
                         print("   - Compute land pit deposition ", time.clock() - time1)
@@ -767,6 +769,7 @@ class flowNetwork:
                     seavol[seaIDs,:] = depo[seaIDs,:]
                     seadep = pdalgo.marine_distribution(elev, seavol, sealevel, self.borders, seaIDs)
                     deposition += seadep
+                    # depo -= seadep*Acell.reshape(len(Acell),1)
                     depo[seaIDs,:] = 0.
                     if verbose:
                         print("   - Compute marine deposition ", time.clock() - time1)
@@ -782,11 +785,11 @@ class flowNetwork:
             erotot = -numpy.sum(erosion[self.insideIDs,:]*Acell[self.insideIDs].reshape(len(self.insideIDs),1))
             depotot = numpy.sum(deposition[self.insideIDs,:]*Acell[self.insideIDs].reshape(len(self.insideIDs),1))
             depotot += outload
-
-            if erotot>depotot and depotot>0.:
-                frac = erotot / depotot
-                deposition[self.insideIDs,:] *= frac
+            if self.depo > 0 and erotot>depotot and erotot>0.:
+                frac = depotot/erotot
+                erosion[self.insideIDs,:] *= frac
                 sedflux[self.insideIDs,:] = erosion[self.insideIDs,:] + deposition[self.insideIDs,:]
+
             if verbose:
                 print("   - Total sediment flux time ", time.clock() - time0)
 
