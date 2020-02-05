@@ -646,7 +646,7 @@ class flowNetwork:
             if actlay is None:
                 actlay = numpy.zeros((len(elev),1))
 
-            cdepo, cero, sedload, flowdensity = flowalgo.streampower(self.critdens, self.localstack,self.receivers,self.pitID, \
+            cdepo, cero, sedload, slopeTIN, flowdensity = flowalgo.streampower(self.critdens, self.localstack,self.receivers,self.pitID, \
                      self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
                      elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,sealevel+self.deepb,newdt,self.borders)
             if self.depo == 0:
@@ -685,7 +685,7 @@ class flowNetwork:
                 time1 = time.clock()
 
             if newdt < dt:
-                cdepo, cero, sedload, flowdensity = flowalgo.streampower(self.critdens, self.localstack,self.receivers,self.pitID, \
+                cdepo, cero, sedload, slopeTIN, flowdensity = flowalgo.streampower(self.critdens, self.localstack,self.receivers,self.pitID, \
                         self.pitVolume,self.pitDrain,self.xycoords,Acell,self.maxh,self.maxdep,self.discharge,fillH, \
                         elev,rivqs,eroCoeff,actlay,perc_dep,slp_cr,sealevel,sealevel+self.deepb,newdt,self.borders)
                 volChange = cdepo+cero
@@ -767,7 +767,7 @@ class flowNetwork:
                     seaIDs = seaid[:nsea]
                     seavol = numpy.zeros(depo.shape)
                     seavol[seaIDs,:] = depo[seaIDs,:]
-                    seadep = pdalgo.marine_distribution(elev, seavol, sealevel, self.borders, seaIDs)
+                    seadep = pdalgo.marine_distribution(elev, seavol, sealevel, self.borders, seaIDs, slopeTIN)
                     deposition += seadep
                     # depo -= seadep*Acell.reshape(len(Acell),1)
                     depo[seaIDs,:] = 0.
@@ -793,7 +793,7 @@ class flowNetwork:
             if verbose:
                 print("   - Total sediment flux time ", time.clock() - time0)
 
-        return newdt, sedflux, erosion, deposition
+        return newdt, sedflux, erosion, deposition, slopeTIN
 
     def _gaussian_diffusion(self, diff, dsmooth):
         """

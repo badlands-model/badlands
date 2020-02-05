@@ -121,6 +121,9 @@ class Model(object):
         else:
             self.wavediff = None
 
+        # Initialize TIN slope (gradient)
+        self.slopeTIN = np.zeros(self.totPts, dtype=float)
+
         # Define hillslope parameters
         self.rain = np.zeros(self.totPts, dtype=float)
         self.hillslope = diffLinear()
@@ -511,7 +514,7 @@ class Model(object):
                         tEnd, self.force.next_wave, self.force.next_disp, self.force.next_rain,
                         self.next_carbStep])
 
-            self.tNow, self.elevation, self.cumdiff, self.cumhill, self.cumfail = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
+            self.tNow, self.elevation, self.cumdiff, self.cumhill, self.cumfail, self.slopeTIN = buildFlux.sediment_flux(self.input, self.recGrid, self.hillslope, \
                               self.FVmesh, self.tMesh, self.flow, self.force, self.rain, self.lGIDs, self.applyDisp, self.straTIN, self.mapero,  \
                               self.cumdiff, self.cumhill, self.cumfail, self.fillH, self.disp, self.inGIDs, self.elevation, self.tNow, tStop, verbose)
 

@@ -3,24 +3,27 @@
 
 python module pdalgo ! in
     interface  ! in :pdalgo
-        subroutine marine_distribution(elevation,seavol,sealevel,border,depids,diffsed,pydnodes,pyids,pyrocknb) ! in :pdalgo:pdalgo.f90
+        subroutine marine_distribution(elevation,seavol,sealevel,border,depids,pyslp,diffsed,pydnodes,pyids,pyrocknb) ! in :pdalgo:pdalgo.f90
             use classpd
             real(kind=8) dimension(pydnodes),intent(in) :: elevation
             real(kind=8) dimension(pydnodes,pyrocknb),intent(in),depend(pydnodes) :: seavol
             real(kind=8) intent(in) :: sealevel
             integer dimension(pydnodes),intent(in),depend(pydnodes) :: border
             integer dimension(pyids),intent(in) :: depids
+            real(kind=8) dimension(pydnodes),intent(in),depend(pydnodes) :: pyslp
             real(kind=8) dimension(pydnodes,pyrocknb),intent(out),depend(pydnodes,pyrocknb) :: diffsed
             integer, optional,check(len(elevation)>=pydnodes),depend(elevation) :: pydnodes=len(elevation)
             integer, optional,check(len(depids)>=pyids),depend(depids) :: pyids=len(depids)
             integer, optional,check(shape(seavol,1)==pyrocknb),depend(seavol) :: pyrocknb=shape(seavol,1)
         end subroutine marine_distribution
-        subroutine pitparams(pyngbs,pyarea,pydiff,pyprop,fillth,epsilon,pybounds,pydnodes) ! in :pdalgo:pdalgo.f90
+        subroutine pitparams(pyngbs,pyarea,pydiff,pyprop,pyPropa,pyPropb,fillth,epsilon,pybounds,pydnodes) ! in :pdalgo:pdalgo.f90
             use classpd
             integer dimension(pydnodes,20),intent(in) :: pyngbs
             real(kind=8) dimension(pydnodes),intent(in),depend(pydnodes) :: pyarea
             integer intent(in) :: pydiff
             real(kind=8) intent(in) :: pyprop
+            real(kind=8) intent(in) :: pyPropa
+            real(kind=8) intent(in) :: pyPropb
             real(kind=8) intent(in) :: fillth
             real(kind=8) intent(in) :: epsilon
             integer intent(in) :: pybounds

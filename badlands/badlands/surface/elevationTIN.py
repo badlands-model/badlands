@@ -225,7 +225,7 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
 
     return elev
 
-def assign_parameter_pit(neighbours, area, diffnb, prop, boundPts, fillTH=1., epsilon=1.e-6):
+def assign_parameter_pit(neighbours, area, diffnb, prop, propa, propb, boundPts, fillTH=1., epsilon=1.e-6):
     """
     This function defines the global variables used in the **pit filling algorithm** described in
     the :code:`pit_stack` function_.
@@ -248,7 +248,7 @@ def assign_parameter_pit(neighbours, area, diffnb, prop, boundPts, fillTH=1., ep
 
     """
 
-    pdalgo.pitparams(neighbours, area, diffnb, prop, fillTH, epsilon, boundPts)
+    pdalgo.pitparams(neighbours, area, diffnb, prop, propa, propb, fillTH, epsilon, boundPts)
 
 
 def pit_stack(elev, allFill, sealevel):

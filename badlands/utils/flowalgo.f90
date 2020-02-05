@@ -795,7 +795,7 @@ end subroutine slumpero
 
 subroutine streampower(sedfluxcrit,pyStack, pyRcv, pitID, pitVol1, pitDrain, pyXY, pyArea, pyMaxH, &
 pyMaxD, pyDischarge, pyFillH, pyElev, pyRiv, Cero, actlay, perc_dep, slp_cr, sea, db, dt, &
-borders, pyDepo, pyEro, sedFluxes, pyDensity, pylNodesNb, pygNodesNb, pyRockNb)
+borders, pyDepo, pyEro, sedFluxes, slope, pyDensity, pylNodesNb, pygNodesNb, pyRockNb)
 
   use classfv
   implicit none
@@ -829,6 +829,7 @@ borders, pyDepo, pyEro, sedFluxes, pyDensity, pylNodesNb, pygNodesNb, pyRockNb)
   real(kind=8),dimension(pygNodesNb,pyRockNb),intent(out) :: pyDepo
   real(kind=8),dimension(pygNodesNb,pyRockNb),intent(out) :: pyEro
   real(kind=8),dimension(pygNodesNb,pyRockNb),intent(out) :: sedFluxes
+  real(kind=8),dimension(pygNodesNb),intent(out) :: slope
   real(kind=8),dimension(pygNodesNb),intent(out) :: pyDensity
 
   integer :: n, donor, recvr, nID, tmpID, r
@@ -844,6 +845,7 @@ borders, pyDepo, pyEro, sedFluxes, pyDensity, pylNodesNb, pygNodesNb, pyRockNb)
   rhosed = 2000.
   rhowat = 1000.
   hypyc = 0.
+  slope = 0.
   pitVol = pitVol1
   sedFluxes = pyRiv * dt
   if(bedslptype > 0) bedFluxes = 0.
@@ -890,7 +892,8 @@ borders, pyDepo, pyEro, sedFluxes, pyDensity, pylNodesNb, pygNodesNb, pyRockNb)
         endif
         if( pyElev(donor)<db) tauratio = 0.
 
-        slp = dh/dist*tauratio
+        slope(donor) = dh/dist
+        slp = slope(donor)*tauratio
         ! Check if this is an alluvial plain in which case we force deposition
         if(updist(donor) > 0. .and. dist > 0. .and. slp_cr > 0.)then
           updh = upZ(donor) - pyElev(donor)

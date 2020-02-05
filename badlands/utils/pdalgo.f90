@@ -8,7 +8,7 @@
 !!~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~!!
 
 ! This module implements Planchon & Darboux depression filling algorithm
-subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diffsed, pydnodes, pyIDs, pyRockNb)
+subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, pySlp, diffsed, pydnodes, pyIDs, pyRockNb)
 
   use classpd
   implicit none
@@ -19,13 +19,14 @@ subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diff
   real(kind=8),intent(in) :: sealevel
   real(kind=8),dimension(pydnodes,pyRockNb),intent(in) :: seavol
   real(kind=8),dimension(pydnodes),intent(in) :: elevation
+  real(kind=8),dimension(pydnodes),intent(in) :: pySlp
 
   real(kind=8),dimension(pydnodes,pyRockNb),intent(out) :: diffsed
 
   real(kind=8),dimension(pydnodes) :: elev, seadep, newelev
 
   integer :: it, s, m, n, p, k, pid, nid, id, nup, ndown, ngbh(20)
-  real(kind=8) :: dh, vol, minz, maxz
+  real(kind=8) :: dh, vol, minz, maxz, dprop
 
   dnodes = pydnodes
   elev = elevation
@@ -51,7 +52,12 @@ subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diff
             enddo loop0
             if(maxz>sealevel) maxz = sealevel
             if(maxz<elev(id)) maxz = elev(id)
-            vol = max(0.,diffprop*(maxz-elev(id))*area(id))
+            if(propA+propB == 0)then
+              dprop = diffprop
+            else
+              dprop = ((0.9_8)/(1.0_8+exp(propA*(pySlp(id))))+propB)
+            endif
+            vol = max(0.,dprop*(maxz-elev(id))*area(id))
 
             if(it>max_it_cyc)then
               elev(id) = elev(id) + seadep(id)/area(id)
@@ -147,7 +153,7 @@ subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, diff
 
 end subroutine marine_distribution
 
-subroutine pitparams(pyNgbs,pyArea,pyDiff,pyProp,fillTH,epsilon,pybounds,pydnodes)
+subroutine pitparams(pyNgbs,pyArea,pyDiff,pyProp,pyPropa,pyPropb,fillTH,epsilon,pybounds,pydnodes)
 
   use classpd
   implicit none
@@ -159,12 +165,16 @@ subroutine pitparams(pyNgbs,pyArea,pyDiff,pyProp,fillTH,epsilon,pybounds,pydnode
   integer,intent(in) :: pyDiff
   integer,intent(in) :: pyNgbs(pydnodes,20)
   real(kind=8),intent(in) :: pyProp
+  real(kind=8),intent(in) :: pyPropa
+  real(kind=8),intent(in) :: pyPropb
   real(kind=8),intent(in) :: pyArea(pydnodes)
 
   dnodes = pydnodes
 
   diffnbmax = pyDiff
   diffprop = pyProp
+  propA = pyPropa
+  propB = pyPropb
   bds = pybounds
   block_size = pydnodes - bds
   eps = epsilon
@@ -174,6 +184,9 @@ subroutine pitparams(pyNgbs,pyArea,pyDiff,pyProp,fillTH,epsilon,pybounds,pydnode
 
   neighbours = pyNgbs
   area = pyArea
+
+  print *, "propA: ", propA
+  print *, "propB: ", propB
 
   return
 

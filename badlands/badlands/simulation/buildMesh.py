@@ -252,7 +252,7 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     walltime = time.clock()
     FVmesh = FVmethod.FVmethod(recGrid.tinMesh['vertices'], recGrid.tinMesh['triangles'],
                                recGrid.tinMesh['edges'])
-                               
+
     # Perform partitioning by equivalent domain splitting
     partitionIDs, RowProc, ColProc = partitionTIN.simple(recGrid.tinMesh['vertices'][:, 0],
                                                          recGrid.tinMesh['vertices'][:, 1])
@@ -297,7 +297,8 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     inIDs = np.where(FVmesh.partIDs[recGrid.boundsPt:] == 0)[0]
     inIDs += recGrid.boundsPt
     elevationTIN.assign_parameter_pit(FVmesh.neighbours, FVmesh.control_volumes, input.diffnb,
-                                      input.diffprop, recGrid.boundsPt, input.fillmax)
+                                      input.diffprop, input.propa, input.propb, recGrid.boundsPt,
+                                      input.fillmax)
 
     return FVmesh, tMesh, lGIDs, inIDs, inGIDs, totPts
 
@@ -360,7 +361,8 @@ def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
 
     # Define pit filling algorithm
     elevationTIN.assign_parameter_pit(FVmesh.neighbours, FVmesh.control_volumes, input.diffnb,
-                                      input.diffprop, recGrid.boundsPt, input.fillmax)
+                                      input.diffprop, input.propa, input.propb,
+                                      recGrid.boundsPt, input.fillmax)
 
     if verbose:
         print(" - define paramters on TIN grid ", time.clock() - walltime)

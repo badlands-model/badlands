@@ -98,6 +98,9 @@ class xmlParser:
         self.SPLero = 0.
         self.diffnb = 5
         self.diffprop = 0.9
+        self.propa = None
+        self.propb = None
+        self.slpDiffprop = False
         self.spl = False
         self.deepbasin = -10000.
         self.denscrit = 20000.
@@ -958,6 +961,25 @@ class xmlParser:
                     raise ValueError('Proportion of marine sediment deposited on downstream nodes needs to be range between ]0,1[')
             else:
                 self.diffprop = 0.9
+            element = None
+            element = spl.find('propa')
+            if element is not None:
+                self.propa = float(element.text)
+                self.slpDiffprop = True
+            else:
+                self.propa = None
+            element = None
+            element = spl.find('propb')
+            if element is not None:
+                self.propb = float(element.text)
+            else:
+                self.propb = None
+            dpropList = [self.propa,self.propb]
+            if dpropList.count(None) == 1:
+                raise ValueError('Both <propa> and <propb> must be assigned to implement slope-dependent diffprop.')
+            if dpropList.count(None) == 2: # Assign them to real vals for input into pdalgo
+                self.propa = 0.
+                self.propb = 0.
         else:
             self.depo = 0
             self.SPLm = 1.

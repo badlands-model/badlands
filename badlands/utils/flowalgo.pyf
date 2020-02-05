@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module flowalgo ! in
+python module flowalgo ! in 
     interface  ! in :flowalgo
         subroutine overlap(pyx,pyy,pyxst,pyyst,pyxed,pyyed,pypart,pynodes) ! in :flowalgo:flowalgo.f90
             real(kind=8) dimension(pynodes),intent(in) :: pyx
@@ -190,7 +190,7 @@ python module flowalgo ! in
             integer, optional,check(len(pystack)>=pylnodesnb),depend(pystack) :: pylnodesnb=len(pystack)
             integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
         end subroutine slumpero
-        subroutine streampower(sedfluxcrit,pystack,pyrcv,pitid,pitvol1,pitdrain,pyxy,pyarea,pymaxh,pymaxd,pydischarge,pyfillh,pyelev,pyriv,cero,actlay,perc_dep,slp_cr,sea,db,dt,borders,pydepo,pyero,sedfluxes,pydensity,pylnodesnb,pygnodesnb,pyrocknb) ! in :flowalgo:flowalgo.f90
+        subroutine streampower(sedfluxcrit,pystack,pyrcv,pitid,pitvol1,pitdrain,pyxy,pyarea,pymaxh,pymaxd,pydischarge,pyfillh,pyelev,pyriv,cero,actlay,perc_dep,slp_cr,sea,db,dt,borders,pydepo,pyero,sedfluxes,slope,pydensity,pylnodesnb,pygnodesnb,pyrocknb) ! in :flowalgo:flowalgo.f90
             use classfv
             real(kind=8) intent(in) :: sedfluxcrit
             integer dimension(pylnodesnb),intent(in) :: pystack
@@ -217,6 +217,7 @@ python module flowalgo ! in
             real(kind=8) dimension(pygnodesnb,pyrocknb),intent(out),depend(pygnodesnb,pyrocknb) :: pydepo
             real(kind=8) dimension(pygnodesnb,pyrocknb),intent(out),depend(pygnodesnb,pyrocknb) :: pyero
             real(kind=8) dimension(pygnodesnb,pyrocknb),intent(out),depend(pygnodesnb,pyrocknb) :: sedfluxes
+            real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: slope
             real(kind=8) dimension(pygnodesnb),intent(out),depend(pygnodesnb) :: pydensity
             integer, optional,check(len(pystack)>=pylnodesnb),depend(pystack) :: pylnodesnb=len(pystack)
             integer, optional,check(len(pyrcv)>=pygnodesnb),depend(pyrcv) :: pygnodesnb=len(pyrcv)
@@ -254,7 +255,7 @@ python module flowalgo ! in
             integer, optional,check(len(fillh)>=ptsnb),depend(fillh) :: ptsnb=len(fillh)
             integer, optional,check(shape(depo,1)==sednb),depend(depo) :: sednb=shape(depo,1)
         end subroutine getids
-    end interface
+    end interface 
 end python module flowalgo
 
 ! This file was auto-generated with f2py (version:2).

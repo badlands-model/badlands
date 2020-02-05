@@ -154,7 +154,6 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
     """
 
     flow_time = time.clock()
-    #verbose = True
 
     # Get active layer
     if straTIN is not None:
@@ -239,7 +238,7 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
 
     # Initial cumulative elevation change
     walltime = time.clock()
-    timestep, sedchange, erosion, deposition = flow.compute_sedflux(FVmesh.control_volumes, elevation, rain, fillH,
+    timestep, sedchange, erosion, deposition, slopeTIN = flow.compute_sedflux(FVmesh.control_volumes, elevation, rain, fillH,
                                           CFLtime, activelay, eroCk, force.rivQs, force.sealevel, input.perc_dep,
                                           input.slp_cr, FVmesh.neighbours, verbose=False)
 
@@ -420,4 +419,4 @@ def sediment_flux(input, recGrid, hillslope, FVmesh, tMesh, flow, force, rain, l
 
     if verbose:
         print(" - Flow computation ", time.clock() - flow_time)
-    return tNow,elevation,cumdiff,cumhill,cumfail
+    return tNow, elevation, cumdiff, cumhill, cumfail, slopeTIN
