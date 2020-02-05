@@ -91,7 +91,9 @@ class waveSed:
         self.dsteps = input.dsteps
         self.Ce = Ce
         self.Cd = Cd
-        self.Ero = input.wEro
+        # Maximum eroded thickness for each time step
+        self.Ero = input.wEro*input.tWave
+
 
         # Non-dimensional diameter
         self.ds = self.dia*np.power(self.grav*(self.rhos/self.rhow-1)/(self.nu*self.nu),1./3.)
