@@ -391,7 +391,7 @@ class Model(object):
                 if self.carbTIN is not None:
                     # Update erosion/deposition due to SPM processes on carbTIN
                     self.carbTIN.update_layers(self.cumdiff-self.oldsed,self.elevation)
-                    self.carbTIN.get_active_layer(self.input.wEro)
+                    self.carbTIN.get_active_layer(self.input.tWave*self.input.wEro)
                     actlay = self.carbTIN.alay
                 else:
                     actlay = None

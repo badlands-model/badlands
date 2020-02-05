@@ -848,8 +848,8 @@ Sediment is transported by wave-induced currents over a maximum number of iterat
           <!-- Wave sediment entrainment coefficient. Value needs to be
                set between ]0,1]. Default is 0.5 -->
           <wCe>0.35</wCe>
-          <!-- Maximum wave-induced erosion [m] -->
-          <wEro>0.5</wEro>
+          <!-- Maximum wave-induced erosion rate [m/yr] -->
+          <wEro>0.002</wEro>
           <!-- Maximum depth for wave influence [m] -->
           <wbase>10</wbase>
           <!--  Steps used to perform sediment transport.
