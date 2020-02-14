@@ -911,7 +911,7 @@ class flowNetwork:
         h5file = filename+'.hdf5'
         with h5py.File(h5file, "w") as f:
             # Write node coordinates and elevation
-            f.create_dataset('coords',shape=(n1*2,3), dtype='float32', compression='gzip')
+            f.create_dataset('coords',shape=(n1*2,3), dtype='float64', compression='gzip')
             f["coords"][:,:3] = coords
 
             f.create_dataset('connect',shape=(n1,2), dtype='int32', compression='gzip')

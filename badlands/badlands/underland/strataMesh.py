@@ -273,8 +273,12 @@ class strataMesh():
         # Update stratal elevation
         self.stratElev[self.ids,self.step] =  selev[self.ids]-sea
 
-        # Update stratal deposition
         localCum = fcum[self.ids]
+        # Update stratal erosion
+        eroIDs = numpy.where(localCum<0.)[0]
+        self.eroLayer(self.ids[eroIDs], localCum)
+
+        # Update stratal deposition
         depIDs = numpy.where(localCum>0.)[0]
         subs = self.depoLayer(self.ids[depIDs], localCum)
         subsi = numpy.reshape(subs,(len(self.ygrid),len(self.xgrid)))
@@ -283,12 +287,9 @@ class strataMesh():
         sub_poro[boundsPt:] = subs_values((self.xyTIN[boundsPt:,1],self.xyTIN[boundsPt:,0]))
         sub_poro[sub_poro>0.] = 0.
 
-        # Update stratal erosion
-        eroIDs = numpy.where(localCum<0.)[0]
-        self.eroLayer(self.ids[eroIDs], localCum)
-
+        self.oldload += sub_poro
         if write>0:
-            self.layerMesh(selev[self.ids])
+            self.layerMesh(selev[self.ids]+subs[self.ids])
             self.write_hdf5_stratal(outstep-1)
 
         self.step += 1
@@ -375,13 +376,15 @@ class strataMesh():
             nh = self.stratThick[ids,:self.step+1]*(1.-self.stratPoro[ids,:self.step+1])/(1.-poro)
             nh = numpy.minimum(self.stratThick[ids,:self.step+1],nh)
             nh[nh<0.] = 0.
-            # Subsidence due to porosity change
-            subs[ids] = numpy.sum(nh-self.stratThick[ids,:self.step+1],axis=1)
-            subs[subs>0.] = 0.
             # Update layer thickness
             self.stratThick[ids,:self.step+1] = nh
             # Update porosity
             self.stratPoro[ids,:self.step+1] = poro
+            # Subsidence due to porosity change
+            cumThick2 = numpy.cumsum(self.stratThick[ids,self.step::-1],axis=1)[:,::-1]
+            subs[ids] = (cumThick2-cumThick)[:,0]
+            # subs[ids] = numpy.sum(nh-self.stratThick[ids,:self.step+1],axis=1)
+            subs[subs>0.] = 0.
 
         return subs
 
@@ -444,6 +447,8 @@ class strataMesh():
         surf = numpy.array([topsurf[tmpIDs],]*int(self.step+2)).transpose()
         self.stratDepth[tmpIDs,:self.step+2] = surf
         self.stratThick[tmpIDs,:self.step+2] = 0.
+
+
         # Find points with stratigraphic layers
         tmpIDs = numpy.where(self.stratIn == 1)[0]
         if len(tmpIDs) == 0:
