@@ -52,12 +52,11 @@ subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, pySl
             enddo loop0
             if(maxz>sealevel) maxz = sealevel
             if(maxz<elev(id)) maxz = elev(id)
-            if(propA+propB == 0)then
-              dprop = diffprop
-            else
+            dprop = 1.0_8
+            if(propA+propB > 0)then
               dprop = ((0.9_8)/(1.0_8+exp(propA*(pySlp(id))))+propB)
             endif
-            vol = max(0.,dprop*(maxz-elev(id))*area(id))
+            vol = max(0.,diffprop*dprop*(maxz-elev(id))*area(id))
 
             if(it>max_it_cyc)then
               elev(id) = elev(id) + seadep(id)/area(id)
@@ -184,9 +183,6 @@ subroutine pitparams(pyNgbs,pyArea,pyDiff,pyProp,pyPropa,pyPropb,fillTH,epsilon,
 
   neighbours = pyNgbs
   area = pyArea
-
-  print *, "propA: ", propA
-  print *, "propB: ", propB
 
   return
 

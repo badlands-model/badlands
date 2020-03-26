@@ -29,6 +29,7 @@ from shutil import rmtree
 from scipy import interpolate
 from scipy.spatial import cKDTree
 
+
 class raster2TIN:
     """
     Class to build **badlands** surface grid from a rectangular grid (DEM).
@@ -57,22 +58,27 @@ class raster2TIN:
         * The TIN cells resolution is equal to the areaDelFactor times the square of the TIN edges resolution.
 
     """
-    def __init__(self, inputfile=None, delimiter=r'\s+', resRecFactor=1, areaDelFactor=1):
 
-        if inputfile==None:
-            raise RuntimeError('DEM input file name must be defined to construct Badlands irregular grid.')
+    def __init__(
+        self, inputfile=None, delimiter=r"\s+", resRecFactor=1, areaDelFactor=1
+    ):
+
+        if inputfile == None:
+            raise RuntimeError(
+                "DEM input file name must be defined to construct Badlands irregular grid."
+            )
         if not os.path.isfile(inputfile):
-            raise RuntimeError('The DEM input file name cannot be found in your path.')
+            raise RuntimeError("The DEM input file name cannot be found in your path.")
         self.inputfile = inputfile
 
         self.delimiter = delimiter
 
         if resRecFactor < 1:
-            raise ValueError( "TIN edges resolution factor needs to be at least 1." )
+            raise ValueError("TIN edges resolution factor needs to be at least 1.")
         self.resRecFactor = resRecFactor
 
         if areaDelFactor < 1:
-            raise ValueError( "TIN cell area factor needs to be at least 1." )
+            raise ValueError("TIN cell area factor needs to be at least 1.")
         self.areaDelFactor = areaDelFactor
 
         # Define class parameters
@@ -106,13 +112,19 @@ class raster2TIN:
         """
 
         # Read DEM file
-        data = pandas.read_csv(self.inputfile, sep=self.delimiter, engine='c',
-                               header=None, na_filter=False,
-                               dtype=numpy.float, low_memory=False)
-        self.rectX = data.values[:,0]
-        self.rectY = data.values[:,1]
-        self.rectZ = data.values[:,2]
-        resDEM = self.rectX[1]-self.rectX[0]
+        data = pandas.read_csv(
+            self.inputfile,
+            sep=self.delimiter,
+            engine="c",
+            header=None,
+            na_filter=False,
+            dtype=numpy.float,
+            low_memory=False,
+        )
+        self.rectX = data.values[:, 0]
+        self.rectY = data.values[:, 1]
+        self.rectZ = data.values[:, 2]
+        resDEM = self.rectX[1] - self.rectX[0]
         self.resdx = resDEM
         minX = self.rectX.min()
         maxX = self.rectX.max()
@@ -120,45 +132,45 @@ class raster2TIN:
         maxY = self.rectY.max()
 
         # Defines TIN variables
-        self.resEdges = resDEM*self.resRecFactor
-        self.resEdges = max(self.resEdges,resDEM)
-        self.areaDel = (self.resEdges**2)*self.areaDelFactor
-        self.areaDel = max(self.resEdges**2,self.areaDel)
+        self.resEdges = resDEM * self.resRecFactor
+        self.resEdges = max(self.resEdges, resDEM)
+        self.areaDel = (self.resEdges ** 2) * self.areaDelFactor
+        self.areaDel = max(self.resEdges ** 2, self.areaDel)
 
         # North South edges
-        self.nx = int(round((maxX-minX)/self.resEdges+1))
-        e_x = numpy.linspace(minX,maxX,self.nx)
+        self.nx = int(round((maxX - minX) / self.resEdges + 1))
+        e_x = numpy.linspace(minX, maxX, self.nx)
         tmp1 = numpy.zeros(self.nx)
         tmp2 = numpy.zeros(self.nx)
         tmp1.fill(minY)
         tmp2.fill(maxY)
-        south = numpy.column_stack((e_x,tmp1))
-        north = numpy.column_stack((e_x,tmp2))
+        south = numpy.column_stack((e_x, tmp1))
+        north = numpy.column_stack((e_x, tmp2))
 
         # East West edges
-        self.ny = int(round((maxY-minY)/self.resEdges+1))
-        e_y = numpy.linspace(minY+self.resEdges,maxY-self.resEdges,self.ny-2)
-        tmp1 = numpy.zeros(self.ny-2)
-        tmp2 = numpy.zeros(self.ny-2)
+        self.ny = int(round((maxY - minY) / self.resEdges + 1))
+        e_y = numpy.linspace(minY + self.resEdges, maxY - self.resEdges, self.ny - 2)
+        tmp1 = numpy.zeros(self.ny - 2)
+        tmp2 = numpy.zeros(self.ny - 2)
         tmp1.fill(minX)
         tmp2.fill(maxX)
-        east = numpy.column_stack((tmp1,e_y))
-        west = numpy.column_stack((tmp2,e_y))
+        east = numpy.column_stack((tmp1, e_y))
+        west = numpy.column_stack((tmp2, e_y))
 
         # Merge edges together
         edges = []
-        edges = numpy.vstack((south,east))
-        edges = numpy.vstack((edges,north))
-        edges = numpy.vstack((edges,west))
+        edges = numpy.vstack((south, east))
+        edges = numpy.vstack((edges, north))
+        edges = numpy.vstack((edges, west))
         self.edges = edges
 
         self.edgesPt = len(self.edges)
 
-        self.rnx = int(round((maxX-minX)/resDEM+1))
-        self.rny = int(round((maxY-minY)/resDEM+1))
-        self.regX = numpy.linspace(minX,maxX,self.rnx)
-        self.regY = numpy.linspace(minY,maxY,self.rny)
-        self.regZ = numpy.reshape(self.rectZ,(self.rnx,self.rny),order='F')
+        self.rnx = int(round((maxX - minX) / resDEM + 1))
+        self.rny = int(round((maxY - minY) / resDEM + 1))
+        self.regX = numpy.linspace(minX, maxX, self.rnx)
+        self.regY = numpy.linspace(minY, maxY, self.rny)
+        self.regZ = numpy.reshape(self.rectZ, (self.rnx, self.rny), order="F")
 
     def _TIN_ghosts_bounds(self):
         """
@@ -172,28 +184,28 @@ class raster2TIN:
         maxY = self.rectY.max()
 
         # North South bounds
-        b_x = numpy.linspace(minX-self.resEdges,maxX+self.resEdges,self.nx+2)
-        tmp1 = numpy.zeros(self.nx+2)
-        tmp2 = numpy.zeros(self.nx+2)
-        tmp1.fill(minY-self.resEdges)
-        tmp2.fill(maxY+self.resEdges)
-        south = numpy.column_stack((b_x,tmp1))
-        north = numpy.column_stack((b_x,tmp2))
+        b_x = numpy.linspace(minX - self.resEdges, maxX + self.resEdges, self.nx + 2)
+        tmp1 = numpy.zeros(self.nx + 2)
+        tmp2 = numpy.zeros(self.nx + 2)
+        tmp1.fill(minY - self.resEdges)
+        tmp2.fill(maxY + self.resEdges)
+        south = numpy.column_stack((b_x, tmp1))
+        north = numpy.column_stack((b_x, tmp2))
 
         # East West edges
-        b_y = numpy.linspace(minY,maxY,self.ny)
+        b_y = numpy.linspace(minY, maxY, self.ny)
         tmp1 = numpy.zeros(self.ny)
         tmp2 = numpy.zeros(self.ny)
-        tmp1.fill(minX-self.resEdges)
-        tmp2.fill(maxX+self.resEdges)
-        east = numpy.column_stack((tmp1,b_y))
-        west = numpy.column_stack((tmp2,b_y))
+        tmp1.fill(minX - self.resEdges)
+        tmp2.fill(maxX + self.resEdges)
+        east = numpy.column_stack((tmp1, b_y))
+        west = numpy.column_stack((tmp2, b_y))
 
         # Merge edges together
         bounds = []
-        bounds = numpy.vstack((south,east))
-        bounds = numpy.vstack((bounds,north))
-        bounds = numpy.vstack((bounds,west))
+        bounds = numpy.vstack((south, east))
+        bounds = numpy.vstack((bounds, north))
+        bounds = numpy.vstack((bounds, west))
         self.bounds = bounds
 
         self.boundsPt = len(self.bounds)
@@ -213,24 +225,30 @@ class raster2TIN:
         self._TIN_ghosts_bounds()
 
         # Create TIN
-        tinPts = numpy.vstack(( self.bounds, self.edges))
-        self.tinMesh  = triangle.triangulate( {'vertices':tinPts},'Dqa'+str(self.areaDel))
-        ptsTIN = self.tinMesh['vertices']
+        tinPts = numpy.vstack((self.bounds, self.edges))
+        self.tinMesh = triangle.triangulate(
+            {"vertices": tinPts}, "Dqa" + str(self.areaDel)
+        )
+        ptsTIN = self.tinMesh["vertices"]
 
         # Check extent
-        checkXmin = ptsTIN[self.boundsPt:,0].min()
-        checkXmax = ptsTIN[self.boundsPt:,0].max()
-        checkYmin = ptsTIN[self.boundsPt:,1].min()
-        checkYmax = ptsTIN[self.boundsPt:,1].max()
+        checkXmin = ptsTIN[self.boundsPt :, 0].min()
+        checkXmax = ptsTIN[self.boundsPt :, 0].max()
+        checkYmin = ptsTIN[self.boundsPt :, 1].min()
+        checkYmax = ptsTIN[self.boundsPt :, 1].max()
 
         if checkXmin < self.rectX.min() or checkXmax > self.rectX.max():
-            raise ValueError('Error in defining the X boundary nodes, you will need to adjust the resolution value')
+            raise ValueError(
+                "Error in defining the X boundary nodes, you will need to adjust the resolution value"
+            )
         if checkYmin < self.rectY.min() or checkYmax > self.rectY.max():
-            raise ValueError('Error in defining the Y boundary nodes, you will need to adjust the resolution value')
+            raise ValueError(
+                "Error in defining the Y boundary nodes, you will need to adjust the resolution value"
+            )
 
         # Add masks
-        self.bmask = numpy.zeros(len(ptsTIN[:,0]))
-        self.bmask[:self.boundsPt] = 1
+        self.bmask = numpy.zeros(len(ptsTIN[:, 0]))
+        self.bmask[: self.boundsPt] = 1
 
         return
 
@@ -256,57 +274,61 @@ class raster2TIN:
         """
 
         if os.path.exists(restartFolder):
-            folder = restartFolder+'/h5/'
-            fileCPU = 'tin.time%s.hdf5'%timestep
-            restartncpus = len(glob.glob1(folder,fileCPU))
+            folder = restartFolder + "/h5/"
+            fileCPU = "tin.time%s.hdf5" % timestep
+            restartncpus = len(glob.glob1(folder, fileCPU))
             if restartncpus == 0:
-                raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
+                raise ValueError(
+                    "The requested time step for the restart simulation cannot be found in the restart folder."
+                )
         else:
-            raise ValueError('The restart folder is missing or the given path is incorrect.')
+            raise ValueError(
+                "The restart folder is missing or the given path is incorrect."
+            )
 
-        df = h5py.File('%s/h5/tin.time%s.hdf5'%(restartFolder, timestep), 'r')
-        coords = numpy.array((df['/coords']))
-        cumdiff = numpy.array((df['/cumdiff']))
-        cumhill = numpy.array((df['/cumhill']))
-        cumfail = numpy.array((df['/cumfail']))
+        df = h5py.File("%s/h5/tin.time%s.hdf5" % (restartFolder, timestep), "r")
+        coords = numpy.array((df["/coords"]))
+        cumdiff = numpy.array((df["/cumdiff"]))
+        cumhill = numpy.array((df["/cumhill"]))
+        cumfail = numpy.array((df["/cumfail"]))
         x, y, z = numpy.hsplit(coords, 3)
         c = cumdiff
         h = cumhill
         f = cumfail
 
-        XY = numpy.column_stack((x,y))
+        XY = numpy.column_stack((x, y))
         tree = cKDTree(XY)
         distances, indices = tree.query(tXY, k=3)
 
         if len(z[indices].shape) == 3:
-            z_vals = z[indices][:,:,0]
-            c_vals = c[indices][:,:,0]
-            h_vals = h[indices][:,:,0]
-            f_vals = f[indices][:,:,0]
+            z_vals = z[indices][:, :, 0]
+            c_vals = c[indices][:, :, 0]
+            h_vals = h[indices][:, :, 0]
+            f_vals = f[indices][:, :, 0]
         else:
             z_vals = z[indices]
             c_vals = c[indices]
             h_vals = h[indices]
             f_vals = f[indices]
 
-        with numpy.errstate(divide='ignore'):
-            elev = numpy.average(z_vals,weights=(1./distances), axis=1)
-            cum = numpy.average(c_vals,weights=(1./distances), axis=1)
-            hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
-            fcum = numpy.average(f_vals,weights=(1./distances), axis=1)
+        with numpy.errstate(divide="ignore"):
+            elev = numpy.average(z_vals, weights=(1.0 / distances), axis=1)
+            cum = numpy.average(c_vals, weights=(1.0 / distances), axis=1)
+            hcum = numpy.average(h_vals, weights=(1.0 / distances), axis=1)
+            fcum = numpy.average(f_vals, weights=(1.0 / distances), axis=1)
 
-        onIDs = numpy.where(distances[:,0] == 0)[0]
+        onIDs = numpy.where(distances[:, 0] == 0)[0]
         if len(onIDs) > 0:
             if len(z[indices].shape) == 3:
-                elev[onIDs] = z[indices[onIDs,0],0]
-                cum[onIDs] = c[indices[onIDs,0],0]
-                hcum[onIDs] = h[indices[onIDs,0],0]
-                fcum[onIDs] = f[indices[onIDs,0],0]
+                elev[onIDs] = z[indices[onIDs, 0], 0]
+                cum[onIDs] = c[indices[onIDs, 0], 0]
+                hcum[onIDs] = h[indices[onIDs, 0], 0]
+                fcum[onIDs] = f[indices[onIDs, 0], 0]
             else:
-                elev[onIDs] = z[indices[onIDs,0]]
-                cum[onIDs] = c[indices[onIDs,0]]
-                hcum[onIDs] = h[indices[onIDs,0]]
-                fcum[onIDs] = f[indices[onIDs,0]]
+                elev[onIDs] = z[indices[onIDs, 0]]
+                cum[onIDs] = c[indices[onIDs, 0]]
+                hcum[onIDs] = h[indices[onIDs, 0]]
+                fcum[onIDs] = f[indices[onIDs, 0]]
 
         return elev, cum, hcum, fcum
 
@@ -344,37 +366,40 @@ class raster2TIN:
         """
 
         if os.path.exists(restartFolder):
-            folder = restartFolder+'/h5/'
-            fileCPU = 'tin.time%s.hdf5'%timestep
-            restartncpus = len(glob.glob1(folder,fileCPU))
+            folder = restartFolder + "/h5/"
+            fileCPU = "tin.time%s.hdf5" % timestep
+            restartncpus = len(glob.glob1(folder, fileCPU))
             if restartncpus == 0:
-                raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
+                raise ValueError(
+                    "The requested time step for the restart simulation cannot be found in the restart folder."
+                )
         else:
-            raise ValueError('The restart folder is missing or the given path is incorrect.')
+            raise ValueError(
+                "The restart folder is missing or the given path is incorrect."
+            )
 
-
-        df = h5py.File('%s/h5/tin.time%s.hdf5'%(restartFolder, timestep), 'r')
-        coords = numpy.array((df['/coords']))
-        cumdiff = numpy.array((df['/cumdiff']))
-        cumhill = numpy.array((df['/cumhill']))
-        cumfail = numpy.array((df['/cumfail']))
-        cumflex = numpy.array((df['/cumflex']))
+        df = h5py.File("%s/h5/tin.time%s.hdf5" % (restartFolder, timestep), "r")
+        coords = numpy.array((df["/coords"]))
+        cumdiff = numpy.array((df["/cumdiff"]))
+        cumhill = numpy.array((df["/cumhill"]))
+        cumfail = numpy.array((df["/cumfail"]))
+        cumflex = numpy.array((df["/cumflex"]))
         x, y, z = numpy.hsplit(coords, 3)
         c = cumdiff
         h = cumhill
         s = cumfail
         f = cumflex
-    
-        XY = numpy.column_stack((x,y))
+
+        XY = numpy.column_stack((x, y))
         tree = cKDTree(XY)
         distances, indices = tree.query(tXY, k=3)
 
         if len(z[indices].shape) == 3:
-            z_vals = z[indices][:,:,0]
-            c_vals = c[indices][:,:,0]
-            h_vals = h[indices][:,:,0]
-            s_vals = s[indices][:,:,0]
-            f_vals = f[indices][:,:,0]
+            z_vals = z[indices][:, :, 0]
+            c_vals = c[indices][:, :, 0]
+            h_vals = h[indices][:, :, 0]
+            s_vals = s[indices][:, :, 0]
+            f_vals = f[indices][:, :, 0]
         else:
             z_vals = z[indices]
             c_vals = c[indices]
@@ -382,19 +407,27 @@ class raster2TIN:
             h_vals = h[indices]
             f_vals = f[indices]
 
-        distances[distances<0.0001] = 0.0001
-        with numpy.errstate(divide='ignore'):
-            elev = numpy.average(z_vals,weights=(1./distances), axis=1)
-            cum = numpy.average(c_vals,weights=(1./distances), axis=1)
-            hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
-            scum = numpy.average(s_vals,weights=(1./distances), axis=1)
+        distances[distances < 0.0001] = 0.0001
+        with numpy.errstate(divide="ignore"):
+            elev = numpy.average(z_vals, weights=(1.0 / distances), axis=1)
+            cum = numpy.average(c_vals, weights=(1.0 / distances), axis=1)
+            hcum = numpy.average(h_vals, weights=(1.0 / distances), axis=1)
+            scum = numpy.average(s_vals, weights=(1.0 / distances), axis=1)
+            cumf = numpy.average(f_vals, weights=(1.0 / distances), axis=1)
 
-        onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
+        onIDs = numpy.where(distances[:, 0] <= 0.0001)[0]
         if len(onIDs) > 0:
-            elev[onIDs] = z[indices[onIDs,0]]
-            cum[onIDs] = c[indices[onIDs,0]]
-            cumf[onIDs] = f[indices[onIDs,0]]
-            scum[onIDs] = s[indices[onIDs,0]]
-            hcum[onIDs] = h[indices[onIDs,0]]
+            if len(z[indices].shape) == 3:
+                elev[onIDs] = z[indices[onIDs, 0], 0]
+                cum[onIDs] = c[indices[onIDs, 0], 0]
+                hcum[onIDs] = h[indices[onIDs, 0], 0]
+                scum[onIDs] = s[indices[onIDs, 0], 0]
+                fcum[onIDs] = f[indices[onIDs, 0], 0]
+            else:
+                elev[onIDs] = z[indices[onIDs, 0]]
+                cum[onIDs] = c[indices[onIDs, 0]]
+                hcum[onIDs] = h[indices[onIDs, 0]]
+                scum[onIDs] = s[indices[onIDs, 0]]
+                fcum[onIDs] = f[indices[onIDs, 0]]
 
         return elev, cum, hcum, scum, cumf
