@@ -391,10 +391,10 @@ class raster2TIN:
 
         onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
-            elev[onIDs] = z[indices[onIDs,0]]
-            cum[onIDs] = c[indices[onIDs,0]]
-            cumf[onIDs] = f[indices[onIDs,0]]
-            scum[onIDs] = s[indices[onIDs,0]]
-            hcum[onIDs] = h[indices[onIDs,0]]
+            elev[onIDs] = z[indices[onIDs,0],0]
+            cum[onIDs] = c[indices[onIDs,0],0]
+            cumf[onIDs] = f[indices[onIDs,0],0]
+            scum[onIDs] = s[indices[onIDs,0],0]
+            hcum[onIDs] = h[indices[onIDs,0],0]
 
         return elev, cum, hcum, scum, cumf
