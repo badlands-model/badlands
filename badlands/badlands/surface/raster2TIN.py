@@ -388,6 +388,8 @@ class raster2TIN:
             cum = numpy.average(c_vals,weights=(1./distances), axis=1)
             hcum = numpy.average(h_vals,weights=(1./distances), axis=1)
             scum = numpy.average(s_vals,weights=(1./distances), axis=1)
+            cumf = numpy.average(f_vals,weights=(1./distances), axis=1)
+
 
         onIDs = numpy.where(distances[:,0] <= 0.0001)[0]
         if len(onIDs) > 0:
