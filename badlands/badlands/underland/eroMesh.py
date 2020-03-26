@@ -62,7 +62,7 @@ class eroMesh():
             # Get erodibility from erosive layer thicknesses
             self.erodibility = numpy.zeros(nbPts)
             for k in range(self.layNb):
-                existIDs = numpy.where(numpy.logical_and(self.thickness[:,k] > 0., self.erodibility[:,k] == 0.))[0]
+                existIDs = numpy.where(numpy.logical_and(self.thickness[:,k] > 0., self.erodibility[:] == 0.))[0]
                 self.erodibility[existIDs] = self.Ke[existIDs,k]
                 if(len(numpy.where(self.erodibility == 0)[0]) == 0):
                     break
