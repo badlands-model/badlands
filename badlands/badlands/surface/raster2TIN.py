@@ -350,7 +350,7 @@ class raster2TIN:
             numpy 1D array containing the updated elevation from the restart model.
         cum
             numpy 1D array containing the updated erosion/deposition values from the restart model.
-        cumf
+        fcum
             numpy 1D array containing the cumulative flexural isostasy values from the restart model.
 
 
@@ -413,7 +413,7 @@ class raster2TIN:
             cum = numpy.average(c_vals, weights=(1.0 / distances), axis=1)
             hcum = numpy.average(h_vals, weights=(1.0 / distances), axis=1)
             scum = numpy.average(s_vals, weights=(1.0 / distances), axis=1)
-            cumf = numpy.average(f_vals, weights=(1.0 / distances), axis=1)
+            fcum = numpy.average(f_vals, weights=(1.0 / distances), axis=1)
 
         onIDs = numpy.where(distances[:, 0] <= 0.0001)[0]
         if len(onIDs) > 0:
@@ -430,4 +430,4 @@ class raster2TIN:
                 scum[onIDs] = s[indices[onIDs, 0]]
                 fcum[onIDs] = f[indices[onIDs, 0]]
 
-        return elev, cum, hcum, scum, cumf
+        return elev, cum, hcum, scum, fcum

@@ -383,6 +383,15 @@ This law is often used to look at purely erosive model (:code:`<dep>=0`), but as
           <!-- Proportion of marine sediment deposited on downstream nodes. It needs
                to be set between ]0,1[. Default value is 0.9 (optional). -->
           <diffprop>0.2</diffprop>
+          <!-- Scaling parameter for diffprop (it depends on the diffprop parameter) value that is dependent on local
+               topographic slope. Recommended value is 2000.0. Comment out or remove
+               to revert to fixed diffprop value for entire domain. See Thran et
+               al. 2020, G-cubed in which diffprop is set to 1.-->
+          <propa>2000.</propa>
+          <!-- Additional necessary scaling parameter for slope-dependent diffprop (subject to diffprop parameter value).
+               Recommended value is 0.005. Comment out or remove to revert to fixed
+               diffprop value for entire domain. -->
+          <propb>0.005</propb>
           <!-- Critical density of water+sediment flux to trigger hyperpycnal current
                off shore - (optional) -->
           <dens_cr>1060.</dens_cr>
