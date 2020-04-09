@@ -36,7 +36,7 @@ end subroutine overlap
 
 ! This module builds the stack used for in Braun & Willett (2013) flow network
 ! algorithm
-subroutine build(pyBase,pyRcv,pyDelta,pyDonors,pyStackOrder,pyBaseNb,pyDeltaNb,pyNodesNb)
+subroutine buildFA(pyBase,pyRcv,pyDelta,pyDonors,pyStackOrder,pyBaseNb,pyDeltaNb,pyNodesNb)
 
   use classfv
   implicit none
@@ -89,7 +89,7 @@ subroutine build(pyBase,pyRcv,pyDelta,pyDonors,pyStackOrder,pyBaseNb,pyDeltaNb,p
 
   return
 
-end subroutine build
+end subroutine buildFA
 
 ! This module implements flow parameters computation.
 subroutine eroparams(typefct, m, n, mt, nt, kt, kw, b, bsfct)

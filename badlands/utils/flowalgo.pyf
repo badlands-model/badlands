@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module flowalgo ! in 
+python module flowalgo ! in
     interface  ! in :flowalgo
         subroutine overlap(pyx,pyy,pyxst,pyyst,pyxed,pyyed,pypart,pynodes) ! in :flowalgo:flowalgo.f90
             real(kind=8) dimension(pynodes),intent(in) :: pyx
@@ -13,7 +13,7 @@ python module flowalgo ! in
             integer dimension(pynodes),intent(out),depend(pynodes) :: pypart
             integer, optional,check(len(pyx)>=pynodes),depend(pyx) :: pynodes=len(pyx)
         end subroutine overlap
-        subroutine build(pybase,pyrcv,pydelta,pydonors,pystackorder,pybasenb,pydeltanb,pynodesnb) ! in :flowalgo:flowalgo.f90
+        subroutine buildFA(pybase,pyrcv,pydelta,pydonors,pystackorder,pybasenb,pydeltanb,pynodesnb) ! in :flowalgo:flowalgo.f90
             use classfv
             integer dimension(pybasenb),intent(in) :: pybase
             integer dimension(pynodesnb),intent(in) :: pyrcv
@@ -23,7 +23,7 @@ python module flowalgo ! in
             integer, optional,check(len(pybase)>=pybasenb),depend(pybase) :: pybasenb=len(pybase)
             integer, optional,check(len(pydelta)>=pydeltanb),depend(pydelta) :: pydeltanb=len(pydelta)
             integer, optional,check(len(pyrcv)>=pynodesnb),depend(pyrcv) :: pynodesnb=len(pyrcv)
-        end subroutine build
+        end subroutine buildFA
         subroutine eroparams(typefct,m,n,mt,nt,kt,kw,b,bsfct) ! in :flowalgo:flowalgo.f90
             use classfv
             integer :: typefct
@@ -255,7 +255,7 @@ python module flowalgo ! in
             integer, optional,check(len(fillh)>=ptsnb),depend(fillh) :: ptsnb=len(fillh)
             integer, optional,check(shape(depo,1)==sednb),depend(depo) :: sednb=shape(depo,1)
         end subroutine getids
-    end interface 
+    end interface
 end python module flowalgo
 
 ! This file was auto-generated with f2py (version:2).
