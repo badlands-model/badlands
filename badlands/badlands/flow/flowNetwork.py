@@ -508,7 +508,7 @@ class flowNetwork:
         self._delta_array()
 
         # Using libUtils stack create the ordered node array
-        self.donors, lstcks = flowalgo.buildFA(
+        self.donors, lstcks = flowalgo.buildfa(
             self.localbase, self.receivers, self.delta
         )
 
@@ -531,7 +531,7 @@ class flowNetwork:
         self._delta_array1()
 
         # Using libUtils stack create the ordered node array
-        self.donors1, lstcks = flowalgo.buildFA(
+        self.donors1, lstcks = flowalgo.buildfa(
             self.localbase1, self.receivers1, self.delta
         )
 

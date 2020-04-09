@@ -13,7 +13,7 @@ python module flowalgo ! in
             integer dimension(pynodes),intent(out),depend(pynodes) :: pypart
             integer, optional,check(len(pyx)>=pynodes),depend(pyx) :: pynodes=len(pyx)
         end subroutine overlap
-        subroutine buildFA(pybase,pyrcv,pydelta,pydonors,pystackorder,pybasenb,pydeltanb,pynodesnb) ! in :flowalgo:flowalgo.f90
+        subroutine buildfa(pybase,pyrcv,pydelta,pydonors,pystackorder,pybasenb,pydeltanb,pynodesnb) ! in :flowalgo:flowalgo.f90
             use classfv
             integer dimension(pybasenb),intent(in) :: pybase
             integer dimension(pynodesnb),intent(in) :: pyrcv
@@ -23,7 +23,7 @@ python module flowalgo ! in
             integer, optional,check(len(pybase)>=pybasenb),depend(pybase) :: pybasenb=len(pybase)
             integer, optional,check(len(pydelta)>=pydeltanb),depend(pydelta) :: pydeltanb=len(pydelta)
             integer, optional,check(len(pyrcv)>=pynodesnb),depend(pyrcv) :: pynodesnb=len(pyrcv)
-        end subroutine buildFA
+        end subroutine buildfa
         subroutine eroparams(typefct,m,n,mt,nt,kt,kw,b,bsfct) ! in :flowalgo:flowalgo.f90
             use classfv
             integer :: typefct
