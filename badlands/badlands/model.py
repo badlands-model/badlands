@@ -453,7 +453,7 @@ class Model(object):
                             scum,
                             Ke,
                             Th,
-                        ) = self.force.apply_XY_dispacements(
+                        ) = self.force.apply_XY_displacements(
                             self.recGrid.areaDel,
                             self.fixIDs,
                             self.elevation,
@@ -477,6 +477,10 @@ class Model(object):
                             self.mapero.thickness = Th
                         # Rebuild the computational mesh
                         self._rebuild_mesh(verbose)
+
+                        # In case where the paleoflow workflow is used
+                        if self.force.uDisp is not None:
+                            self.elevation += self.force.uDisp
 
                         # Update the stratigraphic mesh
                         if self.input.laytime > 0 and self.strata is not None:
