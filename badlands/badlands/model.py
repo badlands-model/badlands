@@ -118,6 +118,10 @@ class Model(object):
         if self.input.pelagic:
             self.pelagic = pelagicGrowth.pelagicGrowth(self.input)
 
+        # Initialize TIN mobilized wave sediments going to fluvial flowNetwork
+        # self.waveMobile = np.zeros(self.totPts, dtype=float)
+        # self.waveED = np.zeros(self.totPts, dtype=float)
+
     def _build_mesh(self, filename, verbose):
         """
         Build TIN based on regular grid.
@@ -355,6 +359,10 @@ class Model(object):
                     self.tNow, self.elevation, self.inIDs
                 )
 
+            # Initialize waveFlux at tStart
+            # if self.tNow == self.input.tStart:
+            #     self.force.initWaveFlux(self.inIDs)
+
             # Load tectonic grid
             if not self.input.disp3d:
                 # Vertical displacements
@@ -533,10 +541,24 @@ class Model(object):
                 waveED, nactlay = self.wave.compute_wavesed(
                     self.tNow, self.input, self.force, self.elevation, actlay
                 )
+                # Wave-remobilized sediments sent to stream network if mobilized over steep slopes
+                # slopeVal = 0.01
+                # slopeBool = (self.slopeTIN > slopeVal).astype(int)
+                # waveDep = waveED.clip(min=0)  # keep positive values (deposition)
+                # self.waveMobile = np.multiply(slopeBool, waveDep)
+                # self.waveED = np.subtract(waveED, self.waveMobile)
+                # self.force.waveFlux = (
+                #     np.multiply(self.waveMobile, self.FVmesh.control_volumes)
+                #     / self.input.tWave
+                # )
+
                 # Update elevation / cumulative changes based on wave-induced sediment transport
                 self.elevation += waveED
                 self.cumdiff += waveED
                 self.wavediff += waveED
+                # self.elevation += self.waveED
+                # self.cumdiff += self.waveED
+                # self.wavediff += self.waveED
                 print(
                     "   - Compute wave-induced sediment transport %0.02f seconds"
                     % (time.clock() - wavetime)

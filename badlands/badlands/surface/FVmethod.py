@@ -19,8 +19,10 @@ import warnings
 import tribad as triangle
 
 import os
-if 'READTHEDOCS' not in os.environ:
+
+if "READTHEDOCS" not in os.environ:
     from badlands import fvframe
+
 
 class FVmethod:
     """
@@ -40,6 +42,7 @@ class FVmethod:
         cells : numpy integer array of 3 indices defining TIN's cells connectivity.
         edges : numpy integer array of 2 indices defining TIN's edges connectivity.
     """
+
     def __init__(self, nodes, cells, edges):
 
         self.node_coords = nodes
@@ -73,9 +76,23 @@ class FVmethod:
 
         # Call the finite volume frame construction function from libUtils
         walltime = time.clock()
-        self.control_volumes, self.neighbours, self.vor_edges, \
-        self.edge_length, maxNgbhs = fvframe.build(lGIDs+1, self.localIDs+1, self.node_coords[:,0], self.node_coords[:,1],
-            self.edges[:,:2]+1, self.cells[:,:3]+1, Vor_pts[:,0], Vor_pts[:,1], Vor_edges[:,:2]+1)
+        (
+            self.control_volumes,
+            self.neighbours,
+            self.vor_edges,
+            self.edge_length,
+            maxNgbhs,
+        ) = fvframe.build(
+            lGIDs + 1,
+            self.localIDs + 1,
+            self.node_coords[:, 0],
+            self.node_coords[:, 1],
+            self.edges[:, :2] + 1,
+            self.cells[:, :3] + 1,
+            Vor_pts[:, 0],
+            Vor_pts[:, 1],
+            Vor_edges[:, :2] + 1,
+        )
         if verbose:
             print(" - construct Finite Volume representation ", time.clock() - walltime)
 
@@ -157,9 +174,9 @@ class FVmethod:
         """
 
         # Get local neighbourhood declaration
-        ngbh = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.int)
+        ngbh = numpy.zeros((localPtsNb, self.maxNgbh), dtype=numpy.int)
         ngbh.fill(-2)
-        ngbh = self.neighbours[self.localIDs,:self.maxNgbh]
+        ngbh = self.neighbours[self.localIDs, : self.maxNgbh]
         ngbh = numpy.ravel(ngbh)
         ngbhINT = ngbh.astype(numpy.int32)
 
@@ -168,9 +185,9 @@ class FVmethod:
 
         # Gather flatten neighbour array definition from each region globally
         shape = (totPts, self.maxNgbh)
-        #globalNgbh = numpy.zeros(sum(ngbhNbs),dtype=ngbhINT.dtype)
+        # globalNgbh = numpy.zeros(sum(ngbhNbs),dtype=ngbhINT.dtype)
         globalNgbh = ngbhINT
-        exportNgbhIDs = numpy.reshape(globalNgbh,shape)
+        exportNgbhIDs = numpy.reshape(globalNgbh, shape)
 
         return exportNgbhIDs, shape, ngbhNbs
 
@@ -190,15 +207,15 @@ class FVmethod:
         """
 
         # Get local edges length declaration
-        edges = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
-        edges = self.edge_length[self.localIDs,:self.maxNgbh]
+        edges = numpy.zeros((localPtsNb, self.maxNgbh), dtype=numpy.float)
+        edges = self.edge_length[self.localIDs, : self.maxNgbh]
         edges = numpy.ravel(edges)
         edgesFLT = edges.astype(numpy.float64)
 
         # Gather flatten array definition from each region globally
-        #globalEdges = numpy.zeros(sum(ngbhNbs),dtype=edgesFLT.dtype)
+        # globalEdges = numpy.zeros(sum(ngbhNbs),dtype=edgesFLT.dtype)
         globalEdges = edgesFLT
-        exportEdges = numpy.reshape(globalEdges,shape)
+        exportEdges = numpy.reshape(globalEdges, shape)
 
         return exportEdges
 
@@ -218,14 +235,14 @@ class FVmethod:
         """
 
         # Get local voronoi length declaration
-        vors = numpy.zeros((localPtsNb,self.maxNgbh), dtype=numpy.float)
-        vors = self.vor_edges[self.localIDs,:self.maxNgbh]
+        vors = numpy.zeros((localPtsNb, self.maxNgbh), dtype=numpy.float)
+        vors = self.vor_edges[self.localIDs, : self.maxNgbh]
         vors = numpy.ravel(vors)
         vorsFLT = vors.astype(numpy.float64)
 
         # Gather flatten array definition from each region globally
         globalVors = vorsFLT
-        exportVors = numpy.reshape(globalVors,shape)
+        exportVors = numpy.reshape(globalVors, shape)
 
         return exportVors
 
@@ -298,8 +315,8 @@ class FVmethod:
         exportNgbhIDs, shape, ngbhNbs = self._gather_Neighbours(localPtsNb, totPts)
         # Gather edges lengths from each region globally
         exportEdges = self._gather_Edges(localPtsNb, shape, ngbhNbs)
-        maxdist = numpy.sqrt(2.*res**2)
-        exportEdges[exportEdges > 2.*maxdist] = maxdist
+        maxdist = numpy.sqrt(2.0 * res ** 2)
+        exportEdges[exportEdges > 2.0 * maxdist] = maxdist
         # Gather voronoi edges lengths from each region globally
         exportVors = self._gather_VorEdges(localPtsNb, shape, ngbhNbs)
 

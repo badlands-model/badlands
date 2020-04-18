@@ -54,7 +54,7 @@ subroutine marine_distribution(elevation, seavol, sealevel, border, depIDs, pySl
             if(maxz<elev(id)) maxz = elev(id)
             dprop = 1.0_8
             if(propA+propB > 0)then
-              dprop = ((0.9_8)/(1.0_8+exp(propA*(pySlp(id))))+propB)
+              dprop = 0.9_8/(1.0_8+exp(propA*(pySlp(id)-propB)))
             endif
             vol = max(0.,diffprop*dprop*(maxz-elev(id))*area(id))
 
