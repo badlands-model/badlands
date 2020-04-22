@@ -24,7 +24,7 @@ import errno
 import pandas
 import os.path
 import warnings
-import tribad as triangle
+import triangle as triangle
 from shutil import rmtree
 from scipy import interpolate
 from scipy.spatial import cKDTree
@@ -227,7 +227,7 @@ class raster2TIN:
         # Create TIN
         tinPts = numpy.vstack((self.bounds, self.edges))
         self.tinMesh = triangle.triangulate(
-            {"vertices": tinPts}, "Dqa" + str(self.areaDel)
+            {"vertices": tinPts}, "eDqa" + str(self.areaDel)
         )
         ptsTIN = self.tinMesh["vertices"]
 

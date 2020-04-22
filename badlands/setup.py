@@ -53,7 +53,7 @@ if __name__ == "__main__":
         author="Tristan Salles",
         author_email="tristan.salles@sydney.edu.au",
         url="https://github.com/badlands-model",
-        version="2.0.21",
+        version="2.0.22",
         description="Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model",
         long_description=long_description,
         long_description_content_type="text/markdown",
@@ -71,7 +71,8 @@ if __name__ == "__main__":
         data_files=[("badlands", sys_includes)],
         include_package_data=True,
         install_requires=[
-            "tribad",
+            "triangle",
+            "meshplex",
             "numpy>=1.15.0",
             "six>=1.11.0",
             "setuptools>=38.4.0",

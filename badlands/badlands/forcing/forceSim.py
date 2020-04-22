@@ -27,7 +27,7 @@ Above figure shows a schematic of the main variables and forcing conditions foun
 import os
 import numpy
 import pandas
-import tribad as triangle
+import triangle as triangle
 from scipy.ndimage.filters import gaussian_filter
 from scipy import interpolate
 from scipy.spatial import cKDTree
@@ -862,7 +862,7 @@ class forceSim:
             nTe = mTe
 
         # Based on new points build the triangulation
-        newTIN = triangle.triangulate({"vertices": newXY}, "Da" + str(area))
+        newTIN = triangle.triangulate({"vertices": newXY}, "eqDa" + str(area))
         # If some points have been added during the triangulation update the TIN
         # interpolate neighbouring parameters to these new points
         if len(newTIN["vertices"][:, 0]) > len(newXY[:, 0]):

@@ -16,10 +16,11 @@ Warning:
 
 import time
 import numpy
-import tribad as triangle
+import triangle as triangle
 
 import os
-if 'READTHEDOCS' not in os.environ:
+
+if "READTHEDOCS" not in os.environ:
     from badlands import flowalgo
 
 from numpy import random
@@ -71,46 +72,49 @@ def simple(X, Y, Xdecomp=1, Ydecomp=1):
     nbprocY = Ydecomp
 
     # Check decomposition versus CPUs number
-    if size != nbprocX*nbprocY:
-        raise ValueError('Error in the decomposition grid: the number of domains \
-        decomposition is not equal to the number of CPUs allocated')
+    if size != nbprocX * nbprocY:
+        raise ValueError(
+            "Error in the decomposition grid: the number of domains \
+        decomposition is not equal to the number of CPUs allocated"
+        )
 
     # Define output type and size
-    partID = numpy.zeros( len(X), dtype=numpy.uint32 )
+    partID = numpy.zeros(len(X), dtype=numpy.uint32)
 
     # Get extent of X partition
-    nbX = int((xmax-xmin)/nbprocX)
-    Xstart = numpy.zeros( nbprocX )
-    Xend = numpy.zeros( nbprocX )
+    nbX = int((xmax - xmin) / nbprocX)
+    Xstart = numpy.zeros(nbprocX)
+    Xend = numpy.zeros(nbprocX)
     for p in range(nbprocX):
-        Xstart[p] = p*nbX+xmin
-        Xend[p] = Xstart[p]+nbX
-    Xend[nbprocX-1]=xmax
+        Xstart[p] = p * nbX + xmin
+        Xend[p] = Xstart[p] + nbX
+    Xend[nbprocX - 1] = xmax
 
     # Get extent of Y partition
-    nbY = int((ymax-ymin)/nbprocY)
-    Ystart = numpy.zeros( nbprocY )
-    Yend = numpy.zeros( nbprocY )
+    nbY = int((ymax - ymin) / nbprocY)
+    Ystart = numpy.zeros(nbprocY)
+    Yend = numpy.zeros(nbprocY)
     for p in range(nbprocY):
-        Ystart[p] = p*nbY+ymin
-        Yend[p] = Ystart[p]+nbY
-    Yend[nbprocY-1]=ymax
+        Ystart[p] = p * nbY + ymin
+        Yend[p] = Ystart[p] + nbY
+    Yend[nbprocY - 1] = ymax
 
     # Fill partition ID based on node coordinates
     for id in range(len(X)):
         ix = 0
         pX = Xend[ix]
-        while X[id] > pX :
+        while X[id] > pX:
             ix += 1
             pX = Xend[ix]
         iy = 0
         pY = Yend[iy]
-        while Y[id] > pY :
+        while Y[id] > pY:
             iy += 1
             pY = Yend[iy]
         partID[id] = ix + iy * nbprocX
 
     return partID, nbprocX, nbprocY
+
 
 def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     """
@@ -154,45 +158,47 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     walltime = time.clock()
     size = 1
     # Check decomposition versus CPUs number
-    if size != nbprocX*nbprocY:
-        raise ValueError('Error in the decomposition grid: the number of domains \
-        decomposition is not equal to the number of CPUs allocated')
+    if size != nbprocX * nbprocY:
+        raise ValueError(
+            "Error in the decomposition grid: the number of domains \
+        decomposition is not equal to the number of CPUs allocated"
+        )
 
     # Get extent of X partition
     xmin = X.min()
     xmax = X.max()
-    nbX = int((xmax-xmin)/nbprocX)
-    Xstart = numpy.zeros( nbprocX )
-    Xend = numpy.zeros( nbprocX )
+    nbX = int((xmax - xmin) / nbprocX)
+    Xstart = numpy.zeros(nbprocX)
+    Xend = numpy.zeros(nbprocX)
     for p in range(nbprocX):
         if p == 0:
-            Xstart[p] = p*nbX+xmin
-            Xend[p] = Xstart[p]+nbX+overlapLen
+            Xstart[p] = p * nbX + xmin
+            Xend[p] = Xstart[p] + nbX + overlapLen
         else:
-            Xstart[p] = p*nbX+xmin-overlapLen
-            Xend[p] = Xstart[p]+nbX+2*overlapLen
-    Xend[nbprocX-1]=xmax
+            Xstart[p] = p * nbX + xmin - overlapLen
+            Xend[p] = Xstart[p] + nbX + 2 * overlapLen
+    Xend[nbprocX - 1] = xmax
 
     # Get extent of Y partition
     ymin = Y.min()
     ymax = Y.max()
-    nbY = int((ymax-ymin)/nbprocY)
-    Ystart = numpy.zeros( nbprocY )
-    Yend = numpy.zeros( nbprocY )
+    nbY = int((ymax - ymin) / nbprocY)
+    Ystart = numpy.zeros(nbprocY)
+    Yend = numpy.zeros(nbprocY)
     for p in range(nbprocY):
         if p == 0:
-            Ystart[p] = p*nbY+ymin
-            Yend[p] = Ystart[p]+nbY+overlapLen
+            Ystart[p] = p * nbY + ymin
+            Yend[p] = Ystart[p] + nbY + overlapLen
         else:
-            Ystart[p] = p*nbY+ymin-overlapLen
-            Yend[p] = Ystart[p]+nbY+2*overlapLen
-    Yend[nbprocY-1]=ymax
+            Ystart[p] = p * nbY + ymin - overlapLen
+            Yend[p] = Ystart[p] + nbY + 2 * overlapLen
+    Yend[nbprocY - 1] = ymax
 
     # Define partitions ID globally
-    Xst = numpy.zeros( size )
-    Xed = numpy.zeros( size )
-    Yst = numpy.zeros( size )
-    Yed = numpy.zeros( size )
+    Xst = numpy.zeros(size)
+    Xed = numpy.zeros(size)
+    Yst = numpy.zeros(size)
+    Yed = numpy.zeros(size)
     for q in range(nbprocX):
         for p in range(nbprocY):
             Xst[q + p * nbprocX] = Xstart[q]
@@ -202,14 +208,14 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
 
     # Loop over node coordinates and find if they belong to local partition
     # Note: used a Cython/Fython class to increase search loop performance... in libUtils
-    partID = flowalgo.overlap(X,Y,Xst[0],Yst[0],Xed[0],Yed[0])
+    partID = flowalgo.overlap(X, Y, Xst[0], Yst[0], Xed[0], Yed[0])
 
     # Extract local domain nodes global ID
     globIDs = numpy.where(partID > -1)[0]
 
     # Build local TIN
-    data = numpy.column_stack((X,Y))
-    localTIN = triangle.triangulate( {'vertices':data[globIDs,:2]},' ')
+    data = numpy.column_stack((X, Y))
+    localTIN = triangle.triangulate({"vertices": data[globIDs, :2]}, "eD")
 
     if verbose:
         print(" - partition TIN including shadow zones ", time.clock() - walltime)

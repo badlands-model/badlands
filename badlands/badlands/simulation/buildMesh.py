@@ -52,8 +52,6 @@ def construct_mesh(input, filename, verbose=False):
         class describing the finite volume mesh.
     force
         class describing the forcing parameters.
-    tMesh
-        class describing the TIN mesh.
     lGIDs
         numpy 1D array containing the node indices.
     fixIDs
@@ -152,34 +150,11 @@ def construct_mesh(input, filename, verbose=False):
         recGrid.tinMesh["edges"],
     )
 
-    # Perform partitioning by equivalent domain splitting
-    partitionIDs, RowProc, ColProc = partitionTIN.simple(
-        recGrid.tinMesh["vertices"][:, 0], recGrid.tinMesh["vertices"][:, 1]
-    )
-    FVmesh.partIDs = partitionIDs
-
-    # Get each partition global node ID
-    inGIDs = np.where(partitionIDs == 0)[0]
-
-    # Build Finite Volume discretisation
-    # Define overlapping partitions
-    lGIDs, localTIN = partitionTIN.overlap(
-        recGrid.tinMesh["vertices"][:, 0],
-        recGrid.tinMesh["vertices"][:, 1],
-        RowProc,
-        ColProc,
-        2 * recGrid.resEdges,
-        verbose,
-    )
-
-    # Set parameters of the finite volume mesh
-    tMesh = FVmethod.FVmethod(
-        localTIN["vertices"], localTIN["triangles"], localTIN["edges"]
-    )
-
     # Define Finite Volume parameters
     walltime = time.clock()
     totPts = len(recGrid.tinMesh["vertices"][:, 0])
+    lGIDs = np.arange(totPts)
+    inGIDs = lGIDs
     FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32, order="F")
     FVmesh.neighbours.fill(-2)
     FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float, order="F")
@@ -187,15 +162,7 @@ def construct_mesh(input, filename, verbose=False):
     FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
 
     # Compute Finite Volume parameters
-    tGIDs, tNgbh, tEdgs, tVors, tVols = tMesh.construct_FV(
-        inGIDs, lGIDs, totPts, recGrid.resEdges * input.Afactor, verbose
-    )
-
-    FVmesh.neighbours[tGIDs, : tMesh.maxNgbh] = tNgbh
-    FVmesh.edge_length[tGIDs, : tMesh.maxNgbh] = tEdgs
-    FVmesh.vor_edges[tGIDs, : tMesh.maxNgbh] = tVors
-    FVmesh.control_volumes[tGIDs] = tVols
-
+    FVmesh.construct_FV(lGIDs, verbose)
     if verbose:
         print(" - FV mesh ", time.clock() - walltime)
 
@@ -209,10 +176,12 @@ def construct_mesh(input, filename, verbose=False):
             cumflex,
             inIDs,
             parentIDs,
-        ) = _define_TINparams(totPts, input, FVmesh, recGrid, verbose)
+        ) = _define_TINparams(
+            totPts, lGIDs[recGrid.boundsPt :], input, FVmesh, recGrid, verbose
+        )
     else:
         elevation, cumdiff, cumhill, cumfail, inIDs, parentIDs = _define_TINparams(
-            totPts, input, FVmesh, recGrid, verbose
+            totPts, lGIDs[recGrid.boundsPt :], input, FVmesh, recGrid, verbose
         )
 
     # Build stratigraphic and erodibility meshes
@@ -334,7 +303,6 @@ def construct_mesh(input, filename, verbose=False):
         recGrid,
         FVmesh,
         force,
-        tMesh,
         lGIDs,
         fixIDs,
         inIDs,
@@ -373,8 +341,6 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     -------
     FVmesh
         class describing the finite volume mesh.
-    tMesh
-        class describing the TIN mesh.
     lGIDs
         numpy 1D array containing the node indices.
     inIDs
@@ -392,36 +358,10 @@ def reconstruct_mesh(recGrid, input, verbose=False):
         recGrid.tinMesh["edges"],
     )
 
-    # Perform partitioning by equivalent domain splitting
-    partitionIDs, RowProc, ColProc = partitionTIN.simple(
-        recGrid.tinMesh["vertices"][:, 0], recGrid.tinMesh["vertices"][:, 1]
-    )
-    FVmesh.partIDs = partitionIDs
-
-    # Get each partition global node ID
-    inGIDs = np.where(partitionIDs == 0)[0]
-
-    if verbose:
-        print(" - partition TIN amongst processors ", time.clock() - walltime)
-
-    # Define overlapping partitions
-    walltime = time.clock()
-    lGIDs, localTIN = partitionTIN.overlap(
-        recGrid.tinMesh["vertices"][:, 0],
-        recGrid.tinMesh["vertices"][:, 1],
-        RowProc,
-        ColProc,
-        2 * recGrid.resEdges,
-        verbose,
-    )
-
-    # Set parameters of the finite volume mesh
-    tMesh = FVmethod.FVmethod(
-        localTIN["vertices"], localTIN["triangles"], localTIN["edges"]
-    )
-
     # Define Finite Volume parameters
     totPts = len(recGrid.tinMesh["vertices"][:, 0])
+    lGIDs = np.arange(totPts)
+    inGIDs = lGIDs
     FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32, order="F")
     FVmesh.neighbours.fill(-2)
     FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float, order="F")
@@ -429,20 +369,12 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
 
     # Compute Finite Volume parameters
-    tGIDs, tNgbh, tEdgs, tVors, tVols = tMesh.construct_FV(
-        inGIDs, lGIDs, totPts, recGrid.resEdges * input.Afactor, verbose
-    )
-
-    FVmesh.neighbours[tGIDs, : tMesh.maxNgbh] = tNgbh
-    FVmesh.edge_length[tGIDs, : tMesh.maxNgbh] = tEdgs
-    FVmesh.vor_edges[tGIDs, : tMesh.maxNgbh] = tVors
-    FVmesh.control_volumes[tGIDs] = tVols
+    FVmesh.construct_FV(lGIDs, verbose)
 
     if verbose:
         print(" - reconstructed FV mesh ", time.clock() - walltime)
 
-    inIDs = np.where(FVmesh.partIDs[recGrid.boundsPt :] == 0)[0]
-    inIDs += recGrid.boundsPt
+    inIDs = lGIDs[recGrid.boundsPt :]
     elevationTIN.assign_parameter_pit(
         FVmesh.neighbours,
         FVmesh.control_volumes,
@@ -454,19 +386,15 @@ def reconstruct_mesh(recGrid, input, verbose=False):
         input.fillmax,
     )
 
-    return FVmesh, tMesh, lGIDs, inIDs, inGIDs, totPts
+    return FVmesh, lGIDs, inIDs, inGIDs, totPts
 
 
-def _define_TINparams(totPts, input, FVmesh, recGrid, verbose=False):
+def _define_TINparams(totPts, inIDs, input, FVmesh, recGrid, verbose=False):
     """
     This function is defining the main values declared on the TIN.
     """
 
     walltime = time.clock()
-
-    inIDs = np.where(FVmesh.partIDs[recGrid.boundsPt :] == 0)[0]
-    inIDs += recGrid.boundsPt
-
     local_elev = np.zeros(totPts)
     local_elev.fill(-1.0e6)
 

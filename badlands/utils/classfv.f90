@@ -507,7 +507,7 @@ module classfv
 
   integer,dimension(:),allocatable :: tri_ngbNb
   integer,dimension(:,:),allocatable :: tri_ngbID
-  integer,dimension(:,:),allocatable :: tri_voronoi_edge
+  real(kind=8),dimension(:,:),allocatable :: tri_voronoi_edge
   real(kind=8),dimension(:,:),allocatable :: tri_distance
 
   integer :: incisiontype
@@ -656,13 +656,33 @@ contains
     ed2(:)=tEdge(:,2)
     call mrgrnk(ed1,rk1)
     call mrgrnk(ed2,rk2)
+    write(*,*)tX(1469),',',tY(1469) ! node point XY
+    do n = 1, dedges
+      ! write(*,*) n,'ed1',ed1(n),'rk1',rk1(n),'ed2',ed2(n),'rk2',rk2(n)
+      if(tEdge(rk1(n),1)==1469)then
+        ! write(*,*) 'rk1',tEdge(rk1(n),1),tEdge(rk1(n),2)
+        write(*,*) tX(tEdge(rk1(n),2)),',',tY(tEdge(rk1(n),2))
+      endif
+      if(tEdge(rk1(n),2)==1469)then
+        ! write(*,*) 'rk1',tEdge(rk1(n),1),tEdge(rk1(n),2)
+        write(*,*) tX(tEdge(rk1(n),1)),',',tY(tEdge(rk1(n),1))
+      endif
+      if(tEdge(rk2(n),1)==1469)then
+        write(*,*) tX(tEdge(rk2(n),2)),',',tY(tEdge(rk2(n),2))
+        ! write(*,*) 'rk2',tEdge(rk2(n),1),tEdge(rk2(n),2)
+      endif
+      if(tEdge(rk2(n),2)==1469)then
+        write(*,*) tX(tEdge(rk2(n),1)),',',tY(tEdge(rk2(n),1))
+        ! write(*,*) 'rk2',tEdge(rk2(n),1),tEdge(rk2(n),2)
+      endif
+    enddo
+
     id1=0
     id2=0
     k1=0
     k2=0
 
     tri_distance = 0.
-    voronoi_area = 0.
     tri_voronoi_edge = 0.
     voronoi_vertexID = -1
     voronoi_vertexNb = 0
@@ -670,7 +690,6 @@ contains
     voronoi_area = 0.0
     tri_ngbNb = 0
     tri_ngbID = -1
-
 
     do c = 1, gnodes
        cell = gIDs(c)
@@ -704,6 +723,9 @@ contains
                    tri_ngbNb(cell)=id
                    tri_ngbID(cell,id)=tEdge(rk1(n),2)
                 endif
+             endif
+             if(tEdge(rk1(n),1)==1469)then
+               write(*,*)id,tri_ngbID(cell,id)
              endif
              rec=.true.
              rec2=.true.
@@ -739,7 +761,14 @@ contains
              exit lp_ed1
           endif
        enddo lp_ed1
-
+       if(cell==1469)then
+         write(*,*)'cell point',tX(cell),tY(cell)
+         write(*,*)'voronoi point nb',voronoi_vertexNb(cell)
+         do p = 1, voronoi_vertexNb(cell)
+           id=voronoi_vertexID(cell,p)
+           write(*,*)voronoi_vertexID(cell,p),vX(id),vY(id)
+         enddo
+      endif
        lp_ed2: do n=id2,dedges
           if(tEdge(rk2(n),2)==cell)then
              id2=n
@@ -788,7 +817,14 @@ contains
              exit lp_ed2
           endif
        enddo lp_ed2
-
+       if(cell==1469)then
+          write(*,*)'cell point',tX(cell),tY(cell)
+          write(*,*)'voronoi point nb',voronoi_vertexNb(cell)
+          do p = 1, voronoi_vertexNb(cell)
+            id=voronoi_vertexID(cell,p)
+            write(*,*)vX(id),',',vY(id)
+          enddo
+        endif
        if(voronoi_border(cell)==0)then
           vsort=-1
           n=voronoi_vertexNb(cell)
@@ -807,6 +843,7 @@ contains
                  voronoi_border(cell)=1
              endif
           endif
+
           if(voronoi_border(cell)==0)then
               do p=1,nvert
                  sortedID(p)=voronoi_vertexID(cell,vsort(p))

@@ -26,12 +26,14 @@ import time
 import numpy
 
 import os
-if 'READTHEDOCS' not in os.environ:
+
+if "READTHEDOCS" not in os.environ:
     from badlands import pdalgo
 
 from scipy.interpolate import interpn
 from scipy.interpolate import LinearNDInterpolator
 from scipy.interpolate import NearestNDInterpolator
+
 
 def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
     """
@@ -55,25 +57,29 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
     if btype == 0:
         missedPts = []
         for id in range(boundPts):
-            ngbhs = neighbours[id,:]
+            ngbhs = neighbours[id, :]
             ids = numpy.where(ngbhs >= boundPts)[0]
             if len(ids) == 1:
                 elevation[id] = elevation[ngbhs[ids]]
             elif len(ids) > 1:
-                lselect = edge_length[id,ids]
+                lselect = edge_length[id, ids]
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
             else:
-                missedPts = numpy.append(missedPts,id)
+                missedPts = numpy.append(missedPts, id)
 
-        if len(missedPts) > 0 :
+        if len(missedPts) > 0:
             for p in range(len(missedPts)):
                 id = int(missedPts[p])
-                ngbhs = neighbours[id,:]
-                ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
+                ngbhs = neighbours[id, :]
+                ids = numpy.where((elevation[ngbhs] < 9.0e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
-                    raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
-                lselect = edge_length[id,ids]
+                    raise ValueError(
+                        "Error while getting boundary elevation for point "
+                        "%d"
+                        "." % id
+                    )
+                lselect = edge_length[id, ids]
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
 
@@ -81,84 +87,95 @@ def _boundary_elevation(elevation, neighbours, edge_length, boundPts, btype):
     elif btype == 1:
         missedPts = []
         for id in range(boundPts):
-            ngbhs = neighbours[id,:]
+            ngbhs = neighbours[id, :]
             ids = numpy.where(ngbhs >= boundPts)[0]
             if len(ids) == 1:
                 # Pick closest non-boundary vertice
-                ln1 = edge_length[id,ids[0]]
+                ln1 = edge_length[id, ids[0]]
                 id1 = ngbhs[ids[0]]
                 # Pick closest non-boundary vertice to first picked
-                ngbhs2 = neighbours[id1,:]
+                ngbhs2 = neighbours[id1, :]
                 ids2 = numpy.where(ngbhs2 >= boundPts)[0]
-                lselect = edge_length[id1,ids2]
+                lselect = edge_length[id1, ids2]
                 if len(lselect) > 0:
                     picked = numpy.argmin(lselect)
                     id2 = ngbhs2[ids2[picked]]
                     ln2 = lselect[picked]
-                    elevation[id] = (elevation[id1]-elevation[id2])*(ln2+ln1)/ln2 + elevation[id2]
+                    elevation[id] = (elevation[id1] - elevation[id2]) * (
+                        ln2 + ln1
+                    ) / ln2 + elevation[id2]
                 else:
-                    missedPts = numpy.append(missedPts,id)
+                    missedPts = numpy.append(missedPts, id)
             elif len(ids) > 1:
                 # Pick closest non-boundary vertice
-                lselect = edge_length[id,ids]
+                lselect = edge_length[id, ids]
                 picked = numpy.argmin(lselect)
                 id1 = ngbhs[ids[picked]]
                 ln1 = lselect[picked]
                 # Pick closest non-boundary vertice to first picked
-                ngbhs2 = neighbours[id1,:]
+                ngbhs2 = neighbours[id1, :]
                 ids2 = numpy.where(ngbhs2 >= boundPts)[0]
-                lselect2 = edge_length[id1,ids2]
+                lselect2 = edge_length[id1, ids2]
                 if len(lselect2) > 0:
                     picked2 = numpy.argmin(lselect2)
                     id2 = ngbhs2[ids2[picked2]]
                     ln2 = lselect2[picked2]
-                    elevation[id] = (elevation[id1]-elevation[id2])*(ln2+ln1)/ln2 + elevation[id2]
+                    elevation[id] = (elevation[id1] - elevation[id2]) * (
+                        ln2 + ln1
+                    ) / ln2 + elevation[id2]
                 else:
-                    missedPts = numpy.append(missedPts,id)
+                    missedPts = numpy.append(missedPts, id)
             else:
-                missedPts = numpy.append(missedPts,id)
+                missedPts = numpy.append(missedPts, id)
 
-        if len(missedPts) > 0 :
-            for p in range(0,len(missedPts)):
+        if len(missedPts) > 0:
+            for p in range(0, len(missedPts)):
                 id = int(missedPts[p])
-                ngbhs = neighbours[id,:]
-                ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
+                ngbhs = neighbours[id, :]
+                ids = numpy.where((elevation[ngbhs] < 9.0e6) & (ngbhs >= 0))[0]
                 if len(ids) == 0:
-                    raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
-                lselect = edge_length[id,ids]
+                    raise ValueError(
+                        "Error while getting boundary elevation for point "
+                        "%d"
+                        "." % id
+                    )
+                lselect = edge_length[id, ids]
                 picked = numpy.argmin(lselect)
                 elevation[id] = elevation[ngbhs[ids[picked]]]
         elevation[:boundPts] -= 0.5
 
     # Associate TIN edge point to the border for ero/dep updates
-    parentID = numpy.zeros(boundPts,dtype=int)
+    parentID = numpy.zeros(boundPts, dtype=int)
     missedPts = []
     for id in range(boundPts):
-        ngbhs = neighbours[id,:]
+        ngbhs = neighbours[id, :]
         ids = numpy.where(ngbhs >= boundPts)[0]
         if len(ids) == 1:
             parentID[id] = ngbhs[ids]
         elif len(ids) > 1:
-            lselect = edge_length[id,ids]
+            lselect = edge_length[id, ids]
             picked = numpy.argmin(lselect)
             parentID[id] = ngbhs[ids[picked]]
         else:
-            missedPts = numpy.append(missedPts,id)
+            missedPts = numpy.append(missedPts, id)
 
-    if len(missedPts) > 0 :
+    if len(missedPts) > 0:
         for p in range(len(missedPts)):
             id = int(missedPts[p])
-            ngbhs = neighbours[id,:]
-            ids = numpy.where((elevation[ngbhs] < 9.e6) & (ngbhs >= 0))[0]
+            ngbhs = neighbours[id, :]
+            ids = numpy.where((elevation[ngbhs] < 9.0e6) & (ngbhs >= 0))[0]
             if len(ids) == 0:
-                raise ValueError('Error while getting boundary elevation for point ''%d''.' % id)
-            lselect = edge_length[id,ids]
+                raise ValueError(
+                    "Error while getting boundary elevation for point " "%d" "." % id
+                )
+            lselect = edge_length[id, ids]
             picked = numpy.argmin(lselect)
             parentID[id] = ngbhs[ids[picked]]
 
     return elevation, parentID
 
-def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat'):
+
+def update_border_elevation(elev, neighbours, edge_length, boundPts, btype="flat"):
     """
     This function computes the boundary elevation based on 3 different conditions:
 
@@ -186,22 +203,32 @@ def update_border_elevation(elev, neighbours, edge_length, boundPts, btype='flat
 
     newelev = elev
 
-    if btype == 'wall' or btype == 'flat' or btype == 'slope' or btype == 'fixed' or btype == 'outlet' or btype == 'wall1':
-        newelev[:boundPts] = 1.e7
+    if (
+        btype == "wall"
+        or btype == "flat"
+        or btype == "slope"
+        or btype == "fixed"
+        or btype == "outlet"
+        or btype == "wall1"
+    ):
+        newelev[:boundPts] = 1.0e7
         thetype = 0
-        if btype == 'slope' or btype == 'outlet' or btype == 'wall1':
+        if btype == "slope" or btype == "outlet" or btype == "wall1":
             thetype = 1
-        newelev, parentID = _boundary_elevation(elev, neighbours, edge_length, boundPts, thetype)
-        if btype == 'wall':
-            newelev[:boundPts] = 1.e7
-        if btype == 'outlet':
-            newelev[1:boundPts] = 1.e7
+        newelev, parentID = _boundary_elevation(
+            elev, neighbours, edge_length, boundPts, thetype
+        )
+        if btype == "wall":
+            newelev[:boundPts] = 1.0e7
+        if btype == "outlet":
+            newelev[1:boundPts] = 1.0e7
     else:
-        raise ValueError('Unknown boundary type ''%s''.' % btype)
+        raise ValueError("Unknown boundary type " "%s" "." % btype)
 
     return newelev, parentID
 
-def getElevation(rX, rY, rZ, coords, interp='linear'):
+
+def getElevation(rX, rY, rZ, coords, interp="linear"):
     """
     This function interpolates elevation from the regular grid to the triamgular mesh
     using **SciPy** *interpn* funciton.
@@ -218,14 +245,17 @@ def getElevation(rX, rY, rZ, coords, interp='linear'):
     """
 
     # Set new elevation to 0
-    elev = numpy.zeros(len(coords[:,0]))
+    elev = numpy.zeros(len(coords[:, 0]))
 
     # Get the TIN points elevation values using the regular grid dataset
-    elev = interpn( (rX, rY), rZ, (coords[:,:2]), method=interp)
+    elev = interpn((rX, rY), rZ, (coords[:, :2]), method=interp)
 
     return elev
 
-def assign_parameter_pit(neighbours, area, diffnb, prop, propa, propb, boundPts, fillTH=1., epsilon=1.e-6):
+
+def assign_parameter_pit(
+    neighbours, area, diffnb, prop, propa, propb, boundPts, fillTH=1.0, epsilon=1.0e-6
+):
     """
     This function defines the global variables used in the **pit filling algorithm** described in
     the :code:`pit_stack` function_.
@@ -248,7 +278,9 @@ def assign_parameter_pit(neighbours, area, diffnb, prop, propa, propb, boundPts,
 
     """
 
-    pdalgo.pitparams(neighbours, area, diffnb, prop, propa, propb, fillTH, epsilon, boundPts)
+    pdalgo.pitparams(
+        neighbours, area, diffnb, prop, propa, propb, fillTH, epsilon, boundPts
+    )
 
 
 def pit_stack(elev, allFill, sealevel):

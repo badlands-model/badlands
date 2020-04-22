@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module fvframe ! in 
+python module fvframe ! in
     interface  ! in :fvframe
         subroutine build(pyoids,pygids,pytx,pyty,pytedge,pytelmt,pyvx,pyvy,pyvedge,pyvarea,pyngbs,pyvlenght,pydlenght,pymaxngbh,pygnodes,pyonodes,pydnodes,pydedges,pydelems,pyvnodes,pyvedges) ! in :fvframe:fvframe.f90
             use classfv
@@ -27,7 +27,24 @@ python module fvframe ! in
             integer, optional,check(len(pyvx)>=pyvnodes),depend(pyvx) :: pyvnodes=len(pyvx)
             integer, optional,check(shape(pyvedge,0)==pyvedges),depend(pyvedge) :: pyvedges=shape(pyvedge,0)
         end subroutine build
-    end interface 
+
+
+        subroutine definetin(coords,cells_nodes,cells_edges,edges_nodes,circumcenter, ngbid, vor_edges, edge_length, maxngbhs,n,nb,m)
+            real(kind=8) dimension(nb,3),intent(in) :: coords
+            integer dimension(n,3),intent(in) :: cells_nodes
+            integer dimension(n,3),intent(in),depend(n) :: cells_edges
+            integer dimension(m,2),intent(in) :: edges_nodes
+            real(kind=8) dimension(3,n),intent(in),depend(n) :: circumcenter
+            integer dimension(nb,20),intent(out),depend(nb) :: ngbid
+            real(kind=8) dimension(nb,20),intent(out),depend(nb) :: vor_edges
+            real(kind=8) dimension(nb,20),intent(out),depend(nb) :: edge_length
+            integer intent(out) :: maxngbhs
+            integer, optional,check(shape(cells_nodes,0)==n),depend(cells_nodes) :: n=shape(cells_nodes,0)
+            integer, optional,check(shape(coords,0)==nb),depend(coords) :: nb=shape(coords,0)
+            integer, optional,check(shape(edges_nodes,0)==m),depend(edges_nodes) :: m=shape(edges_nodes,0)
+        end subroutine definetin
+
+    end interface
 end python module fvframe
 
 ! This file was auto-generated with f2py (version:2).
