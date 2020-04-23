@@ -862,7 +862,23 @@ class forceSim:
             nTe = mTe
 
         # Based on new points build the triangulation
-        newTIN = triangle.triangulate({"vertices": newXY}, "eqDa" + str(area))
+        tmpTIN = triangle.triangulate({"vertices": newXY}, "eqDa" + str(area))
+        idsX = numpy.where(
+            numpy.logical_and(
+                tmpTIN["vertices"][:, 0] > minX, tmpTIN["vertices"][:, 0] < maxX
+            )
+        )
+        idsY = numpy.where(
+            numpy.logical_and(
+                tmpTIN["vertices"][:, 1] > minY, tmpTIN["vertices"][:, 1] < maxY
+            )
+        )
+        insID = numpy.intersect1d(idsX, idsY)
+        tmpXY = numpy.zeros((fixIDs + len(insID), 2))
+        tmpXY[:fixIDs, :] = tXY[:fixIDs, :]
+        tmpXY[fixIDs:, :] = tmpTIN["vertices"][insID, :]
+        newTIN = triangle.triangulate({"vertices": tmpXY}, "eDa" + str(area))
+
         # If some points have been added during the triangulation update the TIN
         # interpolate neighbouring parameters to these new points
         if len(newTIN["vertices"][:, 0]) > len(newXY[:, 0]):
