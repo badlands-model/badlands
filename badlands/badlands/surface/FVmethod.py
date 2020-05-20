@@ -67,7 +67,7 @@ class FVmethod:
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
         """
         # Build the voronoi diagram (dual of the delaunay)
-        walltime = time.clock()
+        walltime = time.process_time()
 
         node_coords = numpy.zeros((len(self.node_coords), 3))
         node_coords[:, :2] = self.node_coords
@@ -90,7 +90,10 @@ class FVmethod:
             maxNgbhs,
         ) = fvframe.definetin(node_coords, cells_nodes, cells_edges, edges_nodes, cc.T,)
         if verbose:
-            print(" - construct Finite Volume representation ", time.clock() - walltime)
+            print(
+                " - construct Finite Volume representation ",
+                time.process_time() - walltime,
+            )
 
         # Maximum number of neighbours for each partition
         self.maxNgbh = numpy.array(maxNgbhs)

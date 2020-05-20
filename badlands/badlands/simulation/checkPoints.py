@@ -92,7 +92,7 @@ def write_checkpoints(
         eroOn = True
     else:
         eroOn = False
-    out_time = time.clock()
+    out_time = time.process_time()
     visXlim = np.zeros(2)
     visYlim = np.zeros(2)
     visXlim[0] = recGrid.rectX.min()
@@ -304,7 +304,7 @@ def write_checkpoints(
 
     print(
         "   - Writing outputs (%0.02f seconds; tNow = %s)"
-        % (time.clock() - out_time, tNow)
+        % (time.process_time() - out_time, tNow)
     )
 
     # Record erodibility maps

@@ -143,7 +143,7 @@ def construct_mesh(input, filename, verbose=False):
             force.merge3d = input.merge3d
 
     # Partition the TIN
-    walltime = time.clock()
+    walltime = time.process_time()
     FVmesh = FVmethod.FVmethod(
         recGrid.tinMesh["vertices"],
         recGrid.tinMesh["triangles"],
@@ -151,7 +151,7 @@ def construct_mesh(input, filename, verbose=False):
     )
 
     # Define Finite Volume parameters
-    walltime = time.clock()
+    walltime = time.process_time()
     totPts = len(recGrid.tinMesh["vertices"][:, 0])
     lGIDs = np.arange(totPts)
     inGIDs = lGIDs
@@ -164,7 +164,7 @@ def construct_mesh(input, filename, verbose=False):
     # Compute Finite Volume parameters
     FVmesh.construct_FV(lGIDs, verbose)
     if verbose:
-        print(" - FV mesh ", time.clock() - walltime)
+        print(" - FV mesh ", time.process_time() - walltime)
 
     # Define TIN parameters
     if input.flexure:
@@ -351,7 +351,7 @@ def reconstruct_mesh(recGrid, input, verbose=False):
         total number of points in the mesh.
     """
 
-    walltime = time.clock()
+    walltime = time.process_time()
     FVmesh = FVmethod.FVmethod(
         recGrid.tinMesh["vertices"],
         recGrid.tinMesh["triangles"],
@@ -372,7 +372,7 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     FVmesh.construct_FV(lGIDs, verbose)
 
     if verbose:
-        print(" - reconstructed FV mesh ", time.clock() - walltime)
+        print(" - reconstructed FV mesh ", time.process_time() - walltime)
 
     inIDs = lGIDs[recGrid.boundsPt :]
     elevationTIN.assign_parameter_pit(
@@ -394,7 +394,7 @@ def _define_TINparams(totPts, inIDs, input, FVmesh, recGrid, verbose=False):
     This function is defining the main values declared on the TIN.
     """
 
-    walltime = time.clock()
+    walltime = time.process_time()
     local_elev = np.zeros(totPts)
     local_elev.fill(-1.0e6)
 
@@ -474,7 +474,7 @@ def _define_TINparams(totPts, inIDs, input, FVmesh, recGrid, verbose=False):
     )
 
     if verbose:
-        print(" - define paramters on TIN grid ", time.clock() - walltime)
+        print(" - define paramters on TIN grid ", time.process_time() - walltime)
 
     if input.flexure:
         return elevation, cumdiff, cumhill, cumfail, cumflex, inIDs, parentIDs
@@ -491,7 +491,7 @@ def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, verbose=False):
     # Build stratigraphic mesh
     if input.laytime > 0:
 
-        walltime = time.clock()
+        walltime = time.process_time()
         sdx = input.stratdx
         if sdx == 0:
             sdx = recGrid.rectX[1] - recGrid.rectX[0]
@@ -527,12 +527,12 @@ def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, verbose=False):
                 input.poroC,
             )
         if verbose:
-            print(" - create stratigraphic regions ", time.clock() - walltime)
+            print(" - create stratigraphic regions ", time.process_time() - walltime)
 
     # Define pre-existing erodibility maps
     if input.erolays and input.erolays >= 0:
 
-        walltime = time.clock()
+        walltime = time.process_time()
         bPts = recGrid.boundsPt
         if input.restart:
             mapero = eroMesh.eroMesh(
@@ -570,7 +570,7 @@ def _build_strateroMesh(input, FVmesh, recGrid, cumdiff, verbose=False):
             )
 
         if verbose:
-            print(" - create erodibility mesh ", time.clock() - walltime)
+            print(" - create erodibility mesh ", time.process_time() - walltime)
 
     if (input.laytime and input.laytime > 0) and (input.erolays and input.erolays >= 0):
         return strata, mapero
@@ -588,7 +588,7 @@ def _init_flexure(
     """
 
     # Initialise flexure parameters for gFlex library.
-    walltime = time.clock()
+    walltime = time.process_time()
 
     nx = input.fnx
     ny = input.fny
@@ -630,7 +630,7 @@ def _init_flexure(
     )
     cumflex += tinFlex
     if verbose:
-        print("   - Initialise flexural isostasy ", time.clock() - walltime)
+        print("   - Initialise flexural isostasy ", time.process_time() - walltime)
 
     return flex, tinFlex, cumflex
 
@@ -641,13 +641,13 @@ def _init_wavesed(input, z0, recGrid, force, verbose=False):
     """
 
     # Initialise wavesed parameters.
-    walltime = time.clock()
+    walltime = time.process_time()
 
     wave = waveSed.waveSed(input, recGrid, Ce=input.wCe, Cd=50.0)
     force.getSea(input.tStart, input.udw, z0)
 
     if verbose:
-        print("   - Initialise wavesed grid ", time.clock() - walltime)
+        print("   - Initialise wavesed grid ", time.process_time() - walltime)
 
     return wave
 

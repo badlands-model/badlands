@@ -653,18 +653,17 @@ class flowNetwork:
         pitID, pitVolume = flowalgo.basinparameters(
             self.localstack1, self.receivers1, elev, fillH, Acell
         )
+
         self.pitID = pitID
         self.pitVolume = pitVolume
         self.pitVolume[self.pitVolume <= 0] = 0.0
 
         # Find the depression node IDs
-        pIDs = numpy.where(self.pitVolume >= 0.0)[0]
-
+        pIDs = numpy.where(self.pitVolume > 0.0)[0]
         if len(pIDs) > 0:
             xyidd = numpy.where(self.pitVolume == self.pitVolume.max())[0]
             # Order the pits based on filled elevation from top to bottom
             orderPits = numpy.argsort(fillH[pIDs])[::-1]
-
             # Find the depression or edge, marine point where a given pit is draining
             self.pitDrain = flowalgo.basindrainage(
                 orderPits, self.pitID, self.receivers, pIDs, fillH, sealevel
@@ -744,8 +743,8 @@ class flowNetwork:
         # Stream power law
         if self.spl:
             if verbose:
-                time0 = time.clock()
-                time1 = time.clock()
+                time0 = time.process_time()
+                time1 = time.process_time()
 
             # Find border/inside nodes
             if self.mp > 0.0:
@@ -792,8 +791,11 @@ class flowNetwork:
             else:
                 volChange = cdepo + cero
             if verbose:
-                print("   - Compute sediment volumetric flux ", time.clock() - time1)
-                time1 = time.clock()
+                print(
+                    "   - Compute sediment volumetric flux ",
+                    time.process_time() - time1,
+                )
+                time1 = time.process_time()
 
             # Find overfilling catchments
             tmpChange, id1, id2, nb1, nb2 = flowalgo.getid1(
@@ -821,8 +823,11 @@ class flowNetwork:
                 newdt = dt
 
             if verbose:
-                print("   - Compute depressions connectivity ", time.clock() - time1)
-                time1 = time.clock()
+                print(
+                    "   - Compute depressions connectivity ",
+                    time.process_time() - time1,
+                )
+                time1 = time.process_time()
 
             if newdt < dt:
                 cdepo, cero, sedload, slopeTIN, flowdensity = flowalgo.streampower(
@@ -853,9 +858,9 @@ class flowNetwork:
                 if verbose:
                     print(
                         "   - Compute volumetric fluxes with updated dt ",
-                        time.clock() - time1,
+                        time.process_time() - time1,
                     )
-                    time1 = time.clock()
+                    time1 = time.process_time()
 
                 if check:
                     # Ensure no overfilling remains
@@ -888,8 +893,8 @@ class flowNetwork:
                 self.insideIDs
             ].reshape(len(self.insideIDs), 1)
             if verbose:
-                print("   - Compute erosion ", time.clock() - time1)
-                time1 = time.clock()
+                print("   - Compute erosion ", time.process_time() - time1)
+                time1 = time.process_time()
 
             # Compute deposition
             if self.depo == 0:
@@ -922,8 +927,11 @@ class flowNetwork:
                     depo[plainID, :] = 0.0
                     # depo[plainID,:] -= depo[plainID,:]
                     if verbose:
-                        print("   - Compute plain deposition ", time.clock() - time1)
-                        time1 = time.clock()
+                        print(
+                            "   - Compute plain deposition ",
+                            time.process_time() - time1,
+                        )
+                        time1 = time.process_time()
 
                 # Compute land pit deposition
                 if nland > 0:
@@ -947,8 +955,11 @@ class flowNetwork:
                         # depo[tmp,:] -= tmpdep[tmp,:]*Acell[tmp].reshape(len(Acell[tmp]),1)
                     depo[landIDs, :] = 0.0
                     if verbose:
-                        print("   - Compute land pit deposition ", time.clock() - time1)
-                        time1 = time.clock()
+                        print(
+                            "   - Compute land pit deposition ",
+                            time.process_time() - time1,
+                        )
+                        time1 = time.process_time()
 
                 # Compute water deposition
                 if nsea > 0:
@@ -963,8 +974,11 @@ class flowNetwork:
                     # depo -= seadep*Acell.reshape(len(Acell),1)
                     depo[seaIDs, :] = 0.0
                     if verbose:
-                        print("   - Compute marine deposition ", time.clock() - time1)
-                        time1 = time.clock()
+                        print(
+                            "   - Compute marine deposition ",
+                            time.process_time() - time1,
+                        )
+                        time1 = time.process_time()
 
                 # Is there some remaining deposits?
                 if numpy.any(depo):
@@ -994,7 +1008,7 @@ class flowNetwork:
                 )
 
             if verbose:
-                print("   - Total sediment flux time ", time.clock() - time0)
+                print("   - Total sediment flux time ", time.process_time() - time0)
 
         return newdt, sedflux, erosion, deposition, slopeTIN
 

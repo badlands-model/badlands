@@ -213,7 +213,7 @@ class waveSed:
 
                     # Compute wave parameters for given condition
                     self._cmptwaves(source, h0=height, sigma=1.)
-                    t1 = time.clock()
+                    t1 = time.process_time()
 
                     # Compute sediment transport
                     self._cmptsed(perc,sigma=1.)

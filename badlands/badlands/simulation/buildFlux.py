@@ -59,7 +59,7 @@ def streamflow(
     """
 
     # Update sea-level
-    walltime = time.clock()
+    walltime = time.process_time()
     ref_elev = buildMesh.get_reference_elevation(input, recGrid, elevation)
     force.getSea(tNow, input.udw, ref_elev)
     fillH = None
@@ -76,61 +76,68 @@ def streamflow(
         fillH = elevationTIN.pit_stack(elevation, 0, force.sealevel)
 
     if verbose and input.spl:
-        print(" -   depression-less algorithm PD with stack", time.clock() - walltime)
+        print(
+            " -   depression-less algorithm PD with stack",
+            time.process_time() - walltime,
+        )
 
     # Compute stream network
-    walltime = time.clock()
+    walltime = time.process_time()
     flow.SFD_receivers(
         fillH, elevation, FVmesh.neighbours, FVmesh.vor_edges, FVmesh.edge_length, lGIDs
     )
 
     if verbose:
-        print(" -   compute receivers parallel ", time.clock() - walltime)
+        print(" -   compute receivers parallel ", time.process_time() - walltime)
 
     # Distribute evenly local minimas to processors on filled surface
-    walltime = time.clock()
+    walltime = time.process_time()
     flow.localbase = flow.base
     flow.ordered_node_array_filled()
     if verbose:
         print(
             " -   compute stack order locally for filled surface",
-            time.clock() - walltime,
+            time.process_time() - walltime,
         )
 
-    walltime = time.clock()
+    walltime = time.process_time()
     flow.stack = flow.localstack
     if verbose:
         print(
             " -   send stack order for filled surface globally ",
-            time.clock() - walltime,
+            time.process_time() - walltime,
         )
 
     # Distribute evenly local minimas on real surface
-    walltime = time.clock()
+    walltime = time.process_time()
     flow.localbase1 = flow.base1
     flow.ordered_node_array_elev()
     if verbose:
         print(
-            " -   compute stack order locally for real surface", time.clock() - walltime
+            " -   compute stack order locally for real surface",
+            time.process_time() - walltime,
         )
 
-    walltime = time.clock()
+    walltime = time.process_time()
     flow.stack1 = flow.localstack1
     if verbose:
         print(
-            " -   send stack order for real surface globally ", time.clock() - walltime
+            " -   send stack order for real surface globally ",
+            time.process_time() - walltime,
         )
 
     # Compute a unique ID for each local depression and their downstream draining nodes
     flow.compute_parameters_depression(
         fillH, elevation, FVmesh.control_volumes, force.sealevel
     )
+    if verbose:
+        print(" -   compute depressions ", time.process_time() - walltime)
 
     # Compute discharge
-    walltime = time.clock()
+    walltime = time.process_time()
     flow.compute_flow(force.sealevel, elevation, FVmesh.control_volumes, riverrain)
     if verbose:
-        print(" -   compute discharge ", time.clock() - walltime)
+        print(" -   compute discharge ", time.process_time() - walltime)
 
     return fillH, elevation
 
@@ -199,11 +206,11 @@ def sediment_flux(
 
     """
 
-    flow_time = time.clock()
+    flow_time = time.process_time()
 
     # Get active layer
     if straTIN is not None:
-        walltime = time.clock()
+        walltime = time.process_time()
         flow.activelay[flow.activelay < 1.0] = 1.0
         flow.activelay[flow.activelay > straTIN.activeh] = straTIN.activeh
         straTIN.get_active_layer(flow.activelay, verbose)
@@ -216,7 +223,7 @@ def sediment_flux(
         )
         eroCk = straTIN.rockCk
         if verbose:
-            print(" -   Get active layer ", time.clock() - walltime)
+            print(" -   Get active layer ", time.process_time() - walltime)
     else:
         activelay = None
         eroCk = 0.0
@@ -265,7 +272,7 @@ def sediment_flux(
         flow.outsideIDs2 = np.where(flow.borders2 == 0)[0]
 
     # Compute CFL condition
-    walltime = time.clock()
+    walltime = time.process_time()
     if input.Hillslope and hillslope.updatedt == 0:
         if hillslope.Sc == 0:
             hillslope.dt_stability(FVmesh.edge_length[inGIDs, : FVmesh.maxNgbh])
@@ -302,14 +309,14 @@ def sediment_flux(
         CFLtime = max(input.minDT, CFLtime)
     CFLtime = min(input.maxDT, CFLtime)
     if verbose:
-        print(" -   Get CFL time step ", time.clock() - walltime)
+        print(" -   Get CFL time step ", time.process_time() - walltime)
 
     # Compute sediment fluxes
     if input.erolays and input.erolays >= 0:
         oldelev = np.copy(elevation)
 
     # Initial cumulative elevation change
-    walltime = time.clock()
+    walltime = time.process_time()
     timestep, sedchange, erosion, deposition, slopeTIN = flow.compute_sedflux(
         FVmesh.control_volumes,
         elevation,
@@ -335,7 +342,7 @@ def sediment_flux(
         CFLtime = max(input.minDT, CFLtime)
 
     if verbose:
-        print(" -   Get stream fluxes ", time.clock() - walltime)
+        print(" -   Get stream fluxes ", time.process_time() - walltime)
 
     ed = np.sum(sedchange, axis=1)
     elevation += ed
@@ -343,7 +350,7 @@ def sediment_flux(
 
     # Compute marine sediment diffusion
     if hillslope.CDriver > 0.0:
-        walltime = time.clock()
+        walltime = time.process_time()
 
         # Initialise marine sediments diffusion array
         it = 0
@@ -416,11 +423,11 @@ def sediment_flux(
 
     # Compute slope failures
     if hillslope.Sfail > 0.0:
-        walltime = time.clock()
+        walltime = time.process_time()
 
         # Initialise sediments diffusion array
         it = 0
-        walltime = time.clock()
+        walltime = time.process_time()
         erofail = flow.compute_failure(elevation, hillslope.Sfail)
 
         # Add slope failure erosion
@@ -462,13 +469,16 @@ def sediment_flux(
                 it += 1
 
         if verbose:
-            print(" -   Get slope failure sediment fluxes ", time.clock() - walltime)
+            print(
+                " -   Get slope failure sediment fluxes ",
+                time.process_time() - walltime,
+            )
 
     # Compute hillslope processes
     dtype = 1
     if straTIN is None:
         dtype = 0
-    walltime = time.clock()
+    walltime = time.process_time()
     area = np.copy(FVmesh.control_volumes)
     area[flow.outsideIDs2] = 0.0
     diffcoeff = hillslope.sedflux(force.sealevel, elevation, FVmesh.control_volumes)
@@ -535,7 +545,7 @@ def sediment_flux(
         )
 
     if verbose:
-        print(" -   Get hillslope fluxes ", time.clock() - walltime)
+        print(" -   Get hillslope fluxes ", time.process_time() - walltime)
 
     # Update erodibility values
     if input.erolays and input.erolays >= 0:
@@ -548,5 +558,5 @@ def sediment_flux(
     tNow += timestep
 
     if verbose:
-        print(" - Flow computation ", time.clock() - flow_time)
+        print(" - Flow computation ", time.process_time() - flow_time)
     return tNow, elevation, cumdiff, cumhill, cumfail, slopeTIN

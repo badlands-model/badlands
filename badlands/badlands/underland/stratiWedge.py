@@ -163,12 +163,12 @@ class stratiWedge():
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
         """
 
-        time0 = time.clock()
+        time0 = time.process_time()
         self.alayR = pdalgo.getactlay(actlay, self.layerThick[:,:self.step+1],
                                     self.depoThick[:,:self.step+1,:])
         if verbose:
-            print("   - Get active layer composition ", time.clock() - time0)
-            time0 = time.clock()
+            print("   - Get active layer composition ", time.process_time() - time0)
+            time0 = time.process_time()
 
         return
 
@@ -183,7 +183,7 @@ class stratiWedge():
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
         """
 
-        time0 = time.clock()
+        time0 = time.process_time()
         newH, newS = pdalgo.updatestrati(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
                                     erosion, deposition)
 
@@ -192,7 +192,7 @@ class stratiWedge():
         self.paleoDepth[:,self.step] = elev
 
         if verbose:
-            print("   - Update erosion/deposition ", time.clock() - time0)
+            print("   - Update erosion/deposition ", time.process_time() - time0)
 
         return
 

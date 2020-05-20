@@ -187,12 +187,12 @@ class carbMesh():
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
         """
 
-        time0 = time.clock()
+        time0 = time.process_time()
         self.alay = pdalgo.getactlay2(actlay, self.layerThick[:,:self.step+1],
                                     self.depoThick[:,:self.step+1,:])
         if verbose:
-            print("   - Get active layer composition ", time.clock() - time0)
-            time0 = time.clock()
+            print("   - Get active layer composition ", time.process_time() - time0)
+            time0 = time.process_time()
 
         return
 
@@ -206,7 +206,7 @@ class carbMesh():
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
         """
 
-        time0 = time.clock()
+        time0 = time.process_time()
         ero = actlayer[:,0]-self.alay[:,0]
         ero[ero>0.] = 0.
         depo = actlayer[:,0]-self.alay[:,0]
@@ -218,7 +218,7 @@ class carbMesh():
         self.paleoDepth[:,self.step] = elev
 
         if verbose:
-            print("   - Update active layer due to wave-induced erosion/deposition ", time.clock() - time0)
+            print("   - Update active layer due to wave-induced erosion/deposition ", time.process_time() - time0)
 
         return
 
@@ -232,7 +232,7 @@ class carbMesh():
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
         """
 
-        time0 = time.clock()
+        time0 = time.process_time()
         newH, newS = pdalgo.stratcarb(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
                                     clastic)
         self.depoThick[:,:self.step+1,:] = newS[:,:self.step+1,:]
@@ -240,7 +240,7 @@ class carbMesh():
         self.paleoDepth[:,self.step] = elev
 
         if verbose:
-            print("   - Update erosion/deposition ", time.clock() - time0)
+            print("   - Update erosion/deposition ", time.process_time() - time0)
 
         return
 

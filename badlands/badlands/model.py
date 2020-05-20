@@ -330,17 +330,17 @@ class Model(object):
             self.simStarted = True
 
         outStrata = 0
-        last_time = time.clock()
-        last_output = time.clock()
+        last_time = time.process_time()
+        last_output = time.process_time()
 
         # Perform main simulation loop
         while self.tNow < tEnd:
             # At most, display output every 5 seconds
-            tloop = time.clock() - last_time
-            if time.clock() - last_output >= 5.0:
+            tloop = time.process_time() - last_time
+            if time.process_time() - last_output >= 5.0:
                 print("tNow = %s (step took %0.02f seconds)" % (self.tNow, tloop))
-                last_output = time.clock()
-            last_time = time.clock()
+                last_output = time.process_time()
+            last_time = time.process_time()
 
             # Load precipitation rate
             if (
@@ -494,7 +494,7 @@ class Model(object):
 
             # Compute isostatic flexure
             if self.tNow >= self.force.next_flexure:
-                flextime = time.clock()
+                flextime = time.process_time()
                 ref_elev = buildMesh.get_reference_elevation(
                     self.input, self.recGrid, self.elevation
                 )
@@ -520,12 +520,12 @@ class Model(object):
                 self.force.next_flexure += self.input.ftime
                 print(
                     "   - Compute flexural isostasy %0.02f seconds"
-                    % (time.clock() - flextime)
+                    % (time.process_time() - flextime)
                 )
 
             # Compute wavesed parameters
             if self.tNow >= self.force.next_wave:
-                wavetime = time.clock()
+                wavetime = time.process_time()
                 if self.carbTIN is not None:
                     # Update erosion/deposition due to SPM processes on carbTIN
                     self.carbTIN.update_layers(
@@ -559,7 +559,7 @@ class Model(object):
                 # self.wavediff += self.waveED
                 print(
                     "   - Compute wave-induced sediment transport %0.02f seconds"
-                    % (time.clock() - wavetime)
+                    % (time.process_time() - wavetime)
                 )
                 # Update carbonate active layer
                 if nactlay is not None:
@@ -569,7 +569,7 @@ class Model(object):
 
             # Compute carbonate evolution
             if self.tNow >= self.next_carbStep:
-                carbtime = time.clock()
+                carbtime = time.process_time()
                 depth = self.elevation - self.force.sealevel
                 if self.carbTIN is not None:
                     # Update erosion/deposition due to river and diffusion on carbTIN
@@ -651,7 +651,7 @@ class Model(object):
 
                 print(
                     "   - Compute carbonate growth %0.02f seconds"
-                    % (time.clock() - carbtime)
+                    % (time.process_time() - carbtime)
                 )
 
             # Update next stratal layer time
@@ -714,23 +714,23 @@ class Model(object):
                 )
 
                 if self.straTIN is not None and self.outputStep % self.input.tmesh == 0:
-                    meshtime = time.clock()
+                    meshtime = time.process_time()
                     self.straTIN.write_hdf5_stratigraphy(self.lGIDs, self.outputStep)
                     print(
                         "   - Write sediment mesh output %0.02f seconds"
-                        % (time.clock() - meshtime)
+                        % (time.process_time() - meshtime)
                     )
 
                 if self.carbTIN is not None and self.outputStep % self.input.tmesh == 0:
-                    meshtime = time.clock()
+                    meshtime = time.process_time()
                     self.carbTIN.write_hdf5_stratigraphy(self.lGIDs, self.outputStep)
                     print(
                         "   - Write carbonate mesh output %0.02f seconds"
-                        % (time.clock() - meshtime)
+                        % (time.process_time() - meshtime)
                     )
 
                 # Update next display time
-                last_output = time.clock()
+                last_output = time.process_time()
                 self.force.next_display += self.input.tDisplay
                 self.outputStep += 1
                 if self.carbTIN is not None:
@@ -781,12 +781,12 @@ class Model(object):
                 verbose,
             )
 
-        tloop = time.clock() - last_time
+        tloop = time.process_time() - last_time
         print("tNow = %s (%0.02f seconds)" % (self.tNow, tloop))
 
         # Isostatic flexure
         if self.input.flexure:
-            flextime = time.clock()
+            flextime = time.process_time()
             ref_elev = buildMesh.get_reference_elevation(
                 self.input, self.recGrid, self.elevation
             )
@@ -812,7 +812,7 @@ class Model(object):
             self.force.next_flexure += self.input.ftime
             print(
                 "   - Compute flexural isostasy %0.02f seconds"
-                % (time.clock() - flextime)
+                % (time.process_time() - flextime)
             )
 
         # Update next stratal layer time
@@ -858,19 +858,19 @@ class Model(object):
             )
 
             if self.straTIN is not None and self.outputStep % self.input.tmesh == 0:
-                meshtime = time.clock()
+                meshtime = time.process_time()
                 self.straTIN.write_hdf5_stratigraphy(self.lGIDs, self.outputStep)
                 print(
                     "   - Write sediment mesh output %0.02f seconds"
-                    % (time.clock() - meshtime)
+                    % (time.process_time() - meshtime)
                 )
 
             if self.carbTIN is not None and self.outputStep % self.input.tmesh == 0:
-                meshtime = time.clock()
+                meshtime = time.process_time()
                 self.carbTIN.write_hdf5_stratigraphy(self.lGIDs, self.outputStep)
                 print(
                     "   - Write carbonate mesh output %0.02f seconds"
-                    % (time.clock() - meshtime)
+                    % (time.process_time() - meshtime)
                 )
 
             self.force.next_display += self.input.tDisplay

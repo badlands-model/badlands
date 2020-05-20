@@ -23,7 +23,7 @@ import os
 if "READTHEDOCS" not in os.environ:
     from badlands import flowalgo
 
-from numpy import random
+# from numpy import random
 
 
 def simple(X, Y, Xdecomp=1, Ydecomp=1):
@@ -155,7 +155,7 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
 
     """
 
-    walltime = time.clock()
+    walltime = time.process_time()
     size = 1
     # Check decomposition versus CPUs number
     if size != nbprocX * nbprocY:
@@ -218,6 +218,8 @@ def overlap(X, Y, nbprocX, nbprocY, overlapLen, verbose=False):
     localTIN = triangle.triangulate({"vertices": data[globIDs, :2]}, "eD")
 
     if verbose:
-        print(" - partition TIN including shadow zones ", time.clock() - walltime)
+        print(
+            " - partition TIN including shadow zones ", time.process_time() - walltime
+        )
 
     return globIDs, localTIN
