@@ -75,7 +75,14 @@ Fernandes V. M., Roberts G. G., White N. and Whittaker A. C.: *Continental‐sca
 
 Ding X., T. Salles, N. Flament, C. Mallard and P. Rey: *Drainage and sedimentary responses to dynamic topography*, **Geophysical Research Letters**, `doi:10.1029/2019GL084400`_, 2019.
 
+
 Thran A. C., M. East, J. M. Webster, T. Salles and Petit, C.: *The influence of carbonate platforms on the geomorphological development of a mixed carbonate‐siliciclastic margin (Great Barrier Reef, Australia)*, **Geochemistry, Geophysics, Geosystems**, 21, e2020GC008915, `doi:10.1029/2020GC008915`_, 2020.
+
+
+Zhang J., Sylvester, Z. and Covault, J.: *How do basin margins record long-term tectonic and climatic changes?*, **Geology**, 48, `doi:10.1130/G47498.1`_, 2020. 
+
+
+Chang C. and Liu L.; *Investigating the formation of the Cretaceous Western Interior Seaway using landscape evolution simulations*, **GSA Bulletin**, `doi: 10.1130/B35653.1`_, 2020. 
 
 
 Honours & PhD theses
@@ -128,3 +135,5 @@ Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level chang
 .. _`doi:10.1029/2018JF004979`:  https://doi.org/10.1029/2018JF004979
 .. _`doi:10.1029/2019GL084400`:  https://doi.org/10.1029/2019GL084400
 .. _`doi:10.1029/2020GC008915`: https://doi.org/10.1029/2020GC008915
+.. _`doi:10.1130/G47498.1`: https://doi.org/10.1130/G47498.1
+.. _`doi: 10.1130/B35653.1`: https://doi.org/10.1130/B35653.1
