@@ -33,6 +33,7 @@ from scipy.spatial import cKDTree
 from collections import OrderedDict
 from skimage import measure
 
+
 class carbGrowth:
     """
     This class defines external carbonate growth parameters.
@@ -43,6 +44,7 @@ class carbGrowth:
         regY : float numpy array containing the Y-coordinates of the regular input grid.
         tinBase: numpy integer-type array defining the basement map on the TIN where carbonate will be able to grow.
     """
+
     def __init__(self, input=None, regX=None, regY=None, tinBase=None):
 
         self.regX = regX
@@ -119,7 +121,7 @@ class carbGrowth:
         if self.wavefile2 != None:
             self._build_wave_function(2)
 
-    def _build_depth_function(self,id):
+    def _build_depth_function(self, id):
         """
         Using Pandas library to read the depth control file and define depth interpolation
         function based on Scipy 1D linear function.
@@ -130,42 +132,57 @@ class carbGrowth:
 
         # Read depth control file
         if id == 1:
-            depthdata = pandas.read_csv(self.depthfile, sep=r'\s+', engine='c',
-                                   header=None, na_filter=False,
-                                   dtype=numpy.float, low_memory=False)
+            depthdata = pandas.read_csv(
+                self.depthfile,
+                sep=r"\s+",
+                engine="c",
+                header=None,
+                na_filter=False,
+                dtype=numpy.float,
+                low_memory=False,
+            )
 
-            self.depthval = numpy.zeros(len(depthdata.values[:,0])+2)
+            self.depthval = numpy.zeros(len(depthdata.values[:, 0]) + 2)
             self.depthfct = numpy.zeros(len(self.depthval))
 
-            self.depthval[1:-1] = depthdata.values[:,0]
-            self.depthfct[1:-1] = depthdata.values[:,1]
+            self.depthval[1:-1] = depthdata.values[:, 0]
+            self.depthfct[1:-1] = depthdata.values[:, 1]
             self.depthval[0] = -1.0e7
             self.depthfct[0] = self.depthfct[1]
-            self.depthval[-1] = 1.e7
+            self.depthval[-1] = 1.0e7
             self.depthfct[-1] = self.depthfct[-2]
 
-            self.depthFunc = interpolate.interp1d(self.depthval, self.depthfct, kind='linear')
+            self.depthFunc = interpolate.interp1d(
+                self.depthval, self.depthfct, kind="linear"
+            )
 
         if id == 2:
-            depthdata = pandas.read_csv(self.depthfile2, sep=r'\s+', engine='c',
-                                   header=None, na_filter=False,
-                                   dtype=numpy.float, low_memory=False)
+            depthdata = pandas.read_csv(
+                self.depthfile2,
+                sep=r"\s+",
+                engine="c",
+                header=None,
+                na_filter=False,
+                dtype=numpy.float,
+                low_memory=False,
+            )
+            self.depthval2 = numpy.zeros(len(depthdata.values[:, 0]) + 2)
+            self.depthfct2 = numpy.zeros(len(self.depthval2))
 
-            self.depthval2 = numpy.zeros(len(depthdata.values[:,0])+2)
-            self.depthfct2 = numpy.zeros(len(self.depthval))
-
-            self.depthval2[1:-1] = depthdata.values[:,0]
-            self.depthfct2[1:-1] = depthdata.values[:,1]
+            self.depthval2[1:-1] = depthdata.values[:, 0]
+            self.depthfct2[1:-1] = depthdata.values[:, 1]
             self.depthval2[0] = -1.0e7
             self.depthfct2[0] = self.depthfct2[1]
-            self.depthval2[-1] = 1.e7
+            self.depthval2[-1] = 1.0e7
             self.depthfct2[-1] = self.depthfct2[-2]
 
-            self.depthFunc2 = interpolate.interp1d(self.depthval2, self.depthfct2, kind='linear')
+            self.depthFunc2 = interpolate.interp1d(
+                self.depthval2, self.depthfct2, kind="linear"
+            )
 
         return
 
-    def _build_sed_function(self,id):
+    def _build_sed_function(self, id):
         """
         Using Pandas library to read the sedimentation control file and define sedimentation interpolation
         function based on Scipy 1D linear function.
@@ -176,38 +193,52 @@ class carbGrowth:
 
         # Read sedimentation rate file
         if id == 1:
-            seddata = pandas.read_csv(self.sedfile, sep=r'\s+', engine='c',
-                                   header=None, na_filter=False,
-                                   dtype=numpy.float, low_memory=False)
+            seddata = pandas.read_csv(
+                self.sedfile,
+                sep=r"\s+",
+                engine="c",
+                header=None,
+                na_filter=False,
+                dtype=numpy.float,
+                low_memory=False,
+            )
 
-            self.sedval = numpy.zeros(len(seddata.values[:,0])+2)
+            self.sedval = numpy.zeros(len(seddata.values[:, 0]) + 2)
             self.sedfct = numpy.zeros(len(self.sedval))
 
-            self.sedval[1:-1] = seddata.values[:,0]
-            self.sedfct[1:-1] = seddata.values[:,1]
+            self.sedval[1:-1] = seddata.values[:, 0]
+            self.sedfct[1:-1] = seddata.values[:, 1]
             self.sedval[0] = -1.0e7
             self.sedfct[0] = self.sedfct[1]
-            self.sedval[-1] = 1.e7
+            self.sedval[-1] = 1.0e7
             self.sedfct[-1] = self.sedfct[-2]
 
-            self.sedFunc = interpolate.interp1d(self.sedval, self.sedfct, kind='linear')
+            self.sedFunc = interpolate.interp1d(self.sedval, self.sedfct, kind="linear")
 
         if id == 2:
-            seddata = pandas.read_csv(self.sedfile2, sep=r'\s+', engine='c',
-                                   header=None, na_filter=False,
-                                   dtype=numpy.float, low_memory=False)
+            seddata = pandas.read_csv(
+                self.sedfile2,
+                sep=r"\s+",
+                engine="c",
+                header=None,
+                na_filter=False,
+                dtype=numpy.float,
+                low_memory=False,
+            )
 
-            self.sedval2 = numpy.zeros(len(seddata.values[:,0])+2)
-            self.sedfct2 = numpy.zeros(len(self.sedval))
+            self.sedval2 = numpy.zeros(len(seddata.values[:, 0]) + 2)
+            self.sedfct2 = numpy.zeros(len(self.sedval2))
 
-            self.sedval2[1:-1] = seddata.values[:,0]
-            self.sedfct2[1:-1] = seddata.values[:,1]
+            self.sedval2[1:-1] = seddata.values[:, 0]
+            self.sedfct2[1:-1] = seddata.values[:, 1]
             self.sedval2[0] = -1.0e7
             self.sedfct2[0] = self.sedfct2[1]
-            self.sedval2[-1] = 1.e7
+            self.sedval2[-1] = 1.0e7
             self.sedfct2[-1] = self.sedfct2[-2]
 
-            self.sedFunc2 = interpolate.interp1d(self.sedval2, self.sedfct2, kind='linear')
+            self.sedFunc2 = interpolate.interp1d(
+                self.sedval2, self.sedfct2, kind="linear"
+            )
 
         return
 
@@ -222,38 +253,54 @@ class carbGrowth:
 
         # Read wave control file
         if id == 1:
-            wavedata = pandas.read_csv(self.wavefile, sep=r'\s+', engine='c',
-                                   header=None, na_filter=False,
-                                   dtype=numpy.float, low_memory=False)
+            wavedata = pandas.read_csv(
+                self.wavefile,
+                sep=r"\s+",
+                engine="c",
+                header=None,
+                na_filter=False,
+                dtype=numpy.float,
+                low_memory=False,
+            )
 
-            self.waveval = numpy.zeros(len(wavedata.values[:,0])+2)
+            self.waveval = numpy.zeros(len(wavedata.values[:, 0]) + 2)
             self.wavefct = numpy.zeros(len(self.waveval))
 
-            self.waveval[1:-1] = wavedata.values[:,0]
-            self.wavefct[1:-1] = wavedata.values[:,1]
+            self.waveval[1:-1] = wavedata.values[:, 0]
+            self.wavefct[1:-1] = wavedata.values[:, 1]
             self.waveval[0] = -1.0e7
             self.wavefct[0] = self.wavefct[1]
-            self.waveval[-1] = 1.e7
+            self.waveval[-1] = 1.0e7
             self.wavefct[-1] = self.wavefct[-2]
 
-            self.waveFunc = interpolate.interp1d(self.waveval, self.wavefct, kind='linear')
+            self.waveFunc = interpolate.interp1d(
+                self.waveval, self.wavefct, kind="linear"
+            )
 
         if id == 2:
-            wavedata = pandas.read_csv(self.wavefile2, sep=r'\s+', engine='c',
-                                   header=None, na_filter=False,
-                                   dtype=numpy.float, low_memory=False)
+            wavedata = pandas.read_csv(
+                self.wavefile2,
+                sep=r"\s+",
+                engine="c",
+                header=None,
+                na_filter=False,
+                dtype=numpy.float,
+                low_memory=False,
+            )
 
-            self.waveval2 = numpy.zeros(len(wavedata.values[:,0])+2)
+            self.waveval2 = numpy.zeros(len(wavedata.values[:, 0]) + 2)
             self.wavefct2 = numpy.zeros(len(self.waveval2))
 
-            self.waveval2[1:-1] = wavedata.values[:,0]
-            self.wavefct2[1:-1] = wavedata.values[:,1]
+            self.waveval2[1:-1] = wavedata.values[:, 0]
+            self.wavefct2[1:-1] = wavedata.values[:, 1]
             self.waveval2[0] = -1.0e7
             self.wavefct2[0] = self.wavefct2[1]
-            self.waveval2[-1] = 1.e7
+            self.waveval2[-1] = 1.0e7
             self.wavefct2[-1] = self.wavefct2[-2]
 
-            self.waveFunc2 = interpolate.interp1d(self.waveval2, self.wavefct2, kind='linear')
+            self.waveFunc2 = interpolate.interp1d(
+                self.waveval2, self.wavefct2, kind="linear"
+            )
 
         return
 
@@ -326,7 +373,7 @@ class carbGrowth:
 
         return
 
-    def computeShoreline(self,z,lvl=0.):
+    def computeShoreline(self, z, lvl=0.0):
         """
         This function computes the shoreline position for a given sea-level.
 
@@ -338,37 +385,37 @@ class carbGrowth:
             - contourPts - numpy array containing the contour coordinates.
         """
 
-        contours = measure.find_contours(z.T,level=lvl)
+        contours = measure.find_contours(z.T, level=lvl)
         contourList = []
         start = True
 
         # Loop through each contour
         for c in range(len(contours)):
-            tmpts =  contours[c]
-            tmpts[:,0] = tmpts[:,0]*self.dx+self.xi.min()
-            tmpts[:,1] = tmpts[:,1]*self.dx+self.yi.min()
+            tmpts = contours[c]
+            tmpts[:, 0] = tmpts[:, 0] * self.dx + self.xi.min()
+            tmpts[:, 1] = tmpts[:, 1] * self.dx + self.yi.min()
             closed = False
-            if tmpts[0,0] == tmpts[-1,0] and tmpts[0,1] == tmpts[-1,1]:
+            if tmpts[0, 0] == tmpts[-1, 0] and tmpts[0, 1] == tmpts[-1, 1]:
                 closed = True
 
             # Remove duplicate points
             unique = OrderedDict()
-            for p in zip(tmpts[:,0], tmpts[:,1]):
+            for p in zip(tmpts[:, 0], tmpts[:, 1]):
                 unique.setdefault(p[:2], p)
             pts = numpy.asarray(list(unique.values()))
 
             if closed:
-                cpts = numpy.zeros((len(pts)+1,2), order='F')
-                cpts[0:len(pts),0:2] = pts
-                cpts[-1,0:2] = pts[0,0:2]
+                cpts = numpy.zeros((len(pts) + 1, 2), order="F")
+                cpts[0 : len(pts), 0:2] = pts
+                cpts[-1, 0:2] = pts[0, 0:2]
 
                 # Get contour length
                 arr = cpts
-                val = (arr[:-1,:] - arr[1:,:]).ravel()
-                dist = val.reshape((arr.shape[0]-1,2))
-                lgth = numpy.sum(numpy.sqrt(numpy.sum(dist**2, axis=1)))
+                val = (arr[:-1, :] - arr[1:, :]).ravel()
+                dist = val.reshape((arr.shape[0] - 1, 2))
+                lgth = numpy.sum(numpy.sqrt(numpy.sum(dist ** 2, axis=1)))
             else:
-                lgth = 1.e8
+                lgth = 1.0e8
                 cpts = pts
 
             if len(cpts) > 2 and lgth > self.mlen:
@@ -377,11 +424,11 @@ class carbGrowth:
                     contourPts = cpts
                     start = False
                 else:
-                    contourPts = numpy.concatenate((contourPts,cpts))
+                    contourPts = numpy.concatenate((contourPts, cpts))
 
         return contourPts
 
-    def  _oceanIDs(self, xy, depthfield):
+    def _oceanIDs(self, xy, depthfield):
         """
         Find points that are below sea-level and far from shoreline.
 
@@ -394,11 +441,13 @@ class carbGrowth:
 
         tree = cKDTree(xy)
         distances, indices = tree.query(self.tXY, k=1)
-        seaIDs = numpy.where(numpy.logical_and(distances[:]>=self.mdist,depthfield<=0.))[0]
+        seaIDs = numpy.where(
+            numpy.logical_and(distances[:] >= self.mdist, depthfield <= 0.0)
+        )[0]
 
         return seaIDs
 
-    def buildReg(self,tXY):
+    def buildReg(self, tXY):
         """
         Build regular grid for shoreline contour calculation.
 
@@ -408,13 +457,13 @@ class carbGrowth:
 
         self.tXY = tXY
         self.tree = cKDTree(self.tXY)
-        self.dx = (self.tXY[1,0] - self.tXY[0,0])*self.Afactor
+        self.dx = (self.tXY[1, 0] - self.tXY[0, 0]) * self.Afactor
 
         if self.nx is None:
-            self.nx = int((self.tXY[:,0].max() - self.tXY[:,1].min())/self.dx+1)
-            self.ny = int((self.tXY[:,1].max() - self.tXY[:,1].min())/self.dx+1)
-            xi = numpy.linspace(self.tXY[:,0].min(), self.tXY[:,0].max(), self.nx)
-            yi = numpy.linspace(self.tXY[:,1].min(), self.tXY[:,1].max(), self.ny)
+            self.nx = int((self.tXY[:, 0].max() - self.tXY[:, 1].min()) / self.dx + 1)
+            self.ny = int((self.tXY[:, 1].max() - self.tXY[:, 1].min()) / self.dx + 1)
+            xi = numpy.linspace(self.tXY[:, 0].min(), self.tXY[:, 0].max(), self.nx)
+            yi = numpy.linspace(self.tXY[:, 1].min(), self.tXY[:, 1].max(), self.ny)
             self.xi, self.yi = numpy.meshgrid(xi, yi)
             xyi = numpy.dstack([self.xi.flatten(), self.yi.flatten()])[0]
 
@@ -422,7 +471,7 @@ class carbGrowth:
 
         return
 
-    def _getDistanceShore(self,depthfield):
+    def _getDistanceShore(self, depthfield):
         """
         Computes IDs of nodes at a given distance from shoreline.
 
@@ -434,16 +483,16 @@ class carbGrowth:
         """
 
         if len(depthfield[self.indices].shape) == 3:
-            z_vals = depthfield[self.indices][:,:,0]
+            z_vals = depthfield[self.indices][:, :, 0]
         else:
             z_vals = depthfield[self.indices]
 
-        zi = numpy.average(z_vals,weights=(1./self.distances), axis=1)
-        onIDs = numpy.where(self.distances[:,0] == 0)[0]
+        zi = numpy.average(z_vals, weights=(1.0 / self.distances), axis=1)
+        onIDs = numpy.where(self.distances[:, 0] == 0)[0]
         if len(onIDs) > 0:
-            zi[onIDs] = depthfield[self.indices[onIDs,0]]
+            zi[onIDs] = depthfield[self.indices[onIDs, 0]]
 
-        z = numpy.reshape(zi,(self.ny, self.nx))
+        z = numpy.reshape(zi, (self.ny, self.nx))
 
         xy = self.computeShoreline(z)
 
@@ -451,7 +500,9 @@ class carbGrowth:
 
         return seaIDs
 
-    def computeCarbonate(self, wavefield, sedfield, depthfield, growthsp1, growthsp2, dt):
+    def computeCarbonate(
+        self, wavefield, sedfield, depthfield, growthsp1, growthsp2, dt
+    ):
         """
         Computes carbonate growth on each nodes containing the good proportion of wave, sedimentation and depth.
 
@@ -471,12 +522,14 @@ class carbGrowth:
             numpy array containing the growth (in metres) of species 2.
         """
 
-        if self.mdist == 0.:
+        if self.mdist == 0.0:
             if self.tinBase is not None:
-                tmpids = numpy.where(depthfield<0.)[0]
-                seaIds = numpy.where(numpy.logical_and(self.tinBase==0,depthfield<0.))[0]
+                tmpids = numpy.where(depthfield < 0.0)[0]
+                seaIds = numpy.where(
+                    numpy.logical_and(self.tinBase == 0, depthfield < 0.0)
+                )[0]
             else:
-                seaIds = numpy.where(depthfield<0.)[0]
+                seaIds = numpy.where(depthfield < 0.0)[0]
         else:
             seaIds = self._getDistanceShore(depthfield)
 
@@ -489,37 +542,43 @@ class carbGrowth:
 
         # Get each controlling function values
         if self.depthfile != None:
-            self._getDepthFct(depthfield,1)
-            growth[seaIds] = numpy.minimum(growth[seaIds],self.depthgrowth[seaIds])
+            self._getDepthFct(depthfield, 1)
+            growth[seaIds] = numpy.minimum(growth[seaIds], self.depthgrowth[seaIds])
         if self.sedfile != None:
-            self._getSedFct(sedfield,1)
-            growth[seaIds] = numpy.minimum(growth[seaIds],self.sedgrowth[seaIds])
+            self._getSedFct(sedfield, 1)
+            growth[seaIds] = numpy.minimum(growth[seaIds], self.sedgrowth[seaIds])
         if self.wavefile != None:
-            self._getWaveFct(wavefield,1)
-            growth[seaIds] = numpy.minimum(growth[seaIds],self.wavegrowth[seaIds])
-        growth[growth>1.e6] = 0.
+            self._getWaveFct(wavefield, 1)
+            growth[seaIds] = numpy.minimum(growth[seaIds], self.wavegrowth[seaIds])
+        growth[growth > 1.0e6] = 0.0
 
         if self.carbonate2:
             if self.depthfile2 != None:
-                self._getDepthFct(depthfield,2)
-                growth2[seaIds] = numpy.minimum(growth2[seaIds],self.depthgrowth2[seaIds])
+                self._getDepthFct(depthfield, 2)
+                growth2[seaIds] = numpy.minimum(
+                    growth2[seaIds], self.depthgrowth2[seaIds]
+                )
             if self.sedfile2 != None:
-                self._getSedFct(sedfield,2)
-                growth2[seaIds] = numpy.minimum(growth2[seaIds],self.sedgrowth2[seaIds])
+                self._getSedFct(sedfield, 2)
+                growth2[seaIds] = numpy.minimum(
+                    growth2[seaIds], self.sedgrowth2[seaIds]
+                )
             if self.wavefile2 != None:
-                self._getWaveFct(wavefield,2)
-                growth2[seaIds] = numpy.minimum(growth2[seaIds],self.wavegrowth2[seaIds])
-            growth2[growth2>1.e6] = 0.
+                self._getWaveFct(wavefield, 2)
+                growth2[seaIds] = numpy.minimum(
+                    growth2[seaIds], self.wavegrowth2[seaIds]
+                )
+            growth2[growth2 > 1.0e6] = 0.0
 
         # Average growth function limitation
-        val = growthsp1*growth*dt
-        val[val<0.] = 0.
-        val[seaIds] = numpy.minimum(val[seaIds],-depthfield[seaIds]*0.9)
-        tmpid = numpy.where(numpy.logical_and(val==val.max(),val>0))[0]
+        val = growthsp1 * growth * dt
+        val[val < 0.0] = 0.0
+        val[seaIds] = numpy.minimum(val[seaIds], -depthfield[seaIds] * 0.9)
+        tmpid = numpy.where(numpy.logical_and(val == val.max(), val > 0))[0]
         if self.carbonate2:
-            val2 = growthsp2*growth2*dt
-            val2[val2<0.] = 0.
-            val2[seaIds] = numpy.minimum(val2[seaIds],-depthfield[seaIds]*0.9)
+            val2 = growthsp2 * growth2 * dt
+            val2[val2 < 0.0] = 0.0
+            val2[seaIds] = numpy.minimum(val2[seaIds], -depthfield[seaIds] * 0.9)
         else:
             val2 = None
 

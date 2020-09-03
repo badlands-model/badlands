@@ -166,7 +166,6 @@ class Model(object):
         self.hillslope.CDaerial = self.input.CDa
         self.hillslope.CDmarine = self.input.CDm
         self.hillslope.CDriver = self.input.CDr
-        self.hillslope.Sc = self.input.Sc
         self.hillslope.Sfail = self.input.Sfail
         self.hillslope.Cfail = self.input.Cfail
         self.hillslope.Sc = self.input.Sc
@@ -824,7 +823,7 @@ class Model(object):
                 self.force.sealevel,
                 self.recGrid.boundsPt,
                 1,
-                self.outputStep,
+                self.outputStep + 1,
             )
             self.elevation += sub
             self.cumdiff += sub

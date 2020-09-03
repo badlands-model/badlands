@@ -1382,6 +1382,12 @@ class xmlParser:
             else:
                 self.youngMod = 65e9
             element = None
+            element = flex.find("poisson")
+            if element is not None:
+                self.poisson = float(element.text)
+            else:
+                self.poisson = 0.25
+            element = None
             element = flex.find("elasticH")
             if element is not None:
                 self.elasticH = float(element.text)

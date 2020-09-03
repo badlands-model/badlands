@@ -730,7 +730,7 @@ To estimate flexural isostasy, gflex_ modular python package is used in **badlan
 
 The flexural isostasy is performed on a regular grid (defined based on the number of nodes along the X and Y axis – :code:`<fnx>` and :code:`<fny>`) and user-defined time intervals (:code:`<ftime>`).
 
-To compute the isostasy additional parameters are required: the mantle density (:code:`<dmantle>`), the sediment density (:code:`<dsediment>`), the Young’s Modulus (:code:`<youngMod>`), and the lithospheric elastic thickness.
+To compute the isostasy additional parameters are required: the mantle density (:code:`<dmantle>`), the sediment density (:code:`<dsediment>`), the Young’s Modulus (:code:`<youngMod>`), the Poisson's ratio (:code:`<poisson>`) and the lithospheric elastic thickness.
 
 .. code-block:: xml
 
@@ -757,6 +757,8 @@ To compute the isostasy additional parameters are required: the mantle density (
           <dsediment>2500</dsediment>
           <!-- Young's Modulus [Pa] -->
           <youngMod>65E9</youngMod>
+          <!-- Poisson ratio -->
+          <poisson>0.25</poisson>
           <!-- The lithospheric elastic thickness (Te) can be expressed as a scalar if you assume
                a uniform thickness for the model area in this case the value is given in the next
                parameter [m] - (optional) -->

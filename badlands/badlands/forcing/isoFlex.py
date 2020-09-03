@@ -68,6 +68,7 @@ class isoFlex:
         nx,
         ny,
         youngMod,
+        poisson,
         mantleDensity,
         sedimentDensity,
         elasticT,
@@ -83,6 +84,7 @@ class isoFlex:
             nx: number of points along the X axis
             ny: number of points along the Y axis
             youngMod: Young's modulus
+            poisson: Poisson ratio
             mantleDensity: mantle density
             sedimentDensity: sediment density
             elasticT: elastic thickness. Can be scalar or an array
@@ -127,7 +129,7 @@ class isoFlex:
         # Acceleration due to gravity
         self.flex.g = 9.8
         # Poisson's Ratio
-        self.flex.nu = 0.25
+        self.flex.nu = poisson
         # Infill Material Density
         self.flex.rho_fill = 0.0
         # Young's Modulus

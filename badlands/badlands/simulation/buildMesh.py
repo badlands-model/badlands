@@ -610,6 +610,7 @@ def _init_flexure(
         nx,
         ny,
         input.youngMod,
+        input.poisson,
         input.dmantle,
         input.dsediment,
         elasticT,

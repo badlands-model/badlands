@@ -798,7 +798,7 @@ class forceSim:
             if strat == 1:
                 stcum = numpy.delete(scum, tID, 0)
             if ero == 1:
-                lay = Ke.shape()[1]
+                lay = Ke.shape[1]
                 mKe = numpy.zeros((len(cum), lay))
                 mTe = numpy.zeros((len(cum), lay))
                 for k in range(lay):
@@ -817,7 +817,7 @@ class forceSim:
             if strat == 1:
                 stcum = scum
             if ero == 1:
-                lay = Ke.shape()[1]
+                lay = Ke.shape[1]
                 mKe = Ke
                 mTe = Te
 
