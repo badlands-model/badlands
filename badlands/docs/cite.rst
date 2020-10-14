@@ -85,6 +85,10 @@ Zhang J., Sylvester, Z. and Covault, J.: *How do basin margins record long-term 
 Chang C. and Liu L.; *Investigating the formation of the Cretaceous Western Interior Seaway using landscape evolution simulations*, **GSA Bulletin**, `doi: 10.1130/B35653.1`_, 2020. 
 
 
+Manley K., Salles, T. and Müller, D.; *Modeling the Dynamic Landscape Evolution of a Volcanic Coastal Environment Under Future Climate Trajectories*, **Frontiers Earth Sci.**, `doi:10.3389/feart.2020.550312`_, 2020. 
+
+
+
 Honours & PhD theses
 --------------------
 
@@ -107,6 +111,16 @@ East M.: *Sediment fates across mixed carbonate-siliciclastic margins: The inter
 
 
 Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level change and sediment transfer from source to sink*, **PhD Thesis**, `20665`_, University of Sydney, 2019.
+
+
+Thran, A.: *Understanding the influence of passive continental margin geometry on shallow and deep hydrodynamic and sedimentary processes*, **PhD Thesis**, University of Sydney, 2020.
+
+
+Gilbert, L.: *Modelling the impacts of relative sea level and precipitation changes on the development of the Burdekin river system delta during the Holocene*, **Master**, University of Sydney, 2020.
+
+
+Garrett, R.: *Constraining upland erodibility and marine deposition: source-to-sink sediment transfer in the Gulf of Papua*, **PhD Thesis**, University of Sydney, 2020.
+
 
 
 .. _`1534`: https://scholar.colorado.edu/honr_theses/1534
@@ -137,3 +151,4 @@ Ding X.: *Towards sequence stratigraphy 2.0: Dynamic topography, sea level chang
 .. _`doi:10.1029/2020GC008915`: https://doi.org/10.1029/2020GC008915
 .. _`doi:10.1130/G47498.1`: https://doi.org/10.1130/G47498.1
 .. _`doi: 10.1130/B35653.1`: https://doi.org/10.1130/B35653.1
+.. _`doi:10.3389/feart.2020.550312`: https://doi.org/10.3389/feart.2020.550312
