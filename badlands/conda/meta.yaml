@@ -1,0 +1,61 @@
+{% set name = "badlands" %}
+{% set version = "2.0.25" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  #url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  #sha256: 339175849a62412e6e445be40b1c392ad1194b7c97746492010e7d3e26045814
+  git_url: https://github.com/badlands-model/badlands.git
+
+build:
+  skip: true # [win]
+  number: 0
+  script: {{ PYTHON }} -m pip install badlands/ -vv
+
+requirements:
+  host:
+    - {{ compiler('fortran') }}
+    - {{ compiler('c') }}
+    - numpy >=1.15.0
+    - pip
+    - python
+    - pytriangle
+  run:
+    - gflex >=1.1.0
+    - h5py >=2.8.0
+    - matplotlib >=3.0
+    - meshplex
+    - numpy >=1.15.0
+    - pandas >=0.24
+    - python
+    - scikit-image >=0.15
+    - scipy >=1.2
+    - setuptools >=38.4.0
+    - six >=1.11.0
+    - pytriangle
+
+test:
+  imports:
+    - badlands
+    - badlands.flow
+    - badlands.forcing
+    - badlands.hillslope
+    - badlands.simulation
+    - badlands.surface
+    - badlands.underland
+
+about:
+  home: "https://github.com/badlands-model"
+  license: GPL-3.0+
+  license_family: GPL
+  license_file: LICENSE 
+  summary: "Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model"
+  doc_url: https://badlands.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rbeucher
+    - tristan-salles
