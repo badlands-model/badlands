@@ -19,22 +19,22 @@ requirements:
   host:
     - {{ compiler('fortran') }}
     - {{ compiler('c') }}
-    - numpy >=1.15.0
+    - numpy
     - pip
     - python
     - pytriangle
   run:
-    - gflex >=1.1.0
-    - h5py >=2.8.0
-    - matplotlib >=3.0
+    - gflex
+    - h5py
+    - matplotlib
     - meshplex
-    - numpy >=1.15.0
-    - pandas >=0.24
+    - numpy
+    - pandas
     - python
-    - scikit-image >=0.15
-    - scipy >=1.2
-    - setuptools >=38.4.0
-    - six >=1.11.0
+    - scikit-image
+    - scipy
+    - setuptools
+    - six
     - pytriangle
 
 test:
