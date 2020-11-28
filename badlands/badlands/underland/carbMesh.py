@@ -153,7 +153,7 @@ class carbMesh():
                 self.depoThick[:,0,0] = 1.e6
                 self.layerThick[:,0] = 1.e6
                 self.paleoDepth[:,0] = elev
-                self.step = 1
+                self.step = 0
                 seaIds = numpy.where(self.tinBase==0)[0]
                 self.depoThick[seaIds,0,0] = 0.
                 self.depoThick[seaIds,0,1] = 1.e6
@@ -238,7 +238,6 @@ class carbMesh():
         self.depoThick[:,:self.step+1,:] = newS[:,:self.step+1,:]
         self.layerThick[:,:self.step+1] = newH[:,:self.step+1]
         self.paleoDepth[:,self.step] = elev
-
         if verbose:
             print("   - Update erosion/deposition ", time.process_time() - time0)
 

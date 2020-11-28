@@ -553,6 +553,7 @@ class Model(object):
                 self.elevation += waveED
                 self.cumdiff += waveED
                 self.wavediff += waveED
+                self.oldsed = np.copy(self.cumdiff)
                 # self.elevation += self.waveED
                 # self.cumdiff += self.waveED
                 # self.wavediff += self.waveED
@@ -647,7 +648,6 @@ class Model(object):
                 # Update current cumulative erosion deposition
                 self.oldsed = np.copy(self.cumdiff)
                 self.next_carbStep += self.input.tCarb
-
                 print(
                     "   - Compute carbonate growth %0.02f seconds"
                     % (time.process_time() - carbtime)
@@ -749,36 +749,39 @@ class Model(object):
                 ]
             )
 
-            (
-                self.tNow,
-                self.elevation,
-                self.cumdiff,
-                self.cumhill,
-                self.cumfail,
-                self.slopeTIN,
-            ) = buildFlux.sediment_flux(
-                self.input,
-                self.recGrid,
-                self.hillslope,
-                self.FVmesh,
-                self.flow,
-                self.force,
-                self.rain,
-                self.lGIDs,
-                self.applyDisp,
-                self.straTIN,
-                self.mapero,
-                self.cumdiff,
-                self.cumhill,
-                self.cumfail,
-                self.fillH,
-                self.disp,
-                self.inGIDs,
-                self.elevation,
-                self.tNow,
-                tStop,
-                verbose,
-            )
+            if tStop < tEnd:
+                (
+                    self.tNow,
+                    self.elevation,
+                    self.cumdiff,
+                    self.cumhill,
+                    self.cumfail,
+                    self.slopeTIN,
+                ) = buildFlux.sediment_flux(
+                    self.input,
+                    self.recGrid,
+                    self.hillslope,
+                    self.FVmesh,
+                    self.flow,
+                    self.force,
+                    self.rain,
+                    self.lGIDs,
+                    self.applyDisp,
+                    self.straTIN,
+                    self.mapero,
+                    self.cumdiff,
+                    self.cumhill,
+                    self.cumfail,
+                    self.fillH,
+                    self.disp,
+                    self.inGIDs,
+                    self.elevation,
+                    self.tNow,
+                    tStop,
+                    verbose,
+                )
+            else:
+                self.tNow = tEnd
 
         tloop = time.process_time() - last_time
         print("tNow = %s (%0.02f seconds)" % (self.tNow, tloop))

@@ -250,14 +250,18 @@ class waveSed:
                 tED[onIDs] = ed[self.inds2[onIDs,0]]
 
             if actlay is not None:
-                al = self.regularlayer.flatten('F')
-                al_vals = al[self.inds2]
-                with np.errstate(invalid='ignore'):
-                    tal = np.average(al_vals,weights=(1./self.dists2), axis=1)
-                if len(onIDs) > 0:
-                    tal[onIDs] = al[self.inds2[onIDs,0]]
+                tal = actlay[:,0] + tED
                 tal[tal<0.] = 0.
                 nactlay[:,0] = tal
+
+                # al = self.regularlayer.flatten('F')
+                # al_vals = al[self.inds2]
+                # with np.errstate(invalid='ignore'):
+                #     tal = np.average(al_vals,weights=(1./self.dists2), axis=1)
+                # if len(onIDs) > 0:
+                #     tal[onIDs] = al[self.inds2[onIDs,0]]
+                # tal[tal<0.] = 0.
+                # nactlay[:,0] = tal
             # force.meanH = interpn( (self.regX, self.regY), avewH, (self.wxyTIN), method='linear')
             # force.meanS = interpn( (self.regX, self.regY), avewS, (self.wxyTIN), method='linear')
             # tED = interpn( (self.regX, self.regY), avedz, (self.wxyTIN), method='linear')
