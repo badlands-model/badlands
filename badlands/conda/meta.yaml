@@ -1,5 +1,5 @@
 {% set name = "badlands" %}
-{% set version = "2.0.25" %}
+{% set version = "2.2.0" %}
 
 package:
   name: {{ name|lower }}
@@ -51,7 +51,7 @@ about:
   home: "https://github.com/badlands-model"
   license: GPL-3.0+
   license_family: GPL
-  license_file: LICENSE 
+  license_file: LICENSE
   summary: "Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model"
   doc_url: https://badlands.readthedocs.io/
 
