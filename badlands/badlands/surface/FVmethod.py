@@ -78,7 +78,7 @@ class FVmethod:
         # Voronoi and simplices declaration
         Tmesh.create_edges()
         cc = Tmesh.cell_circumcenters
-        if meshplex.__version__>= "0.1.14":
+        if meshplex.__version__>= "0.14.0":
             edges_nodes = Tmesh.edges["points"]
             cells_nodes = Tmesh.cells["points"]
             cells_edges = Tmesh.cells["edges"]
