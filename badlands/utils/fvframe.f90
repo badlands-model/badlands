@@ -33,7 +33,7 @@ subroutine definetin( coords, cells_nodes, cells_edges, edges_nodes, &
 
   integer :: fvnnb(nb)
   integer :: i, n1, n2, k, l, p, eid, cid, e, id
-  integer :: nid(2), nc(3), edge(nb, 8)
+  integer :: nid(2), nc(3), edge(nb, 20)
   integer :: edgeNb(3), edges(3,2), cell_ids(nb, 20)
 
   real( kind=8 ) :: coords0(3), coordsID(3)
@@ -54,7 +54,7 @@ subroutine definetin( coords, cells_nodes, cells_edges, edges_nodes, &
     nc = cells_nodes(i,1:3)+1
     do p = 1, 3
       inside = .False.
-      lp: do k = 1, 8
+      lp: do k = 1, 20
         if( cell_ids(nc(p),k) == i-1 )then
           exit lp
         elseif( cell_ids(nc(p),k) == -1 )then
@@ -73,7 +73,7 @@ subroutine definetin( coords, cells_nodes, cells_edges, edges_nodes, &
     n1 = edges_nodes(i,1)+1
     n2 = edges_nodes(i,2)+1
     inside = .False.
-    lp0: do k = 1, 8
+    lp0: do k = 1, 20
       if(edge(n1,k) == i-1)then
         exit lp0
       elseif(edge(n1,k) == -1)then
@@ -87,7 +87,7 @@ subroutine definetin( coords, cells_nodes, cells_edges, edges_nodes, &
       maxNgbhs = max(maxNgbhs,fvnnb(n1))
     endif
     inside = .False.
-    lp1: do k = 1, 8
+    lp1: do k = 1, 20
       if(edge(n2,k) == i-1)then
         exit lp1
       elseif(edge(n2,k) == -1)then
