@@ -63,7 +63,7 @@ if __name__ == "__main__":
         author="Tristan Salles",
         author_email="tristan.salles@sydney.edu.au",
         url="https://github.com/badlands-model",
-        version="2.2.0",
+        version="2.2.1",
         description="Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model",
         long_description=long_description,
         long_description_content_type="text/markdown",

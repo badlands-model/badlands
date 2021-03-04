@@ -24,7 +24,7 @@ applications such as **Paraview** or Visit.
 .. image:: img/output.png
    :scale: 50 %
    :alt: Badlands output folder
-   :align: center 
+   :align: center
 
 Above is a typical structure that you will find in **badlands** output folder:
 
@@ -105,6 +105,7 @@ def write_hdf5(
     step,
     coords,
     elevation,
+    fillH,
     rain,
     discharge,
     cumdiff,
@@ -168,6 +169,11 @@ def write_hdf5(
         discharge[elevation < sealevel] = 0.0
         discharge[discharge < 1.0] = 1.0
         f["discharge"][:, 0] = discharge
+
+        f.create_dataset(
+            "lake", shape=(len(fillH), 1), dtype="float64", compression="gzip"
+        )
+        f["lake"][:, 0] = fillH-elevation
 
         if rainOn:
             f.create_dataset(
@@ -259,6 +265,7 @@ def write_hdf5_flexure(
     step,
     coords,
     elevation,
+    fillH,
     rain,
     discharge,
     cumdiff,
@@ -336,6 +343,11 @@ def write_hdf5_flexure(
         discharge[elevation < sealevel] = 0.0
         discharge[discharge < 1.0] = 1.0
         f["discharge"][:, 0] = discharge
+
+        f.create_dataset(
+            "lake", shape=(len(fillH), 1), dtype="float64", compression="gzip"
+        )
+        f["lake"][:, 0] = fillH-elevation
 
         if rainOn:
             f.create_dataset(
@@ -523,6 +535,11 @@ def write_xmf(
     f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
     f.write('Dimensions="%d 3">%s:/coords</DataItem>\n' % (nodes[p], pfile))
     f.write("         </Geometry>\n")
+
+    f.write('         <Attribute Type="Scalar" Center="Node" Name="lake">\n')
+    f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+    f.write('Dimensions="%d 1">%s:/lake</DataItem>\n' % (nodes[p], pfile))
+    f.write("         </Attribute>\n")
 
     f.write('         <Attribute Type="Scalar" Center="Node" Name="Discharge">\n')
     f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
