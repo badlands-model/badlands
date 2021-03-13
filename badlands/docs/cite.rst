@@ -88,6 +88,8 @@ Chang C. and Liu L.; *Investigating the formation of the Cretaceous Western Inte
 Manley K., Salles, T. and Müller, D.; *Modeling the Dynamic Landscape Evolution of a Volcanic Coastal Environment Under Future Climate Trajectories*, **Frontiers Earth Sci.**, `doi:10.3389/feart.2020.550312`_, 2020. 
 
 
+Zhang, J., Flaig, P., Wartes, M., Aschoff, J., and Shuster, M.: *Integrating stratigraphic modelling, inversion analysis, and shelf‐margin records to guide provenance analysis: An example from the Cretaceous Colville Basin, Arctic Alaska*, **Basin Research**, `doi:10.1111/bre.12543`_, 2021
+
 
 Honours & PhD theses
 --------------------
@@ -121,6 +123,10 @@ Gilbert, L.: *Modelling the impacts of relative sea level and precipitation chan
 
 Garrett, R.: *Constraining upland erodibility and marine deposition: source-to-sink sediment transfer in the Gulf of Papua*, **PhD Thesis**, University of Sydney, 2020.
 
+Alfonso, C.: *Evolution of the Nile delta over the last 40 Ma*, **Honours Thesis**, University of Sydney, 2018.
+
+Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin over the past 70 Ma*, **Honours Thesis**, University of Sydney, 2018.
+
 
 
 .. _`1534`: https://scholar.colorado.edu/honr_theses/1534
@@ -152,3 +158,8 @@ Garrett, R.: *Constraining upland erodibility and marine deposition: source-to-s
 .. _`doi:10.1130/G47498.1`: https://doi.org/10.1130/G47498.1
 .. _`doi: 10.1130/B35653.1`: https://doi.org/10.1130/B35653.1
 .. _`doi:10.3389/feart.2020.550312`: https://doi.org/10.3389/feart.2020.550312
+.. _`doi:10.1111/bre.12543`: https://doi.org/10.1111/bre.12543
+
+
+
+
