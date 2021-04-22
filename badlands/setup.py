@@ -63,7 +63,7 @@ if __name__ == "__main__":
         author="Tristan Salles",
         author_email="tristan.salles@sydney.edu.au",
         url="https://github.com/badlands-model",
-        version="2.2.1",
+        version="2.2.2",
         description="Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model",
         long_description=long_description,
         long_description_content_type="text/markdown",
@@ -97,5 +97,7 @@ if __name__ == "__main__":
         classifiers=[
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
+            "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
         ],
     )
