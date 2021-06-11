@@ -73,7 +73,10 @@ Chandra R., Azam D. and Müller D.: *Probabilistic modelling of sedimentary basi
 Fernandes V. M., Roberts G. G., White N. and Whittaker A. C.: *Continental‐scale landscape evolution: A history of North American topography*, **JGR: Earth Surface**, 124, `doi:10.1029/2018JF004979`_, 2019.
 
 
-Ding X., T. Salles, N. Flament, C. Mallard and P. Rey: *Drainage and sedimentary responses to dynamic topography*, **Geophysical Research Letters**, `doi:10.1029/2019GL084400`_, 2019.
+Ding X., T. Salles, N. Flament, C. Mallard and P. Rey: *Drainage and sedimentary responses to dynamic topography*, **Geophysical Research Letters**, `doi:10.1029/2019GL084400`_, `doi:10.1029/2020GC008915`_, 2019.
+
+
+Liu, Z., Dai, L., Li, S., Li, Z.-H., Ding, X., Bukhari,  S. W. H., Somerville, I.: *Earth's surface responses during geodynamic evolution: Numerical insight from the southern East China Sea Continental Shelf Basin, West Pacific*, **Gondwana Research**, `doi:10.1016/j.gr.2020.12.011`_, 2020.
 
 
 Thran A. C., M. East, J. M. Webster, T. Salles and Petit, C.: *The influence of carbonate platforms on the geomorphological development of a mixed carbonate‐siliciclastic margin (Great Barrier Reef, Australia)*, **Geochemistry, Geophysics, Geosystems**, 21, e2020GC008915, `doi:10.1029/2020GC008915`_, 2020.
@@ -163,5 +166,5 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi:10.3389/feart.2020.550312`: https://doi.org/10.3389/feart.2020.550312
 .. _`doi:10.1111/bre.12543`: https://doi.org/10.1111/bre.12543
 .. _`doi:10.1029/2020JF005879`: https://doi.org/10.1029/2020JF005879
-
+.. _`doi:10.1016/j.gr.2020.12.011`: https://doi.org/10.1016/j.gr.2020.12.011
 
