@@ -91,7 +91,7 @@ Manley K., Salles, T. and Müller, D.; *Modeling the Dynamic Landscape Evolution
 Zhang, J., Flaig, P., Wartes, M., Aschoff, J., and Shuster, M.: *Integrating stratigraphic modelling, inversion analysis, and shelf‐margin records to guide provenance analysis: An example from the Cretaceous Colville Basin, Arctic Alaska*, **Basin Research**, `doi:10.1111/bre.12543`_, 2021.
 
 
-Wapenhans, I., Fernandes, V. M., O’Malley, C., White, N., and Roberts, G. G.: *Scale-dependent contributors to river profile geometry*, **Journal of Geophysical Research: Earth Surface**, `doi:10.1029/2020JF005879`_, 2021.
+Wapenhans, I., Fernandes, V. M., O’Malley, C., White, N., and Roberts, G. G.: *Scale-dependent contributors to river profile geometry*, **JGR: Earth Surface**, `doi:10.1029/2020JF005879`_, 2021.
 
 
 Honours & PhD theses
@@ -126,9 +126,9 @@ Gilbert, L.: *Modelling the impacts of relative sea level and precipitation chan
 
 Garrett, R.: *Constraining upland erodibility and marine deposition: source-to-sink sediment transfer in the Gulf of Papua*, **PhD Thesis**, University of Sydney, 2020.
 
-Alfonso, C.: *Evolution of the Nile delta over the last 40 Ma*, **Honours Thesis**, University of Sydney, 2018.
+Alfonso, C.: *Evolution of the Nile delta over the last 40 Ma*, **Honours Thesis**, University of Sydney, 2021.
 
-Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin over the past 70 Ma*, **Honours Thesis**, University of Sydney, 2018.
+Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin over the past 70 Ma*, **Honours Thesis**, University of Sydney, 2021.
 
 
 
