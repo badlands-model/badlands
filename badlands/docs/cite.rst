@@ -88,7 +88,10 @@ Chang C. and Liu L.; *Investigating the formation of the Cretaceous Western Inte
 Manley K., Salles, T. and Müller, D.; *Modeling the Dynamic Landscape Evolution of a Volcanic Coastal Environment Under Future Climate Trajectories*, **Frontiers Earth Sci.**, `doi:10.3389/feart.2020.550312`_, 2020. 
 
 
-Zhang, J., Flaig, P., Wartes, M., Aschoff, J., and Shuster, M.: *Integrating stratigraphic modelling, inversion analysis, and shelf‐margin records to guide provenance analysis: An example from the Cretaceous Colville Basin, Arctic Alaska*, **Basin Research**, `doi:10.1111/bre.12543`_, 2021
+Zhang, J., Flaig, P., Wartes, M., Aschoff, J., and Shuster, M.: *Integrating stratigraphic modelling, inversion analysis, and shelf‐margin records to guide provenance analysis: An example from the Cretaceous Colville Basin, Arctic Alaska*, **Basin Research**, `doi:10.1111/bre.12543`_, 2021.
+
+
+Wapenhans, I., Fernandes, V. M., O’Malley, C., White, N., and Roberts, G. G.: *Scale-dependent contributors to river profile geometry*, **Journal of Geophysical Research: Earth Surface**, `doi:10.1029/2020JF005879`_, 2021.
 
 
 Honours & PhD theses
@@ -159,7 +162,6 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi: 10.1130/B35653.1`: https://doi.org/10.1130/B35653.1
 .. _`doi:10.3389/feart.2020.550312`: https://doi.org/10.3389/feart.2020.550312
 .. _`doi:10.1111/bre.12543`: https://doi.org/10.1111/bre.12543
-
-
+.. _`doi:10.1029/2020JF005879`: https://doi.org/10.1029/2020JF005879
 
 
