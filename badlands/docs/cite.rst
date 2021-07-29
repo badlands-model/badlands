@@ -96,6 +96,11 @@ Zhang, J., Flaig, P., Wartes, M., Aschoff, J., and Shuster, M.: *Integrating str
 
 Wapenhans, I., Fernandes, V. M., O’Malley, C., White, N., and Roberts, G. G.: *Scale-dependent contributors to river profile geometry*, **JGR: Earth Surface**, `doi:10.1029/2020JF005879`_, 2021.
 
+Pechlivanidou, S., Geurts, A., Duclaux, G., Gawthorpe, R., Pennos, C., and Finch, E.: *Contrasting geomorphic and stratigraphic responses to normal fault development during single and multi-phase rifting*, **EarthArXiv** - sumitted to Frontiers in Earth Science-Structural Geology and Tectonics, `doi:10.31223/X5J03H`_, 2021.
+
+
+Soutter, E., Kane, I., Hodgson, D. M., and Flint, S. S.: *Controls on submarine canyon connection to 1 the shoreline: a numerical modelling approach*, **EarthArXiv** - sumitted to Geosphere, `doi:10.31223/X5P33S`_, 2021.
+
 
 Honours & PhD theses
 --------------------
@@ -167,4 +172,5 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi:10.1111/bre.12543`: https://doi.org/10.1111/bre.12543
 .. _`doi:10.1029/2020JF005879`: https://doi.org/10.1029/2020JF005879
 .. _`doi:10.1016/j.gr.2020.12.011`: https://doi.org/10.1016/j.gr.2020.12.011
-
+.. _`doi:10.31223/X5P33S`:  https://doi.org/10.31223/X5P33S
+.. _`doi:10.31223/X5J03H`:  https://doi.org/10.31223/X5J03H
