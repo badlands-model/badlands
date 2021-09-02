@@ -1,0 +1,11 @@
+triangle
+meshplex
+numpy>=1.15.0
+six>=1.11.0
+setuptools>=38.4.0
+gFlex>=1.1.0
+scikit-image>=0.15
+pandas>=0.24
+scipy>=1.2
+h5py>=2.8.0
+matplotlib>=3.0

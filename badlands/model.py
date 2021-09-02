@@ -332,10 +332,10 @@ class Model(object):
         last_time = time.process_time()
         last_output = time.process_time()
         if self.input.udw == 1:
-            print("RUNNING UW-geo:",self.tNow,self.tEnd,self.force.next_layer) 
-            self.tNow = round(self.tNow,0)
-            self.tEnd = round(self.tEnd,0)
-            
+            print("RUNNING UW-geo:", self.tNow, self.tEnd, self.force.next_layer)
+            self.tNow = round(self.tNow, 0)
+            self.tEnd = round(self.tEnd, 0)
+
         # Perform main simulation loop
         while self.tNow < tEnd:
             # At most, display output every 5 seconds
@@ -659,7 +659,12 @@ class Model(object):
 
             # Update next stratal layer time
             if self.input.udw == 1:
-                print("RUNNING UW-geo updating sed layers in loop tnow:",self.tNow," layer time ",self.force.next_layer) 
+                print(
+                    "RUNNING UW-geo updating sed layers in loop tnow:",
+                    self.tNow,
+                    " layer time ",
+                    self.force.next_layer,
+                )
             if self.tNow >= self.force.next_layer:
                 self.force.next_layer += self.input.laytime
                 if self.straTIN is not None:
@@ -825,7 +830,12 @@ class Model(object):
 
         # Update next stratal layer time
         if self.input.udw == 1:
-            print("RUNNING UW-geo updating sed layers tnow:",self.tNow," layer time ",self.force.next_layer) 
+            print(
+                "RUNNING UW-geo updating sed layers tnow:",
+                self.tNow,
+                " layer time ",
+                self.force.next_layer,
+            )
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += self.input.laytime
             sub = self.strata.buildStrata(
