@@ -332,9 +332,9 @@ class Model(object):
         last_time = time.process_time()
         last_output = time.process_time()
         if self.input.udw == 1:
-            print("RUNNING UW-geo:", self.tNow, self.tEnd, self.force.next_layer)
+            print("RUNNING UW-geo:", self.tNow, self.input.tEnd, self.force.next_layer)
             self.tNow = round(self.tNow, 0)
-            self.tEnd = round(self.tEnd, 0)
+            self.input.tEnd = round(self.input.tEnd, 0)
 
         # Perform main simulation loop
         while self.tNow < tEnd:
@@ -662,6 +662,8 @@ class Model(object):
                 print(
                     "RUNNING UW-geo updating sed layers in loop tnow:",
                     self.tNow,
+                    "tstart",
+                    self.input.tStart,
                     " layer time ",
                     self.force.next_layer,
                 )
@@ -670,6 +672,8 @@ class Model(object):
                 if self.straTIN is not None:
                     self.straTIN.step += 1
                 if self.strata:
+                    if self.force.next_display > self.input.tStart:
+                        outStrata = 1
                     sub = self.strata.buildStrata(
                         self.elevation,
                         self.cumdiff,
