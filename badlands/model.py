@@ -663,8 +663,6 @@ class Model(object):
                 print(
                     "RUNNING UW-geo updating sed layers in loop tnow:",
                     self.tNow,
-                    "tstart",
-                    self.input.tStart,
                     " layer time ",
                     self.force.next_layer,
                 )
@@ -751,7 +749,10 @@ class Model(object):
                 if self.carbTIN is not None:
                     self.carbTIN.step += 1
 
-            # Get the maximum time before updating one of the above processes / components
+            # Get the maximum time before updating one of the above processes
+            if self.input.udw == 1:
+                tOld = self.tNow.copy()
+
             tStop = min(
                 [
                     self.force.next_display,
@@ -798,7 +799,19 @@ class Model(object):
                 )
             else:
                 self.tNow = tEnd
-            self.tNow = round(self.tNow, 0)
+
+            if self.input.udw == 1:
+                self.tNow = round(self.tNow, 0)
+                dt = self.tNow - tOld
+                if dt < 1.0:
+                    self.tNow = tOld + 1.0
+                print(
+                    "RUNNING UW-geo updating sed layers in loop tnow:",
+                    self.tNow,
+                    " time step",
+                    self.tNow - tOld,
+                )
+
         tloop = time.process_time() - last_time
         print("tNow = %s (%0.02f seconds)" % (self.tNow, tloop))
 
