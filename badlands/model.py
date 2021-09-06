@@ -310,6 +310,7 @@ class Model(object):
             )
             tEnd = self.input.tEnd
 
+        tEnd = round(tEnd, 0)
         # Define non-flow related processes times
         if not self.simStarted:
             self.force.next_rain = self.force.T_rain[0, 0]
