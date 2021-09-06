@@ -797,7 +797,7 @@ class Model(object):
                 )
             else:
                 self.tNow = tEnd
-
+            self.tNow = round(self.tNow, 0)
         tloop = time.process_time() - last_time
         print("tNow = %s (%0.02f seconds)" % (self.tNow, tloop))
 
