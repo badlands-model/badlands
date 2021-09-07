@@ -755,7 +755,7 @@ class Model(object):
 
             # Get the maximum time before updating one of the above processes
             if self.input.udw == 1:
-                tOld = self.tNow.copy()
+                tOld = self.tNow
 
             tStop = min(
                 [
