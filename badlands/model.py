@@ -333,9 +333,9 @@ class Model(object):
         last_time = time.process_time()
         last_output = time.process_time()
         if self.input.udw == 1:
-            print("RUNNING UW-geo:", self.tNow, self.input.tEnd, self.force.next_layer)
-            self.tNow = round(self.tNow, 0)
             self.input.tEnd = round(self.input.tEnd, 0)
+            self.tNow = round(self.tNow, 0)
+            print("Running Badlands with UW-geo from time:", self.tNow, " up to ", tEnd)
 
         # Perform main simulation loop
         while self.tNow < tEnd:
@@ -659,13 +659,6 @@ class Model(object):
                 )
 
             # Update next stratal layer time
-            if self.input.udw == 1:
-                print(
-                    "RUNNING UW-geo updating sed layers in loop tnow:",
-                    self.tNow,
-                    " layer time ",
-                    self.force.next_layer,
-                )
             if self.tNow >= self.force.next_layer:
                 self.force.next_layer += self.input.laytime
                 if self.straTIN is not None:
@@ -673,6 +666,17 @@ class Model(object):
                 if self.strata:
                     if self.force.next_display > self.input.tStart:
                         outStrata = 1
+                    if self.input.udw == 1:
+                        print(
+                            "UW-geo: inside loop updating sed layer tnow:",
+                            self.tNow,
+                            "next layer",
+                            self.force.next_layer,
+                            "sed time nb ",
+                            self.outputStep,
+                            "output sed layer",
+                            outStrata,
+                        )
                     sub = self.strata.buildStrata(
                         self.elevation,
                         self.cumdiff,
@@ -806,7 +810,7 @@ class Model(object):
                 if dt < 1.0:
                     self.tNow = tOld + 1.0
                 print(
-                    "RUNNING UW-geo updating sed layers in loop tnow:",
+                    "UW-geo internal badlands time step at ",
                     self.tNow,
                     " time step",
                     self.tNow - tOld,
@@ -847,14 +851,16 @@ class Model(object):
             )
 
         # Update next stratal layer time
-        if self.input.udw == 1:
-            print(
-                "RUNNING UW-geo updating sed layers tnow:",
-                self.tNow,
-                " layer time ",
-                self.force.next_layer,
-            )
         if self.tNow >= self.force.next_layer:
+            if self.input.udw == 1:
+                print(
+                    "UW-geo: outside loop updating sed layers tnow:",
+                    self.tNow,
+                    "next layer",
+                    self.force.next_layer,
+                    "sed time nb ",
+                    self.outputStep + 1,
+                )
             self.force.next_layer += self.input.laytime
             sub = self.strata.buildStrata(
                 self.elevation,
