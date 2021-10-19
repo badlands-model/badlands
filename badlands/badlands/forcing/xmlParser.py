@@ -59,6 +59,7 @@ class xmlParser:
 
         self.stratdx = 0.0
         self.laytime = 0.0
+        self.laststrat = False
 
         self.seapos = 0.0
         self.seafile = None
@@ -390,6 +391,9 @@ class xmlParser:
                 self.stratdx = float(element.text)
             else:
                 self.stratdx = 0.0
+            element = strat.find("laststrat")
+            if element is not None:
+                self.laststrat = bool(element.text)
             element = None
             element = strat.find("poroC")
             if element is not None:
@@ -1448,14 +1452,23 @@ class xmlParser:
         else:
             self.outDir = os.getcwd() + "/out"
 
-        if self.makeUniqueOutputDir:
+        if self.makeUniqueOutputDir == True:
             if os.path.exists(self.outDir):
                 self.outDir += "_" + str(len(glob.glob(self.outDir + str("*"))) - 1)
+            os.makedirs(self.outDir)
+            os.makedirs(self.outDir + "/h5")
+            os.makedirs(self.outDir + "/xmf")
+            shutil.copy(self.inputfile, self.outDir)
 
-        os.makedirs(self.outDir)
-        os.makedirs(self.outDir + "/h5")
-        os.makedirs(self.outDir + "/xmf")
-        shutil.copy(self.inputfile, self.outDir)
+        if self.makeUniqueOutputDir == False:
+            os.makedirs(self.outDir)
+            os.makedirs(self.outDir + "/h5")
+            os.makedirs(self.outDir + "/xmf")
+            shutil.copy(self.inputfile, self.outDir)
+
+        # to enable checking of xml file disable file creation
+        if self.makeUniqueOutputDir == 'dummy':
+            print('test model xml only .... no output files written')
 
         # Extract global wave field parameters
         wavefield = None
