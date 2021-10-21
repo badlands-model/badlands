@@ -658,13 +658,21 @@ class Model(object):
                 self.force.next_layer += self.input.laytime
                 if self.straTIN is not None:
                     self.straTIN.step += 1
+                if self.input.laststrat == True:
+                   outStrata=0
                 if self.strata:
+                    if self.tNow==tEnd: 
+                        self.write=1 # set parameter to call hdf5 stratal writer on final strat only
+                    else:
+                        self.write=0
+                    if self.input.laststrat == False:
+                        self.write=outStrata #revert to previous behaviour by default
                     sub = self.strata.buildStrata(
                         self.elevation,
                         self.cumdiff,
                         self.force.sealevel,
                         self.recGrid.boundsPt,
-                        outStrata,
+                        self.write,
                         self.outputStep,
                     )
                     self.elevation += sub
@@ -820,17 +828,19 @@ class Model(object):
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += self.input.laytime
+            if self.input.laststrat==True: 
+                self.write=1 # set parameter to call hdf5 stratal writer
             sub = self.strata.buildStrata(
                 self.elevation,
                 self.cumdiff,
                 self.force.sealevel,
                 self.recGrid.boundsPt,
-                1,
+                self.write, #was 0
                 self.outputStep + 1,
             )
             self.elevation += sub
             self.cumdiff += sub
-
+            
         # Create checkpoint files and write HDF5 output
         if (
             self.input.udw == 0
