@@ -28,6 +28,6 @@ jobs:
             conda config --add channels conda-forge
             conda config --add channels underworldcode
             conda config --set anaconda_upload yes
-            anaconda login --hostname github-actions-${{ matrix.os  }}-$RANDOM --username ${{ secrets.ANACONDA_USERNAME }} --password ${{ secrets.ANACONDA_PASSWORD }}
+            anaconda login --hostname github-actions-${{ matrix.os  }}-$RANDOM --username badlands --password badlands2021
             conda-build --channel conda-forge --user geo-down-under badlands/conda
             anaconda logout
