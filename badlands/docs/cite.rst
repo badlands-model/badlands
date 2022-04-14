@@ -109,6 +109,8 @@ Salles, T., Mallard, C., Husson, L., Zahirovic, S., Sarr, A-C, and Sepulchre, P.
 O’Malley, C. P. B., White, N. J., Stephenson, S. N., and Roberts, G. G.: *Large-scale tectonic forcing of the African landscape*, **Journal of Geophysical Research: Earth Surface** - 126, e2021JF006345, `doi:10.1029/2021JF006345`_, 2021.
 
 
+Alqahtani, S.A., Collier, R.E.L., Paton, D. A., Roberts, G. G. and O’Malley, C. P. B.: *Uplift evolution along the Red Sea continental rift margin from stream profile inverse modeling and drainage analysis*, **Journal of African Earth Sciences** - 104551,  `doi:10.1016/j.jafrearsci.2022.104551`_, 2022.
+
 
 Honours & PhD theses
 --------------------
@@ -185,3 +187,4 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi:10.1111/bre.12606`: https://doi.org/10.1111/bre.12606
 .. _`doi:10.1038/s43247-021-00311-7`: https://doi.org/10.1038/s43247-021-00311-7
 .. _`doi:10.1029/2021JF006345`: https://doi.org/10.1029/2021JF006345
+.. _`doi:10.1016/j.jafrearsci.2022.104551`: https://doi.org/10.1016/j.jafrearsci.2022.104551
