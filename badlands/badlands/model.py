@@ -74,27 +74,26 @@ class Model(object):
         self.applyDisp = False
         self.simStarted = False
 
-    def load_xml(self, filename, verbose=False):
+    def load_xml(self,filename, verbose=False):
         """
         Load the XML input file describing the experiment parameters.
-
         Args:
             filename : (str) path to the XML file to load.
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
-
         Note:
             * Additional information regarding the input file XML options are found on badlands website_.
             * A good way to start learning **badlands** consists in running the Jupyter Notebooks examples.
-
         .. _website: https://badlands.readthedocs.io
         """
-
+        #from badlands import xmlParser
+        
         np.seterr(divide="ignore", invalid="ignore")
 
         # Only the first node should create a unique output dir
+        #self.input = xmlParser(filename, makeUniqueOutputDir=True)
         self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=True)
         self.tNow = self.input.tStart
-
+        
         # Seed the random number generator consistently on all nodes
         seed = None
         # limit to max uint32
@@ -105,14 +104,19 @@ class Model(object):
         # later using _build_mesh
         if self.input.demfile:
             self._build_mesh(self.input.demfile, verbose)
+            #print("Mesh construction load")
 
-        # Initialise carbonate evolution if any
-        if self.input.carbonate:
+        
+        # This modification ensures that the carbonate mesh is created later when coupling with Underworld
+        if self.input.carbonate and self.input.demfile:
+            
+           # Initialise carbonate evolution if any
             self.carb = carbGrowth.carbGrowth(
                 self.input, self.recGrid.regX, self.recGrid.regY, self.carbTIN.tinBase
             )
             if self.input.coastdist > 0.0:
                 self.carb.buildReg(self.FVmesh.node_coords[:, :2])
+                
 
         # Initialise pelagic evolution if any
         if self.input.pelagic:
@@ -122,105 +126,127 @@ class Model(object):
         # self.waveMobile = np.zeros(self.totPts, dtype=float)
         # self.waveED = np.zeros(self.totPts, dtype=float)
 
-    def _build_mesh(self, filename, verbose):
-        """
-        Build TIN based on regular grid.
-        """
+        def _build_mesh(self, filename,UwFlag, verbose):
+            """
+            Build TIN based on regular grid.
+            """
 
-        # Construct Badlands mesh and grid to run simulation
-        (
-            self.recGrid,
-            self.FVmesh,
-            self.force,
-            self.lGIDs,
-            self.fixIDs,
-            self.inIDs,
-            parentIDs,
-            self.inGIDs,
-            self.totPts,
-            self.elevation,
-            self.cumdiff,
-            self.cumhill,
-            self.cumfail,
-            self.cumflex,
-            self.strata,
-            self.mapero,
-            self.tinFlex,
-            self.flex,
-            self.wave,
-            self.straTIN,
-            self.carbTIN,
-        ) = buildMesh.construct_mesh(self.input, filename, verbose)
+            # Construct Badlands mesh and grid to run simulation
+            (
+                self.recGrid,
+                self.FVmesh,
+                self.force,
+                self.lGIDs,
+                self.fixIDs,
+                self.inIDs,
+                parentIDs,
+                self.inGIDs,
+                self.totPts,
+                self.elevation,
+                self.cumdiff,
+                self.cumhill,
+                self.cumfail,
+                self.cumflex,
+                self.strata,
+                self.mapero,
+                self.tinFlex,
+                self.flex,
+                self.wave,
+                self.straTIN,
+                self.carbTIN,
+            ) = buildMesh.construct_mesh(self.input, filename,UwFlag, verbose)
 
-        if self.input.waveSed:
-            self.wavediff = np.zeros((self.totPts))
-        else:
-            self.wavediff = None
-
-        # Initialize TIN slope (gradient)
-        self.slopeTIN = np.zeros(self.totPts, dtype=float)
-
-        # Define hillslope parameters
-        self.rain = np.zeros(self.totPts, dtype=float)
-        self.hillslope = diffLinear()
-        self.hillslope.CDaerial = self.input.CDa
-        self.hillslope.CDmarine = self.input.CDm
-        self.hillslope.CDriver = self.input.CDr
-        self.hillslope.Sfail = self.input.Sfail
-        self.hillslope.Cfail = self.input.Cfail
-        self.hillslope.Sc = self.input.Sc
-        self.hillslope.updatedt = 0
-
-        # Define flow parameters
-        self.flow = flowNetwork(self.input)
-
-        if self.input.erolays is None:
-            self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
-        else:
-            self.flow.erodibility = self.mapero.erodibility
-        self.flow.mindt = self.input.minDT
-        self.flow.xycoords = self.FVmesh.node_coords[:, :2]
-        self.flow.spl = self.input.spl
-        self.flow.depo = self.input.depo
-        self.flow.xgrid = None
-
-        reassignID = np.where(parentIDs < len(parentIDs))[0]
-        if len(reassignID) > 0:
-            tmpTree = cKDTree(self.flow.xycoords[len(parentIDs) :, :2])
-            distances, indices = tmpTree.query(self.flow.xycoords[reassignID, :2], k=1)
-            indices += len(parentIDs)
-            parentIDs[reassignID] = indices
-
-        self.flow.parentIDs = parentIDs
-
-        # Define hydrodynamic conditions
-        if self.input.waveOn:
-            self.force.next_wave = self.input.tStart
-            self.wave.build_tree(self.FVmesh.node_coords[:, :2])
-            self.wave.swan_init(
-                self.input, self.elevation, self.waveID, self.force.sealevel
-            )
-        else:
             if self.input.waveSed:
-                self.force.next_wave = self.input.tStart + self.input.tWave
+                self.wavediff = np.zeros((self.totPts))
             else:
-                self.force.next_wave = self.input.tEnd + 1.0e5
+                self.wavediff = None
 
-        if self.input.carb:
+            # Initialize TIN slope (gradient)
+            self.slopeTIN = np.zeros(self.totPts, dtype=float)
 
-            self.next_carbStep = self.input.tStart + self.input.tCarb
-            self.oldsed = np.zeros(len(self.elevation))
-            if self.carbTIN is not None:
-                self.prop = np.zeros((self.totPts, self.carbTIN.nbSed))
-        else:
-            self.next_carbStep = self.input.tEnd + 1.0e5
-            self.prop = np.zeros((self.totPts, 1))
+            # Define hillslope parameters
+            self.rain = np.zeros(self.totPts, dtype=float)
+            self.hillslope = diffLinear()
+            self.hillslope.CDaerial = self.input.CDa
+            self.hillslope.CDmarine = self.input.CDm
+            self.hillslope.CDriver = self.input.CDr
+            self.hillslope.Sfail = self.input.Sfail
+            self.hillslope.Cfail = self.input.Cfail
+            self.hillslope.Sc = self.input.Sc
+            self.hillslope.updatedt = 0
+
+            # Define flow parameters
+            self.flow = flowNetwork(self.input)
+
+            if self.input.erolays is None:
+                self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
+            else:
+                self.flow.erodibility = self.mapero.erodibility
+            self.flow.mindt = self.input.minDT
+            self.flow.xycoords = self.FVmesh.node_coords[:, :2]
+            self.flow.spl = self.input.spl
+            self.flow.depo = self.input.depo
+            self.flow.xgrid = None
+
+            reassignID = np.where(parentIDs < len(parentIDs))[0]
+            if len(reassignID) > 0:
+                tmpTree = cKDTree(self.flow.xycoords[len(parentIDs) :, :2])
+                distances, indices = tmpTree.query(self.flow.xycoords[reassignID, :2], k=1)
+                indices += len(parentIDs)
+                parentIDs[reassignID] = indices
+
+            self.flow.parentIDs = parentIDs
+
+            # Define hydrodynamic conditions
+            if self.input.waveOn:
+                self.force.next_wave = self.input.tStart
+                self.wave.build_tree(self.FVmesh.node_coords[:, :2])
+                self.wave.swan_init(
+                    self.input, self.elevation, self.waveID, self.force.sealevel
+                )
+            else:
+                if self.input.waveSed:
+                    self.force.next_wave = self.input.tStart + self.input.tWave
+                else:
+                    self.force.next_wave = self.input.tEnd + 1.0e5
+            
+            
+            #####################################################
+            ## THIS NEEDS TO BE UPDATED IN BDLS CODE
+            ### MODIFIED TO INCLUDE THE PROPORTION OF PELAGIC SEDIMENTS ON THE COLUMN
+                #Update Carbonate mesh
+            if self.input.carbonate:
+                if self.input.carbonate2:
+                    self.carbTIN.nbSed = 3
+                    if self.input.pelagic:
+                        self.carbTIN.nbSed = 4
+                else:
+                    self.carbTIN.nbSed = 2
+                    if self.input.pelagic:
+                        self.carbTIN.nbSed = 4
+            
+            ########################################################################
+            ## THIS NEEDS TO BE UPDATED IN BDLS CODE
+            if self.input.carb:
+
+                self.next_carbStep = self.input.tStart + self.input.tCarb
+                self.oldsed = np.zeros(len(self.elevation))
+                if self.carbTIN is not None:
+                    self.prop = np.zeros((self.totPts, self.carbTIN.nbSed))
+            #else:
+            elif self.input.carb is None:
+                self.next_carbStep = self.input.tEnd + 1.0e5
+                self.prop = np.zeros((self.totPts, 1))
+                
+                if self.input.pelagic:
+                    self.next_carbStep = self.input.tEnd + 1.0e5
+                    self.prop = np.zeros((self.totPts, 4))
+            ########################################################################
 
     def _rebuild_mesh(self, verbose=False):
         """
         Build TIN after 3D displacements.
         """
-
         # Build the Finite Volume representation
         self.fixIDs = self.recGrid.boundsPt + self.recGrid.edgesPt
         (
@@ -265,15 +291,39 @@ class Model(object):
             self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
         else:
             self.flow.erodibility = self.mapero.erodibility
-
+        
         # Update Wavesed grid interpolation
         if self.input.waveSed:
-            wave.build_tree(self.FVmesh.node_coords[:, :2])
-
-        # Update Carbonate mesh
-        # if self.input.carbonate:
-        #    if self.input.coastdist>0.:
-        #        self.carb.buildReg(self.FVmesh.node_coords[:,:2])
+            self.wave.build_tree(self.FVmesh.node_coords[:, :2])
+        
+        ######################################################
+        ## THIS NEEDS TO BE UPDATED IN BDLS CODE
+        ### MODIFIED TO INCLUDE THE PROPORTION OF PELAGIC SEDIMENTS ON THE COLUMN
+            #Update Carbonate mesh
+        if self.input.carbonate:
+            if self.input.carbonate2:
+                self.carbTIN.nbSed = 3
+                if self.input.pelagic:
+                    self.carbTIN.nbSed = 4
+            else:
+                self.carbTIN.nbSed = 2
+                if self.input.pelagic:
+                    self.carbTIN.nbSed = 4
+            
+            #Mesh where fuzzy rules are computed
+            if self.input.coastdist > 0.0:
+                self.carb.buildReg(self.FVmesh.node_coords[:,:2])
+                
+            ###########################################################################################
+            #RE-createing carbonate growth with re meshed variables
+            # This ensures the fuzzy rules are computed in the deformed TIN mesh
+            rg = self.recGrid
+            self.carb = carbGrowth.carbGrowth(
+            self.input, rg.regX,
+                rg.regY, self.carbTIN.tinBase)
+                
+            self.carbTIN.update_TIN(self.FVmesh.node_coords[:,:2])
+            ###########################################################################################
 
         self.flow.xycoords = self.FVmesh.node_coords[:, :2]
         self.flow.xgrid = None
@@ -285,16 +335,34 @@ class Model(object):
         self.carbval = None
         self.carbval2 = None
         self.pelaval = None
-        self.prop = np.zeros((self.totPts, 1))
+        
+        ##########################################################
+        ### this ensures the self.prop has the correct shape when writting the carbonate mesh.
+        ### This code sniped is taken from the build_mesh function.
+        ########################################################################
+        ## THIS NEEDS TO BE UPDATED IN BDLS CODE
+        if self.input.carb:
+
+            self.next_carbStep = self.input.tStart + self.input.tCarb
+            self.oldsed = np.zeros(len(self.elevation))
+            if self.carbTIN is not None:
+                self.prop = np.zeros((self.totPts, self.carbTIN.nbSed))
+        #else:
+        elif self.input.carb is None:
+            self.next_carbStep = self.input.tEnd + 1.0e5
+            self.prop = np.zeros((self.totPts, 1))
+            
+            if self.input.pelagic:
+                self.next_carbStep = self.input.tEnd + 1.0e5
+                self.prop = np.zeros((self.totPts, 4))
+        ########################################################################
 
     def run_to_time(self, tEnd, verbose=False):
         """
         Run the simulation to a specified point in time.
-
         Args:
             tEnd : (float) time in years up to run the model for...
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
-
         Warning:
             If specified end time (**tEnd**) is greater than the one defined in the XML input file priority
             is given to the XML value.
@@ -458,7 +526,7 @@ class Model(object):
                             scum,
                             Ke,
                             Th,
-                        ) = self.force.apply_XY_displacements(
+                        ) = self.force.apply_XY_displacements(self.force,
                             self.recGrid.areaDel,
                             self.fixIDs,
                             self.elevation,
@@ -474,15 +542,32 @@ class Model(object):
                             strat=fstrat,
                             ero=fero,
                         )
+                        
+                        ######################################################################
+                        # THIS FUNCTION REMESHES THE CARBONATE VARIABLES
+                        # BASED ON THE APPLY_XY_DISPLACEMENTS USED FOR THE TIN VARS AS ELEVATION
+                        if self.input.carbonate:
+                            (Carb_xyx) = self.force.apply_XY_displacements_Carb_vars(self.force,
+                            self.recGrid.areaDel,
+                            self.fixIDs,
+                            self.carbTIN,
+                            )
+                        ######################################################################
+                        
+                        
                         # Update relevant parameters in deformed TIN
                         if fflex == 1:
                             self.cumflex = fcum
                         if fero == 1:
                             self.mapero.Ke = Ke
                             self.mapero.thickness = Th
+                            
+                        #############################################
                         # Rebuild the computational mesh
-                        self._rebuild_mesh(verbose)
-
+                        self._rebuild_mesh(self,verbose)
+                        #############################################
+                        
+                        
                         # In case where the paleoflow workflow is used
                         if self.force.uDisp is not None:
                             self.elevation += self.force.uDisp
@@ -579,7 +664,6 @@ class Model(object):
 
                 # Compute reef growth
                 if self.input.carbonate:
-
                     # Load carbonate growth rates for species 1 and 2 during a given growth event
                     if (
                         self.force.next_carb <= self.tNow
@@ -589,6 +673,8 @@ class Model(object):
                             self.carbMaxGrowthSp1,
                             self.carbMaxGrowthSp2,
                         ) = self.force.get_carbGrowth(self.tNow, self.inIDs)
+                        
+                     ##################################
                     self.carbval, self.carbval2 = self.carb.computeCarbonate(
                         self.force.meanH,
                         self.cumdiff - self.oldsed,
@@ -597,7 +683,7 @@ class Model(object):
                         self.carbMaxGrowthSp2,
                         self.input.tCarb,
                     )
-
+                    #################################
                     if self.carbval2 is not None:
                         self.cumdiff += self.carbval + self.carbval2
                         self.elevation += self.carbval + self.carbval2
@@ -609,26 +695,29 @@ class Model(object):
                         self.carbTIN.depoThick[:, self.carbTIN.step, 1] += self.carbval
                         self.carbTIN.layerThick[:, self.carbTIN.step] += self.carbval
                         if self.carbval2 is not None:
-                            self.carbTIN.depoThick[
-                                :, self.carbTIN.step, 2
-                            ] += self.carbval2
-                            self.carbTIN.layerThick[
-                                :, self.carbTIN.step
-                            ] += self.carbval2
+                            self.carbTIN.depoThick[:, self.carbTIN.step, 2] += self.carbval2
+                            self.carbTIN.layerThick[:, self.carbTIN.step] += self.carbval2
+                            
                 # Compute pelagic rain
                 if self.input.pelagic:
+                    #########################################################
+                    #THIS MIGHT BE THE VARIABLE THAT HAS THE PELAGIC STUFF AT ANY TIME
                     self.pelaval = self.pelagic.computePelagic(depth, self.input.tCarb)
+                    #########################################################
                     self.cumdiff += self.pelaval
                     self.elevation += self.pelaval
+                #########################################################
+                    #NOW, THE PELAGIC RAIN IS ANOTHER PROPORTION OF THE CARBONATE TIN
+                    # However is still a clastic so is added to the clastic part
                     if self.carbTIN is not None:
                         self.carbTIN.paleoDepth[:, self.carbTIN.step] = self.elevation
                         self.carbTIN.depoThick[:, self.carbTIN.step, 0] += self.pelaval
                         self.carbTIN.layerThick[:, self.carbTIN.step] += self.pelaval
+                #########################################################
+        
                 # Update proportion based on top layer
                 if self.prop is not None:
-                    ids = np.where(self.carbTIN.layerThick[:, self.carbTIN.step] > 0.0)[
-                        0
-                    ]
+                    ids = np.where(self.carbTIN.layerThick[:, self.carbTIN.step] > 0.0)[0]
                     self.prop.fill(0.0)
                     self.prop[ids, 0] = (
                         self.carbTIN.depoThick[ids, self.carbTIN.step, 0]
@@ -640,11 +729,19 @@ class Model(object):
                             / self.carbTIN.layerThick[ids, self.carbTIN.step]
                         )
                         if self.carbval2 is not None:
+                        #if self.carbval2 is not None and self.pelaval is None:
                             self.prop[ids, 2] = (
                                 self.carbTIN.depoThick[ids, self.carbTIN.step, 2]
                                 / self.carbTIN.layerThick[ids, self.carbTIN.step]
                             )
-
+                         #########################################################
+                        if self.pelaval is not None:
+                            self.prop[ids, 3] = (
+                                 self.pelaval[ids]
+                                / self.carbTIN.layerThick[ids, self.carbTIN.step]
+                             )
+                        #########################################################
+                        
                 # Update current cumulative erosion deposition
                 self.oldsed = np.copy(self.cumdiff)
                 self.next_carbStep += self.input.tCarb
@@ -659,9 +756,9 @@ class Model(object):
                 if self.straTIN is not None:
                     self.straTIN.step += 1
                 if self.input.laststrat == True:
-                   outStrata=0
+                    outStrata=0
                 if self.strata:
-                    if self.tNow==tEnd: 
+                    if self.tNow==tEnd:
                         self.write=1 # set parameter to call hdf5 stratal writer on final strat only
                     else:
                         self.write=0
@@ -828,7 +925,7 @@ class Model(object):
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += self.input.laytime
-            if self.input.laststrat==True: 
+            if self.input.laststrat==True:
                 self.write=1 # set parameter to call hdf5 stratal writer
             sub = self.strata.buildStrata(
                 self.elevation,

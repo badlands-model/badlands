@@ -31,19 +31,16 @@ if "READTHEDOCS" not in os.environ:
     )
 
 
-def construct_mesh(input, filename, verbose=False):
+def construct_mesh(input, filename,UwFlag=False, verbose=False):
     """
     The following function is taking parsed values from the XML to:
-
     * build model grids & meshes,
     * initialise Finite Volume discretisation,
     * define the partitioning when parallelisation is enable.
-
     Args:
         input: class containing XML input file parameters.
         filename: (str) this is a string containing the path to the regular grid file.
         verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
-
     Returns
     -------
     recGrid
@@ -176,11 +173,11 @@ def construct_mesh(input, filename, verbose=False):
             cumflex,
             inIDs,
             parentIDs,
-        ) = _define_TINparams(
+        ) = buildMesh._define_TINparams(
             totPts, lGIDs[recGrid.boundsPt :], input, FVmesh, recGrid, verbose
         )
     else:
-        elevation, cumdiff, cumhill, cumfail, inIDs, parentIDs = _define_TINparams(
+        elevation, cumdiff, cumhill, cumfail, inIDs, parentIDs = buildMesh._define_TINparams(
             totPts, lGIDs[recGrid.boundsPt :], input, FVmesh, recGrid, verbose
         )
 
@@ -280,6 +277,16 @@ def construct_mesh(input, filename, verbose=False):
                 input.rfolder,
                 input.rstep,
             )
+            
+            if UwFlag == True:
+                #After the carbonate meshs is created we need to re-shape the variables loaded from the restart step to match the size of the local mesh.
+                erolay_big=int(input.tEnd/input.tDisplay)+3
+                print("Re-Meshing Carbonate variables - Re-Start")
+                (carbTIN.paleoDepth,
+                carbTIN.depoThick,
+                carbTIN.layerThick) = buildMesh.load_hdf5_carbM(input.rfolder, input.rstep, carbTIN.tXY,nbSed,erolay_big)
+            
+            
         else:
             carbTIN = carbMesh.carbMesh(
                 layNb,
@@ -322,6 +329,7 @@ def construct_mesh(input, filename, verbose=False):
         straTIN,
         carbTIN,
     )
+
 
 
 def reconstruct_mesh(recGrid, input, verbose=False):

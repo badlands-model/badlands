@@ -259,6 +259,194 @@ def write_hdf5(
                     f["depSpecies2"][:, 0] = prop[:, k]
 
 
+
+def write_hdf5_pelagic(
+    folder,
+    h5file,
+    step,
+    coords,
+    elevation,
+    fillH,
+    rain,
+    discharge,
+    cumdiff,
+    cumhill,
+    cumfail,
+    cells,
+    rainOn,
+    eroOn,
+    erodibility,
+    area,
+    waveOn,
+    waveH,
+    waveS,
+    wavediff,
+    rockOn,
+    pelagicOn,
+    carb2On,
+    prop,
+    sealevel,
+):
+    """
+    This function writes for each processor the **hdf5** file containing surface information
+    with flexural isostasy turned on.
+    Args:
+        folder: name of the output folder.
+        h5file: first part of the hdf5 file name.
+        step: output visualisation step.
+        coords: numpy float-type array containing X, Y coordinates of the local TIN nodes.
+        sealevel: level of sea water
+        elevation: numpy float-type array containing Z coordinates of the local TIN nodes.
+        rain: numpy float-type array containing rain value of the local TIN nodes.
+        discharge: numpy float-type array containing the discharge values of the local TIN.
+        cumdiff: numpy float-type array containing the cumulative elevation changes values of the local TIN.
+        cumhill: numpy float-type array containing the cumulative elevation changes values for hillslope of the local TIN.
+        wavediff: numpy float-type array containing the cumulative elevation changes values for wave of the local TIN.
+        erodibility: numpy float-type array containing the top surface erodibility values of the local TIN.
+        cumflex: numpy float-type array containing the cumulative flexural changes values of the local TIN.
+        cells: numpy integer-type array filled with the global cell IDs.
+        rainOn: boolean for orographic precipitation.
+        eroOn: boolean for erodibility values.
+        waveOn: boolean for wave activity.
+        waveH: average wave height.
+        waveS: average shear stress on bed.
+    Note:
+        Flexural isostasy is obtained from the gFlex_ package available on Github!
+        Wickert, A. D. (2016), Open-source modular solutions for flexural isostasy: gFlex v1.0,
+        Geosci. Model Dev., 9(3), 997–1017, `doi:10.5194/gmd-9-997-2016`_.
+    .. _`doi:10.5194/gmd-9-997-2016`:  https://doi.org/10.5194/gmd-9-997-2016
+    .. _gflex: https://github.com/awickert/gFlex
+    """
+
+    h5file = folder + "/" + h5file + str(step) + ".hdf5"
+    with h5py.File(h5file, "w") as f:
+
+        # Write node coordinates and elevation
+        f.create_dataset(
+            "coords", shape=(len(elevation), 3), dtype="float64", compression="gzip"
+        )
+        f["coords"][:, :2] = coords
+        f["coords"][:, 2] = elevation
+
+        f.create_dataset(
+            "cells", shape=(len(cells[:, 0]), 3), dtype="int32", compression="gzip"
+        )
+        f["cells"][:, :] = cells
+
+        f.create_dataset(
+            "discharge", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+        )
+        discharge[elevation < sealevel] = 0.0
+        discharge[discharge < 1.0] = 1.0
+        f["discharge"][:, 0] = discharge
+
+        f.create_dataset(
+            "lake", shape=(len(fillH), 1), dtype="float64", compression="gzip"
+        )
+        f["lake"][:, 0] = fillH-elevation
+
+        if rainOn:
+            f.create_dataset(
+                "precipitation",
+                shape=(len(discharge), 1),
+                dtype="float64",
+                compression="gzip",
+            )
+            f["precipitation"][:, 0] = rain
+
+        if eroOn:
+            f.create_dataset(
+                "erodibility",
+                shape=(len(discharge), 1),
+                dtype="float64",
+                compression="gzip",
+            )
+            f["erodibility"][:, 0] = erodibility
+
+        f.create_dataset(
+            "cumdiff", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+        )
+        f["cumdiff"][:, 0] = cumdiff
+
+        f.create_dataset(
+            "cumhill", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+        )
+        f["cumhill"][:, 0] = cumhill
+
+        f.create_dataset(
+            "cumfail", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+        )
+        f["cumfail"][:, 0] = cumfail
+
+#         f.create_dataset(
+#             "cumflex", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+#         )
+#         f["cumflex"][:, 0] = cumflex
+
+        f.create_dataset(
+            "area", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+        )
+        f["area"][:, 0] = area
+
+        if waveOn:
+            f.create_dataset(
+                "waveH", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+            )
+            f["waveH"][:, 0] = waveH
+            f.create_dataset(
+                "waveS", shape=(len(discharge), 1), dtype="float64", compression="gzip"
+            )
+            f["waveS"][:, 0] = waveS
+            f.create_dataset(
+                "cumwave",
+                shape=(len(discharge), 1),
+                dtype="float64",
+                compression="gzip",
+            )
+            f["cumwave"][:, 0] = wavediff
+
+        if rockOn:
+            nbSed = prop.shape[1]
+            for k in range(nbSed):
+                if k == 0:
+                    f.create_dataset(
+                        "depClastic",
+                        shape=(len(discharge), 1),
+                        dtype="float64",
+                        compression="gzip",
+                    )
+                    f["depClastic"][:, 0] = prop[:, k]
+                elif k == 1:
+                    f.create_dataset(
+                        "depSpecies1",
+                        shape=(len(discharge), 1),
+                        dtype="float64",
+                        compression="gzip",
+                    )
+                    f["depSpecies1"][:, 0] = prop[:, k]
+                    
+                elif k == 2:
+                    if carb2On:
+                        f.create_dataset(
+                            "depSpecies2",
+                            shape=(len(discharge), 1),
+                            dtype="float64",
+                            compression="gzip",
+                        )
+                        f["depSpecies2"][:, 0] = prop[:, k]
+                
+                ##################NEW PELAGIC FIELD
+                elif k == 3:
+                    if pelagicOn:
+                        f.create_dataset(
+                            "depPelagic",
+                            shape=(len(discharge), 1),
+                            dtype="float64",
+                            compression="gzip",
+                        )
+                        f["depPelagic"][:, 0] = prop[:, k]
+                ########################
+
 def write_hdf5_flexure(
     folder,
     h5file,
@@ -438,6 +626,8 @@ def write_hdf5_flexure(
                     f["depSpecies2"][:, 0] = prop[:, k]
 
 
+
+
 def _write_xdmf(folder, xdmffile, xmffile, step):
     """
     This function writes the **XDmF** file which is calling the **XmF** file.
@@ -472,6 +662,7 @@ def _write_xdmf(folder, xdmffile, xmffile, step):
     return
 
 
+
 def write_xmf(
     folder,
     xmffile,
@@ -491,7 +682,6 @@ def write_xmf(
 ):
     """
     This function writes the **XmF** file which is calling each **hdf5** file.
-
     Args:
         folder: name of the output folder.
         xmffile: first part of the XmF file name.
@@ -626,6 +816,21 @@ def write_xmf(
                 'Dimensions="%d 1">%s:/depSpecies2</DataItem>\n' % (nodes[p], pfile)
             )
             f.write("         </Attribute>\n")
+            
+        ##############################################################################################
+        ### CHECKPOINTING NEW PELAGIC FIELD
+        if nbSed == 4:
+            f.write(
+                '         <Attribute Type="Scalar" Center="Node" Name="depPelagic">\n'
+            )
+            f.write(
+                '          <DataItem Format="HDF" NumberType="Float" Precision="4" '
+            )
+            f.write(
+                'Dimensions="%d 1">%s:/depPelagic</DataItem>\n' % (nodes[p], pfile)
+            )
+            f.write("         </Attribute>\n")
+        ############################################### ###############################################
 
     f.write('         <Attribute Type="Scalar" Center="Node" Name="Sealevel">\n')
     f.write(
@@ -644,4 +849,5 @@ def write_xmf(
 
     _write_xdmf(folder, xdmffile, xmffile, step)
 
+    return
     return

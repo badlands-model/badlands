@@ -1,3 +1,4 @@
+# +
 ##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
 ##                                                                                   ##
 ##  This file forms part of the Badlands surface processes modelling application.    ##
@@ -27,7 +28,6 @@ class carbMesh():
     """
     This class builds stratigraphic layers over time based on erosion/deposition values when the.
     carbonate or pelagic functions are used.
-
     Args:
         layNb: total number of stratigraphic layers
         elay: regular grid layer thicknesses
@@ -47,7 +47,7 @@ class carbMesh():
     """
 
     def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, folder, h5file, baseMap, nbSed,
-                 regX, regY, elev, rfolder=None, rstep=0):
+                 regX, regY, elev, rfolder=None, rstep=0 ,UwFlag=None):
 
         # Number of points on the TIN
         self.ptsNb = len(xyTIN)
@@ -55,47 +55,92 @@ class carbMesh():
         self.h5file = h5file
         self.initlay = elay
         self.alay = None
-
         self.baseMap = baseMap
         self.tinBase = None
         self.nbSed = nbSed
+        
+        ####FOR RE-STARTING
+        self.loaded_paleoDepth= None
+        
 
         if self.baseMap is not None:
             self._build_basement(xyTIN,bPts,regX,regY)
 
         # In case we restart a simulation
         if rstep > 0:
-            if os.path.exists(rfolder):
-                folder = rfolder+'/h5/'
-                fileCPU = 'stratal.time%s.hdf5'%rstep
-                restartncpus = len(glob.glob1(folder,fileCPU))
-                if restartncpus == 0:
-                    raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
+
+            if UwFlag==False:
+                # Version for not Uw coupling case
+            
+                if os.path.exists(rfolder):
+                    folder = rfolder+'/h5/'
+                    fileCPU = 'stratal.time%s.hdf5'%rstep
+                    restartncpus = len(glob.glob1(folder,fileCPU))
+                    if restartncpus == 0:
+                        raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
+                else:
+                    raise ValueError('The restart folder is missing or the given path is incorrect.')
+
+                if restartncpus != size:
+                    raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
+
+                df = h5py.File('%s/h5/stratal.time%s.hdf5'%(rfolder, rstep), 'r')
+
+                paleoDepth = numpy.array((df['/paleoDepth']))
+                eroLay =  paleoDepth.shape[1]
+                self.step = paleoDepth.shape[1]
+
+                # Elevation at time of deposition (paleo-depth)
+                self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
+                self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
+                self.paleoDepth[:,:eroLay] = paleoDepth
+                # Deposition thickness for each type of sediment
+                self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,self.nbSed),order='F')
+                for r in range(4):
+                    self.depoThick[:,:eroLay,r] = numpy.array((df['/depoThickRock'+str(r)]))
+                self.layerThick[:,:eroLay] = numpy.sum(self.depoThick[:,:eroLay,:],axis=-1)
+            
             else:
-                raise ValueError('The restart folder is missing or the given path is incorrect.')
+                #Version for UW coupling case
+                # In the UW coupling case, the loaded data is not directly assigned to the self.paleoDepth
+                #and self.layerthick. This process is instead done in the load_hdf5_carb fn
+                if os.path.exists(rfolder):
+                    folder = rfolder+'/h5/'
+                    fileCPU = 'stratal.time%s.hdf5'%rstep
+                    restartncpus = len(glob.glob1(folder,fileCPU))
+                    if restartncpus == 0:
+                        raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
+                else:
+                    raise ValueError('The restart folder is missing or the given path is incorrect.')
 
-            if restartncpus != size:
-                raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
+    #            if restartncpus != size:
+    #                raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
 
-            df = h5py.File('%s/h5/stratal.time%s.hdf5'%(rfolder, rstep), 'r')
+                df = h5py.File('%s/h5/stratal.time%s.hdf5'%(rfolder, rstep), 'r')
 
-            paleoDepth = numpy.array((df['/paleoDepth']))
-            eroLay =  paleoDepth.shape[1]
-            self.step = paleoDepth.shape[1]
 
-            # Elevation at time of deposition (paleo-depth)
-            self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
-            self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
-            self.paleoDepth[:,:eroLay] = paleoDepth
-            # Deposition thickness for each type of sediment
-            self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,self.nbSed),order='F')
-            for r in range(4):
-                self.depoThick[:,:eroLay,r] = numpy.array((df['/depoThickRock'+str(r)]))
-            self.layerThick[:,:eroLay] = numpy.sum(self.depoThick[:,:eroLay,:],axis=-1)
+                ###### This is the Carb variables got from the time step file specified by the user
+                paleoDepth = numpy.array((df['/paleoDepth']))
+                #layerThick = numpy.array((df['/layerThick']))
+                eroLay =  paleoDepth.shape[1]
+                self.step = paleoDepth.shape[1]
+
+                # Elevation at time of deposition (paleo-depth)
+                #We instead initialize the self.paleoDepth and etc.. using the actual shape of the loaded array.
+                #This is a numpy array filled with zeros aniway.
+                self.paleoDepth =  numpy.zeros(numpy.shape(paleoDepth),order='F')
+                self.layerThick =  numpy.zeros(numpy.shape(paleoDepth),order='F')
+
+                #Again, we use the shape of the loaded time step data!!
+                self.depoThick = numpy.zeros((paleoDepth.shape[0],eroLay,self.nbSed),order='F')
+
         else:
+
             eroLay = elay+1
             self.step = eroLay
-
+            #bPts: boundary points for the TIN.
+            #ePts: boundary points for the regular grid.
+            #layNb: total number of stratigraphic layers
             tmpTH = numpy.zeros(self.ptsNb)
             # Elevation at time of deposition (paleo-depth)
             self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
@@ -157,7 +202,7 @@ class carbMesh():
                 seaIds = numpy.where(self.tinBase==0)[0]
                 self.depoThick[seaIds,0,0] = 0.
                 self.depoThick[seaIds,0,1] = 1.e6
-
+                
         return
 
     def _build_basement(self, tXY, bPts, regX, regY):
@@ -177,11 +222,23 @@ class carbMesh():
                                                         tXY[bPts:,:], method='linear')
 
         return
+    
+    def update_TIN(self, tXY):
+        """
+        Update TIN mesh after 3D displacements.
+        Args:
+            xyTIN: numpy float-type array containing the coordinates for each nodes in the TIN (in m)
+        """
+        self.tXY = tXY
+        # Update TIN grid kdtree for interpolation
+        self.tree = cKDTree(tXY)
+
+
+        return
 
     def get_active_layer(self, actlay, verbose=False):
         """
         This function extracts the active layer based on the underlying stratigraphic architecture.
-
         Args:
             actlay : active layer elevation based on nodes elevation (m).
             verbose : (bool) when :code:`True`, output additional debug information (default: :code:`False`).
@@ -199,7 +256,6 @@ class carbMesh():
     def update_active_layer(self, actlayer, elev, verbose=False):
         """
         This function updates the stratigraphic layers based active layer composition.
-
         Args:
             actlay : active layer elevation based on nodes elevation (m).
             elev : elevation values for TIN nodes.
@@ -225,7 +281,6 @@ class carbMesh():
     def update_layers(self, clastic, elev, verbose=False):
         """
         This function updates the stratigraphic layers.
-
         Args:
             clastic : active layer clastic proportion.
             elev : elevation values for TIN nodes.
@@ -235,6 +290,7 @@ class carbMesh():
         time0 = time.process_time()
         newH, newS = pdalgo.stratcarb(self.depoThick[:,:self.step+1,:], self.layerThick[:,:self.step+1],
                                     clastic)
+        
         self.depoThick[:,:self.step+1,:] = newS[:,:self.step+1,:]
         self.layerThick[:,:self.step+1] = newH[:,:self.step+1]
         self.paleoDepth[:,self.step] = elev
@@ -246,7 +302,6 @@ class carbMesh():
     def write_hdf5_stratigraphy(self, lGIDs, outstep):
         """
         This function writes for each processor the HDF5 file containing sub-surface information.
-
         Args:
             lGIDs: global node IDs for considered partition.
             outstep: output time step.
@@ -255,12 +310,12 @@ class carbMesh():
         sh5file = self.folder+'/'+self.h5file+str(outstep)+'.hdf5'
         with h5py.File(sh5file, "w") as f:
 
-            # Write stratal layers paeleoelevations per cells
             f.create_dataset('paleoDepth',shape=(len(lGIDs),self.step+1), dtype='float64', compression='gzip')
             f["paleoDepth"][lGIDs,:self.step+1] = self.paleoDepth[lGIDs,:self.step+1]
 
             # Write stratal layers thicknesses per cells
-            for r in range(self.nbSed):
+            #or r in range(self.nbSed):
+            for r in range(self.depoThick.shape[2]):
                 f.create_dataset('depoThickRock'+str(r),shape=(len(lGIDs),self.step+1), dtype='float64', compression='gzip')
                 f['depoThickRock'+str(r)][lGIDs,:self.step+1] = self.depoThick[lGIDs,:self.step+1,r]
 
