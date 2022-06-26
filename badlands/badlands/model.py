@@ -571,19 +571,7 @@ class Model(object):
                             self.fixIDs,
                             self.carbTIN,
                             )
-                        ######################################################################
-                        
-                        ######################################################################
-                        # THIS FUNCTION REMESHES THE wave forcing variables
-                        # BASED ON THE APPLY_XY_DISPLACEMENTS USED FOR THE TIN VARIABLES 
-#                         if self.input.waveSed and self.force.meanH is not None and self.force.meanS is not None:
-#                             (WaveF_xyx) = self.force.apply_XY_displacements_waveForcing(
-#                             self.recGrid.areaDel,
-#                             self.fixIDs,
-#                             )
-                        ######################################################################
-                        
-                        
+                        ######################################################################                       
                         
                         # Update relevant parameters in deformed TIN
                         if fflex == 1:
