@@ -850,4 +850,4 @@ def write_xmf(
     _write_xdmf(folder, xdmffile, xmffile, step)
 
     return
-    return
+

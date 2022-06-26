@@ -86,9 +86,9 @@ class Model(object):
         .. _website: https://badlands.readthedocs.io
         """
         #from badlands import xmlParser
-        
+        print("Hello Andres!")
         np.seterr(divide="ignore", invalid="ignore")
-
+        
         # Only the first node should create a unique output dir
         #self.input = xmlParser(filename, makeUniqueOutputDir=True)
         self.input = xmlParser.xmlParser(filename, makeUniqueOutputDir=True)
@@ -103,7 +103,13 @@ class Model(object):
         # If there's no demfile specified, we assume that it will be loaded
         # later using _build_mesh
         if self.input.demfile:
-            self._build_mesh(self.input.demfile, verbose)
+            #Check if there are X (horizontal) displacements loaded 
+            if self.input.disp3d==True:
+                DispX_Flag=True
+            else:
+                DispX_Flag=False
+            
+            self._build_mesh(self.input.demfile,DispX_Flag, verbose)
             #print("Mesh construction load")
 
         
@@ -126,122 +132,122 @@ class Model(object):
         # self.waveMobile = np.zeros(self.totPts, dtype=float)
         # self.waveED = np.zeros(self.totPts, dtype=float)
 
-        def _build_mesh(self, filename,UwFlag, verbose):
-            """
-            Build TIN based on regular grid.
-            """
+    def _build_mesh(self, filename,DispX_Flag, verbose):
+        """
+        Build TIN based on regular grid.
+        """
 
-            # Construct Badlands mesh and grid to run simulation
-            (
-                self.recGrid,
-                self.FVmesh,
-                self.force,
-                self.lGIDs,
-                self.fixIDs,
-                self.inIDs,
-                parentIDs,
-                self.inGIDs,
-                self.totPts,
-                self.elevation,
-                self.cumdiff,
-                self.cumhill,
-                self.cumfail,
-                self.cumflex,
-                self.strata,
-                self.mapero,
-                self.tinFlex,
-                self.flex,
-                self.wave,
-                self.straTIN,
-                self.carbTIN,
-            ) = buildMesh.construct_mesh(self.input, filename,UwFlag, verbose)
+        # Construct Badlands mesh and grid to run simulation
+        (
+            self.recGrid,
+            self.FVmesh,
+            self.force,
+            self.lGIDs,
+            self.fixIDs,
+            self.inIDs,
+            parentIDs,
+            self.inGIDs,
+            self.totPts,
+            self.elevation,
+            self.cumdiff,
+            self.cumhill,
+            self.cumfail,
+            self.cumflex,
+            self.strata,
+            self.mapero,
+            self.tinFlex,
+            self.flex,
+            self.wave,
+            self.straTIN,
+            self.carbTIN,
+        ) = buildMesh.construct_mesh(self.input, filename,DispX_Flag, verbose)
 
+        if self.input.waveSed:
+            self.wavediff = np.zeros((self.totPts))
+        else:
+            self.wavediff = None
+
+        # Initialize TIN slope (gradient)
+        self.slopeTIN = np.zeros(self.totPts, dtype=float)
+
+        # Define hillslope parameters
+        self.rain = np.zeros(self.totPts, dtype=float)
+        self.hillslope = diffLinear()
+        self.hillslope.CDaerial = self.input.CDa
+        self.hillslope.CDmarine = self.input.CDm
+        self.hillslope.CDriver = self.input.CDr
+        self.hillslope.Sfail = self.input.Sfail
+        self.hillslope.Cfail = self.input.Cfail
+        self.hillslope.Sc = self.input.Sc
+        self.hillslope.updatedt = 0
+
+        # Define flow parameters
+        self.flow = flowNetwork(self.input)
+
+        if self.input.erolays is None:
+            self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
+        else:
+            self.flow.erodibility = self.mapero.erodibility
+        self.flow.mindt = self.input.minDT
+        self.flow.xycoords = self.FVmesh.node_coords[:, :2]
+        self.flow.spl = self.input.spl
+        self.flow.depo = self.input.depo
+        self.flow.xgrid = None
+
+        reassignID = np.where(parentIDs < len(parentIDs))[0]
+        if len(reassignID) > 0:
+            tmpTree = cKDTree(self.flow.xycoords[len(parentIDs) :, :2])
+            distances, indices = tmpTree.query(self.flow.xycoords[reassignID, :2], k=1)
+            indices += len(parentIDs)
+            parentIDs[reassignID] = indices
+
+        self.flow.parentIDs = parentIDs
+
+        # Define hydrodynamic conditions
+        if self.input.waveOn:
+            self.force.next_wave = self.input.tStart
+            self.wave.build_tree(self.FVmesh.node_coords[:, :2])
+            self.wave.swan_init(
+                self.input, self.elevation, self.waveID, self.force.sealevel
+            )
+        else:
             if self.input.waveSed:
-                self.wavediff = np.zeros((self.totPts))
+                self.force.next_wave = self.input.tStart + self.input.tWave
             else:
-                self.wavediff = None
+                self.force.next_wave = self.input.tEnd + 1.0e5
 
-            # Initialize TIN slope (gradient)
-            self.slopeTIN = np.zeros(self.totPts, dtype=float)
 
-            # Define hillslope parameters
-            self.rain = np.zeros(self.totPts, dtype=float)
-            self.hillslope = diffLinear()
-            self.hillslope.CDaerial = self.input.CDa
-            self.hillslope.CDmarine = self.input.CDm
-            self.hillslope.CDriver = self.input.CDr
-            self.hillslope.Sfail = self.input.Sfail
-            self.hillslope.Cfail = self.input.Cfail
-            self.hillslope.Sc = self.input.Sc
-            self.hillslope.updatedt = 0
-
-            # Define flow parameters
-            self.flow = flowNetwork(self.input)
-
-            if self.input.erolays is None:
-                self.flow.erodibility = np.full(self.totPts, self.input.SPLero)
-            else:
-                self.flow.erodibility = self.mapero.erodibility
-            self.flow.mindt = self.input.minDT
-            self.flow.xycoords = self.FVmesh.node_coords[:, :2]
-            self.flow.spl = self.input.spl
-            self.flow.depo = self.input.depo
-            self.flow.xgrid = None
-
-            reassignID = np.where(parentIDs < len(parentIDs))[0]
-            if len(reassignID) > 0:
-                tmpTree = cKDTree(self.flow.xycoords[len(parentIDs) :, :2])
-                distances, indices = tmpTree.query(self.flow.xycoords[reassignID, :2], k=1)
-                indices += len(parentIDs)
-                parentIDs[reassignID] = indices
-
-            self.flow.parentIDs = parentIDs
-
-            # Define hydrodynamic conditions
-            if self.input.waveOn:
-                self.force.next_wave = self.input.tStart
-                self.wave.build_tree(self.FVmesh.node_coords[:, :2])
-                self.wave.swan_init(
-                    self.input, self.elevation, self.waveID, self.force.sealevel
-                )
-            else:
-                if self.input.waveSed:
-                    self.force.next_wave = self.input.tStart + self.input.tWave
-                else:
-                    self.force.next_wave = self.input.tEnd + 1.0e5
-            
-            
-            #####################################################
-            ## THIS NEEDS TO BE UPDATED IN BDLS CODE
-            ### MODIFIED TO INCLUDE THE PROPORTION OF PELAGIC SEDIMENTS ON THE COLUMN
-                #Update Carbonate mesh
-            if self.input.carbonate:
-                if self.input.carbonate2:
-                    self.carbTIN.nbSed = 3
-                    if self.input.pelagic:
-                        self.carbTIN.nbSed = 4
-                else:
-                    self.carbTIN.nbSed = 2
-                    if self.input.pelagic:
-                        self.carbTIN.nbSed = 4
-            
-            ########################################################################
-            ## THIS NEEDS TO BE UPDATED IN BDLS CODE
-            if self.input.carb:
-
-                self.next_carbStep = self.input.tStart + self.input.tCarb
-                self.oldsed = np.zeros(len(self.elevation))
-                if self.carbTIN is not None:
-                    self.prop = np.zeros((self.totPts, self.carbTIN.nbSed))
-            #else:
-            elif self.input.carb is None:
-                self.next_carbStep = self.input.tEnd + 1.0e5
-                self.prop = np.zeros((self.totPts, 1))
-                
+        #####################################################
+        ## THIS NEEDS TO BE UPDATED IN BDLS CODE
+        ### MODIFIED TO INCLUDE THE PROPORTION OF PELAGIC SEDIMENTS ON THE COLUMN
+            #Update Carbonate mesh
+        if self.input.carbonate:
+            if self.input.carbonate2:
+                self.carbTIN.nbSed = 3
                 if self.input.pelagic:
-                    self.next_carbStep = self.input.tEnd + 1.0e5
-                    self.prop = np.zeros((self.totPts, 4))
-            ########################################################################
+                    self.carbTIN.nbSed = 4
+            else:
+                self.carbTIN.nbSed = 2
+                if self.input.pelagic:
+                    self.carbTIN.nbSed = 4
+
+        ########################################################################
+        ## THIS NEEDS TO BE UPDATED IN BDLS CODE
+        if self.input.carb:
+
+            self.next_carbStep = self.input.tStart + self.input.tCarb
+            self.oldsed = np.zeros(len(self.elevation))
+            if self.carbTIN is not None:
+                self.prop = np.zeros((self.totPts, self.carbTIN.nbSed))
+        #else:
+        elif self.input.carb is None:
+            self.next_carbStep = self.input.tEnd + 1.0e5
+            self.prop = np.zeros((self.totPts, 1))
+
+            if self.input.pelagic:
+                self.next_carbStep = self.input.tEnd + 1.0e5
+                self.prop = np.zeros((self.totPts, 4))
+        ########################################################################
 
     def _rebuild_mesh(self, verbose=False):
         """
@@ -377,7 +383,12 @@ class Model(object):
                 "Specified end time is greater than the one used in the XML input file and has been adjusted!"
             )
             tEnd = self.input.tEnd
-
+        ##############################################################################
+        ###This code sniped should solve the issue with the sed. files checkpointing
+        tEnd = round(tEnd, 0)
+        ############################################################################
+        
+        
         # Define non-flow related processes times
         if not self.simStarted:
             self.force.next_rain = self.force.T_rain[0, 0]
@@ -399,6 +410,14 @@ class Model(object):
         outStrata = 0
         last_time = time.process_time()
         last_output = time.process_time()
+        
+        ##################################################################################
+        ##### This code sniped aims to solve the checkpoint issue with .sed files
+        if self.input.udw == 1:
+            self.input.tEnd = round(self.input.tEnd, 0)
+            self.tNow = round(self.tNow, 0)
+            print("Running Badlands with UW-geo from time:", self.tNow, " up to ", tEnd)
+        ##################################################################################
 
         # Perform main simulation loop
         while self.tNow < tEnd:
@@ -526,7 +545,7 @@ class Model(object):
                             scum,
                             Ke,
                             Th,
-                        ) = self.force.apply_XY_displacements(self.force,
+                        ) = self.force.apply_XY_displacements(
                             self.recGrid.areaDel,
                             self.fixIDs,
                             self.elevation,
@@ -545,14 +564,25 @@ class Model(object):
                         
                         ######################################################################
                         # THIS FUNCTION REMESHES THE CARBONATE VARIABLES
-                        # BASED ON THE APPLY_XY_DISPLACEMENTS USED FOR THE TIN VARS AS ELEVATION
+                        # BASED ON THE APPLY_XY_DISPLACEMENTS USED FOR THE TIN VARIABLES 
                         if self.input.carbonate:
-                            (Carb_xyx) = self.force.apply_XY_displacements_Carb_vars(self.force,
+                            (Carb_xyx) = self.force.apply_XY_displacements_Carb_vars(
                             self.recGrid.areaDel,
                             self.fixIDs,
                             self.carbTIN,
                             )
                         ######################################################################
+                        
+                        ######################################################################
+                        # THIS FUNCTION REMESHES THE wave forcing variables
+                        # BASED ON THE APPLY_XY_DISPLACEMENTS USED FOR THE TIN VARIABLES 
+#                         if self.input.waveSed and self.force.meanH is not None and self.force.meanS is not None:
+#                             (WaveF_xyx) = self.force.apply_XY_displacements_waveForcing(
+#                             self.recGrid.areaDel,
+#                             self.fixIDs,
+#                             )
+                        ######################################################################
+                        
                         
                         
                         # Update relevant parameters in deformed TIN
@@ -564,7 +594,7 @@ class Model(object):
                             
                         #############################################
                         # Rebuild the computational mesh
-                        self._rebuild_mesh(self,verbose)
+                        self._rebuild_mesh(verbose)
                         #############################################
                         
                         
@@ -708,8 +738,13 @@ class Model(object):
                     self.elevation += self.pelaval
                 #########################################################
                     #NOW, THE PELAGIC RAIN IS ANOTHER PROPORTION OF THE CARBONATE TIN
-                    # However is still a clastic so is added to the clastic part
+                    # If carbonate growth is activated, this proportion is not added to the "Clastic" proportion
                     if self.carbTIN is not None:
+                        self.carbTIN.paleoDepth[:, self.carbTIN.step] = self.elevation
+                        #self.carbTIN.depoThick[:, self.carbTIN.step, 0] += self.pelaval
+                        self.carbTIN.layerThick[:, self.carbTIN.step] += self.pelaval
+                    else:
+                    #If carbonate growth is not activated, the pelagic proportion is added to the "Clastic" proportion
                         self.carbTIN.paleoDepth[:, self.carbTIN.step] = self.elevation
                         self.carbTIN.depoThick[:, self.carbTIN.step, 0] += self.pelaval
                         self.carbTIN.layerThick[:, self.carbTIN.step] += self.pelaval
@@ -839,7 +874,14 @@ class Model(object):
                 self.outputStep += 1
                 if self.carbTIN is not None:
                     self.carbTIN.step += 1
-
+            
+            ###########################################################################
+            ##### This code sniped aims to solve the checkpoint issue with .sed files
+            # Get the maximum time before updating one of the above processes
+            if self.input.udw == 1:
+                tOld = self.tNow
+            ###########################################################################
+            
             # Get the maximum time before updating one of the above processes / components
             tStop = min(
                 [
@@ -887,6 +929,21 @@ class Model(object):
                 )
             else:
                 self.tNow = tEnd
+                
+            #############################################################
+            ##### This code sniped aims to solve the checkpoint issue with .sed files
+            if self.input.udw == 1:
+                self.tNow = round(self.tNow, 0)
+                dt = self.tNow - tOld
+                if dt < 1.0:
+                    self.tNow = tOld + 1.0
+                print(
+                    "UW-geo internal badlands time step at ",
+                    self.tNow,
+                    " time step",
+                    self.tNow - tOld,
+                )
+            #############################################################    
 
         tloop = time.process_time() - last_time
         print("tNow = %s (%0.02f seconds)" % (self.tNow, tloop))

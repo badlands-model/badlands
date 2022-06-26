@@ -47,7 +47,7 @@ class carbMesh():
     """
 
     def __init__(self, layNb, elay, xyTIN, bPts, ePts, thickMap, folder, h5file, baseMap, nbSed,
-                 regX, regY, elev, rfolder=None, rstep=0 ,UwFlag=None):
+                 regX, regY, elev, rfolder=None, rstep=0 ,DispX_Flag=None):
 
         # Number of points on the TIN
         self.ptsNb = len(xyTIN)
@@ -69,8 +69,9 @@ class carbMesh():
         # In case we restart a simulation
         if rstep > 0:
 
-            if UwFlag==False:
-                # Version for not Uw coupling case
+            if DispX_Flag==False:
+                print("No 3D disp- case")
+                # Version for not 3D displacements
             
                 if os.path.exists(rfolder):
                     folder = rfolder+'/h5/'
@@ -81,8 +82,8 @@ class carbMesh():
                 else:
                     raise ValueError('The restart folder is missing or the given path is incorrect.')
 
-                if restartncpus != size:
-                    raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
+#                 if restartncpus != size:
+#                     raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
 
                 df = h5py.File('%s/h5/stratal.time%s.hdf5'%(rfolder, rstep), 'r')
 
@@ -93,16 +94,19 @@ class carbMesh():
                 # Elevation at time of deposition (paleo-depth)
                 self.paleoDepth = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
                 self.layerThick = numpy.zeros((self.ptsNb,layNb+eroLay),order='F')
+
                 self.paleoDepth[:,:eroLay] = paleoDepth
                 # Deposition thickness for each type of sediment
                 self.depoThick = numpy.zeros((self.ptsNb,layNb+eroLay,self.nbSed),order='F')
-                for r in range(4):
+
+                for r in range(nbSed-1):
                     self.depoThick[:,:eroLay,r] = numpy.array((df['/depoThickRock'+str(r)]))
                 self.layerThick[:,:eroLay] = numpy.sum(self.depoThick[:,:eroLay,:],axis=-1)
             
-            else:
-                #Version for UW coupling case
-                # In the UW coupling case, the loaded data is not directly assigned to the self.paleoDepth
+            elif DispX_Flag==True:
+                print("3D disp- case")
+                #Version for Horizontal displacements case
+                # The loaded data is not directly assigned to the self.paleoDepth
                 #and self.layerthick. This process is instead done in the load_hdf5_carb fn
                 if os.path.exists(rfolder):
                     folder = rfolder+'/h5/'

@@ -702,7 +702,8 @@ class forceSim:
             return update, sdispX, sdispY
         else:
             return update
-
+    
+    
     def apply_XY_displacements(
             self,
             area,
@@ -764,6 +765,11 @@ class forceSim:
             tXY[fixIDs:, 0] += self.dispX[fixIDs:]
             tXY[fixIDs:, 1] += self.dispY[fixIDs:]
 
+            ##Detects wave module
+            #if wcum is not None:
+            meanH_i=numpy.copy(self.meanH)
+            meanS_i=numpy.copy(self.meanS)
+
             # Specify inside simulation area parameters
             dx = tXY[1, 0] - tXY[0, 0]
             minX = min(tXY[:fixIDs, 0]) + dx
@@ -791,6 +797,9 @@ class forceSim:
                 fum = numpy.delete(fcum, tID, 0)
                 if wcum is not None:
                     wum = numpy.delete(wcum, tID, 0)
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH = numpy.delete(meanH_i, tID, 0)
+                        meanS = numpy.delete(meanS_i, tID, 0)
                 if flexure == 1:
                     cumf = numpy.delete(tflex, tID, 0)
                 if strat == 1:
@@ -812,6 +821,9 @@ class forceSim:
                     ##### THERE WAS A TYPO HERE....
                     wum = wcum
                     #############
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH = meanH_i
+                        meanS = meanS_i
                 if flexure == 1:
                     cumf = tflex
                 if strat == 1:
@@ -838,6 +850,9 @@ class forceSim:
                 fum = numpy.delete(fum, pairIDs[nonfixIDs, 1], 0)
                 if wcum is not None:
                     wum = numpy.delete(wum, pairIDs[nonfixIDs, 1], 0)
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH = numpy.delete(meanH, pairIDs[nonfixIDs, 1], 0)
+                        meanS = numpy.delete(meanS, pairIDs[nonfixIDs, 1], 0)
                 if flexure == 1:
                     cumf = numpy.delete(cumf, pairIDs[nonfixIDs, 1], 0)
                 if strat == 1:
@@ -853,6 +868,9 @@ class forceSim:
             newfcum = fum
             if wcum is not None:
                 newwcum = wum
+                if self.meanH is not None and self.meanS is not None:
+                    new_meanH = meanH
+                    new_meanS = meanS
             if flexure == 1:
                 newcumf = cumf
             if strat == 1:
@@ -892,6 +910,9 @@ class forceSim:
                     fumvals = fum[ids][:, :, 0]
                     if wcum is not None:
                         wumvals = wum[ids][:, :, 0]
+                        if self.meanH is not None and self.meanS is not None:
+                            meanH_vals = meanH[ids][:, :, 0]
+                            meanS_vals = meanS[ids][:, :, 0]
                     if flexure == 1:
                         cumfvals = cumf[ids][:, :, 0]
                     if strat == 1:
@@ -903,6 +924,9 @@ class forceSim:
                     fumvals = fum[ids]
                     if wcum is not None:
                         wumvals = wum[ids]
+                        if self.meanH is not None and self.meanS is not None:
+                            meanH_vals = meanH[ids]
+                            meanS_vals = meanS[ids]
                     if flexure == 1:
                         cumfvals = cumf[ids]
                     if strat == 1:
@@ -923,6 +947,9 @@ class forceSim:
                 fumavg = numpy.average(fumvals, weights=weights, axis=1)
                 if wcum is not None:
                     wumavg = numpy.average(wumvals, weights=weights, axis=1)
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH_avg = numpy.average(meanH_vals, weights=weights, axis=1)
+                        meanS_avg = numpy.average(meanS_vals, weights=weights, axis=1)
                 if flexure == 1:
                     cumfavg = numpy.average(cumfvals, weights=weights, axis=1)
                 if strat == 1:
@@ -939,6 +966,9 @@ class forceSim:
                 newfcum = numpy.concatenate((newfcum, fumavg), axis=0)
                 if wcum is not None:
                     newwcum = numpy.concatenate((newwcum, wumavg), axis=0)
+                    if self.meanH is not None and self.meanS is not None:
+                        new_meanH = numpy.concatenate((new_meanH, meanH_avg), axis=0)
+                        new_meanS = numpy.concatenate((new_meanS, meanS_avg), axis=0)
                 if flexure == 1:
                     newcumf = numpy.concatenate((newcumf, cumfavg), axis=0)
                 if strat == 1:
@@ -961,6 +991,12 @@ class forceSim:
                 newTe = None
             if wcum is None:
                 newwcum = None
+                new_meanH = None
+                new_meanS = None
+
+            if wcum is not None and self.meanH is not None and self.meanS is not None:
+                self.meanH = new_meanH
+                self.meanS = new_meanS
 
             return (
                 newTIN,
@@ -974,7 +1010,7 @@ class forceSim:
                 newKe,
                 newTe,
             )
-
+    
     def apply_XY_displacements_Carb_vars(self,area,fixIDs,carbMesh):
         
         """
@@ -986,10 +1022,10 @@ class forceSim:
             """
         
         #Initial variables
-        paleodepth_i=np.copy(carbMesh.paleoDepth)
-        depothick_i=np.copy(carbMesh.depoThick)
-        layerthick_i=np.copy(carbMesh.layerThick)
-        tinBase_i=np.copy(carbMesh.tinBase)
+        paleodepth_i=numpy.copy(carbMesh.paleoDepth)
+        depothick_i=numpy.copy(carbMesh.depoThick)
+        layerthick_i=numpy.copy(carbMesh.layerThick)
+        tinBase_i=numpy.copy(carbMesh.tinBase)
 
         ct=0
         
@@ -1027,11 +1063,11 @@ class forceSim:
             temp_layerthick=None
             
             if ct==0:
-                temp_tinBase=np.copy(tinBase_i)
-            temp_PaleoDepth=np.copy(paleodepth_i[:,J])
-            for nc in range(0,np.shape(depothick_i)[2]):
-                temp_depothick.append(np.copy(depothick_i[:,J,nc]))
-            temp_layerthick=np.copy(layerthick_i[:,J])
+                temp_tinBase=numpy.copy(tinBase_i)
+            temp_PaleoDepth=numpy.copy(paleodepth_i[:,J])
+            for nc in range(0,numpy.shape(depothick_i)[2]):
+                temp_depothick.append(numpy.copy(depothick_i[:,J,nc]))
+            temp_layerthick=numpy.copy(layerthick_i[:,J])
 
             # Delete outside domain points if any
             depothickk=[]
@@ -1068,7 +1104,6 @@ class forceSim:
                     tXY = numpy.copy(carbMesh.tXY)
                     carbMesh.tXY = numpy.delete(tXY, pairIDs[nonfixIDs, 1], 0)
                     TinBase = numpy.delete(TinBase, pairIDs[nonfixIDs, 1], 0)
-                #TinBase = numpy.delete(TinBase, pairIDs[nonfixIDs, 1], 0)
                 paleodepth = numpy.delete(paleodepth, pairIDs[nonfixIDs, 1], 0)
                 for nc in range(0,len(temp_depothick)):
                     depothickk[nc]= numpy.delete(depothickk[nc],pairIDs[nonfixIDs, 1], 0)
@@ -1128,7 +1163,7 @@ class forceSim:
                     #####################################
                 else:
                     
-                    print("2D - Remeshing Carb stratigraphic history")
+                    #print("Remeshing Carb stratigraphic history")
         #             ####################################
                     ### Carbonate case
                     if ct==0:
@@ -1165,9 +1200,9 @@ class forceSim:
             
             if ct==0:
                 #deformed TIN mesh after horizontal displacements. This regrids the carb strata variables at all time steps.
-                def_PaleoDepth=np.zeros((len(newPaleoDepth),np.shape(paleodepth_i)[1]),order='F')
-                def_depothick=np.zeros((len(newPaleoDepth),np.shape(depothick_i)[1],np.shape(depothick_i)[2]),order='F')
-                def_layerthick=np.zeros((len(newPaleoDepth),np.shape(layerthick_i)[1]),order='F')
+                def_PaleoDepth=numpy.zeros((len(newPaleoDepth),numpy.shape(paleodepth_i)[1]),order='F')
+                def_depothick=numpy.zeros((len(newPaleoDepth),numpy.shape(depothick_i)[1],numpy.shape(depothick_i)[2]),order='F')
+                def_layerthick=numpy.zeros((len(newPaleoDepth),numpy.shape(layerthick_i)[1]),order='F')
 
             def_PaleoDepth[:,J]=newPaleoDepth
             for nc in range(0,len(temp_depothick)):
@@ -1187,3 +1222,5 @@ class forceSim:
 
 
         return 1
+
+    

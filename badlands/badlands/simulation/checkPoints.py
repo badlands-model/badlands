@@ -148,12 +148,18 @@ def write_checkpoints(
     rockOn = False
     if input.carbonate:
         rockOn = True
+    else:
+        rockOn = False
         
     if input.carbonate2:
         carb2On = True
+    else:
+        carb2On = False
         
     if input.pelagic:
         pelagicOn = True
+    else:
+        pelagicOn = False
     ######################################################################
         
         
@@ -207,7 +213,7 @@ def write_checkpoints(
     # NEW PELAGIC FIELD
     #############################################################
     elif input.pelagic:
-        write_hdf5_pelagic(
+        visualiseTIN.write_hdf5_pelagic(
             input.outDir,
             input.th5file,
             step,
@@ -324,7 +330,7 @@ def write_checkpoints(
             )
 
     # Combine HDF5 files and write time series
-    write_xmf(
+    visualiseTIN.write_xmf(
         input.outDir,
         input.txmffile,
         input.txdmffile,

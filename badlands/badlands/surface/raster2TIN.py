@@ -432,7 +432,7 @@ class raster2TIN:
 
         return elev, cum, hcum, scum, fcum
 
-    def load_hdf5_carbM(restartFolder, timestep, tXY,nbSed,erolay_big):
+    def load_hdf5_carbM(self,restartFolder, timestep, tXY,nbSed,erolay_big):
         """
         This function reads and allocates **badlands** carbonate parameters & variables from a previous
         simulation. These parameters are obtained from a specific time HDF5 file.
@@ -492,7 +492,7 @@ class raster2TIN:
         eroLay1 =  paleoDepth_i.shape[1]
         eroLay =  erolay_big
         #maybe erolay + 1? does the trick
-        depoThicks_i = np.zeros((paleoDepth_i.shape[0],eroLay,nbSed)) #Shape in second row is always time step + 1. The 0 also counts!!
+        depoThicks_i = numpy.zeros((paleoDepth_i.shape[0],eroLay,nbSed)) #Shape in second row is always time step + 1. The 0 also counts!!
 
         
         for r in range(nbSed-1):
@@ -502,7 +502,7 @@ class raster2TIN:
 
        ###################################################################################################
         ct=0
-        for J in range (0,np.shape(paleoDepth_i )[1]):
+        for J in range (0,numpy.shape(paleoDepth_i )[1]):
         # Apply displacements to TIN points (excluding boundary points)
 
             #Reset Variables
@@ -510,11 +510,11 @@ class raster2TIN:
             temp_PaleoDepth=None
             temp_layerthick=None
 
-            temp_PaleoDepth=np.copy(paleoDepth_i[:,J])
+            temp_PaleoDepth=numpy.copy(paleoDepth_i[:,J])
             for nc in range(0,nbSed-1):
-                temp_depothick.append(np.copy(depoThicks_i[:,J,nc]))
+                temp_depothick.append(numpy.copy(depoThicks_i[:,J,nc]))
                 
-            temp_layerthick=np.copy(layerThick_i[:,J])
+            temp_layerthick=numpy.copy(layerThick_i[:,J])
 
        ###################################################################################################
 
@@ -562,7 +562,7 @@ class raster2TIN:
                     layerThick_f[onIDs]= temp_layerthick[indices[onIDs, 0]]
                     depoThicks_f=[]
                     
-                    depoThick_aux=np.copy(paleoDepth_f)
+                    depoThick_aux=numpy.copy(paleoDepth_f)
                     for nc in range(0,nbSed-1):
 
                         depoThicks_f.append(depoThick_aux)
@@ -571,9 +571,9 @@ class raster2TIN:
             ### THE NUMPY ARRAYS WITH THE RE-MESHED DATA ARE CREATED JUST ONCE
             if ct==0:
                 #deformed TIN mesh after horizontal displacements. This regrids the carb strata variables at all time steps.
-                res_PaleoDepth=np.zeros((len(paleoDepth_f),eroLay),order='F')
-                res_depothick=np.zeros((len(paleoDepth_f),eroLay,nbSed),order='F')
-                res_layerthick=np.zeros((len(paleoDepth_f),eroLay),order='F')
+                res_PaleoDepth=numpy.zeros((len(paleoDepth_f),eroLay),order='F')
+                res_depothick=numpy.zeros((len(paleoDepth_f),eroLay,nbSed),order='F')
+                res_layerthick=numpy.zeros((len(paleoDepth_f),eroLay),order='F')
                 
             res_PaleoDepth[:,J]=paleoDepth_f
             res_layerthick[:,J]=layerThick_f

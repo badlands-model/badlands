@@ -31,7 +31,7 @@ if "READTHEDOCS" not in os.environ:
     )
 
 
-def construct_mesh(input, filename,UwFlag=False, verbose=False):
+def construct_mesh(input, filename,DispX_Flag=False, verbose=False):
     """
     The following function is taking parsed values from the XML to:
     * build model grids & meshes,
@@ -173,11 +173,11 @@ def construct_mesh(input, filename,UwFlag=False, verbose=False):
             cumflex,
             inIDs,
             parentIDs,
-        ) = buildMesh._define_TINparams(
+        ) = _define_TINparams(
             totPts, lGIDs[recGrid.boundsPt :], input, FVmesh, recGrid, verbose
         )
     else:
-        elevation, cumdiff, cumhill, cumfail, inIDs, parentIDs = buildMesh._define_TINparams(
+        elevation, cumdiff, cumhill, cumfail, inIDs, parentIDs = _define_TINparams(
             totPts, lGIDs[recGrid.boundsPt :], input, FVmesh, recGrid, verbose
         )
 
@@ -260,6 +260,12 @@ def construct_mesh(input, filename,UwFlag=False, verbose=False):
             nbSed = 2
 
         if input.restart:
+            #The carbonate variables numpy arrays must have size of all the time steps of the simulation
+            #otherwise, the error "Broadcasting is not supported for complex selections" is raised
+            layNb = int((input.tEnd - input.tStart) / input.tDisplay) + 3
+            
+            #erolay_big=int(input.tEnd/input.tDisplay)+3     
+            
             carbTIN = carbMesh.carbMesh(
                 layNb,
                 input.initlayers,
@@ -276,15 +282,16 @@ def construct_mesh(input, filename,UwFlag=False, verbose=False):
                 elevation,
                 input.rfolder,
                 input.rstep,
+                DispX_Flag=DispX_Flag,
             )
             
-            if UwFlag == True:
+            if DispX_Flag == True:
                 #After the carbonate meshs is created we need to re-shape the variables loaded from the restart step to match the size of the local mesh.
-                erolay_big=int(input.tEnd/input.tDisplay)+3
-                print("Re-Meshing Carbonate variables - Re-Start")
+                
+                #print("Re-Meshing Carbonate variables - Re-Start")
                 (carbTIN.paleoDepth,
                 carbTIN.depoThick,
-                carbTIN.layerThick) = buildMesh.load_hdf5_carbM(input.rfolder, input.rstep, carbTIN.tXY,nbSed,erolay_big)
+                carbTIN.layerThick) = recGrid.load_hdf5_carbM(input.rfolder, input.rstep, carbTIN.tXY,nbSed,layNb)
             
             
         else:
