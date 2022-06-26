@@ -59,10 +59,6 @@ class carbMesh():
         self.tinBase = None
         self.nbSed = nbSed
         
-        ####FOR RE-STARTING
-        self.loaded_paleoDepth= None
-        
-
         if self.baseMap is not None:
             self._build_basement(xyTIN,bPts,regX,regY)
 
