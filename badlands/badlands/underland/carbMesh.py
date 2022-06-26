@@ -81,9 +81,12 @@ class carbMesh():
                         raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
                 else:
                     raise ValueError('The restart folder is missing or the given path is incorrect.')
-
+                
+                ###################################################################################################
+                ### I had to comment this line. Is this important Tristan? for making the re-start work?
 #                 if restartncpus != size:
 #                     raise ValueError('When using the stratal model you need to run the restart simulation with the same number of processors as the previous one.')
+                ###################################################################################################
 
                 df = h5py.File('%s/h5/stratal.time%s.hdf5'%(rfolder, rstep), 'r')
 
@@ -131,7 +134,7 @@ class carbMesh():
 
                 # Elevation at time of deposition (paleo-depth)
                 #We instead initialize the self.paleoDepth and etc.. using the actual shape of the loaded array.
-                #This is a numpy array filled with zeros aniway.
+                #This is a numpy array filled with zeros anyway.
                 self.paleoDepth =  numpy.zeros(numpy.shape(paleoDepth),order='F')
                 self.layerThick =  numpy.zeros(numpy.shape(paleoDepth),order='F')
 
