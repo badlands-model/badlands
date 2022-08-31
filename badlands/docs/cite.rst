@@ -115,6 +115,8 @@ Bukhari, S.W.H., Li, S., Liu, Z., Suo, Y., Zhou, J., Dai, L., Wang, P. and Somer
 
 Bahadori, A., Holt, W.E., Feng, R. et al.: *Coupled influence of tectonics, climate, and surface processes on landscape evolution in southwestern North America*, **Nat Commun**, `doi.org/10.1038/s41467-022-31903-2`_, 2022. 
 
+Puzyrev, V., Salles, T., Surma, G. et al.: *Geophysical model generation with generative adversarial networks*, **Geosci. Lett.**, `doi.org/10.1186/s40562-022-00241-y`_, 2022. 
+
 
 Honours & PhD theses
 --------------------
@@ -194,3 +196,4 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi:10.1016/j.jafrearsci.2022.104551`: https://doi.org/10.1016/j.jafrearsci.2022.104551
 .. _`doi:10.1016/j.gr.2022.05.005`: https://doi.org/10.1016/j.gr.2022.05.005
 .. _`doi.org/10.1038/s41467-022-31903-2`: https://doi.org/10.1038/s41467-022-31903-2
+.. _`doi.org/10.1186/s40562-022-00241-y`: https://doi.org/10.1186/s40562-022-00241-y
