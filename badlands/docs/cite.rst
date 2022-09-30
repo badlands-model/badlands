@@ -118,6 +118,8 @@ Bahadori, A., Holt, W.E., Feng, R. et al.: *Coupled influence of tectonics, clim
 Puzyrev, V., Salles, T., Surma, G. et al.: *Geophysical model generation with generative adversarial networks*, **Geosci. Lett.**, `doi.org/10.1186/s40562-022-00241-y`_, 2022. 
 
 
+Bahadori, A., Holt, W.E., Austermann, J. et al.: *The role of gravitational body forces in the development of metamorphic core complexes*, **Nat Commun**, `doi.org/10.1038/s41467-022-33361-2`_, 2022
+
 Honours & PhD theses
 --------------------
 
@@ -197,3 +199,4 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi:10.1016/j.gr.2022.05.005`: https://doi.org/10.1016/j.gr.2022.05.005
 .. _`doi.org/10.1038/s41467-022-31903-2`: https://doi.org/10.1038/s41467-022-31903-2
 .. _`doi.org/10.1186/s40562-022-00241-y`: https://doi.org/10.1186/s40562-022-00241-y
+.. _`doi.org/10.1038/s41467-022-33361-2`: https://doi.org/10.1038/s41467-022-33361-2
