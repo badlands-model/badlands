@@ -9,6 +9,6 @@ scipy>=1.2
 scikit-image>=0.15
 gFlex>=1.1.0
 matplotlib>=3.0
-cmoocean>=2.0
+cmocean>=2.0
 shapely>=1.7.1
 descartes>=1.1.0
