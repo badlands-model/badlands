@@ -102,6 +102,7 @@ Petit, C., Salles, T., Godard, V. et al.: *River incision, 10Be production and t
 
 Ding, X., Davila, F.M., Lithgow-Bertelloni, C.: *Mechanisms of Subsidence and Uplift of Southern Patagonia and Offshore Basins During Slab Window Formation*, **Geochem. Geophys. Geosyst.**, `doi.org/10.1029/2022GC010844`_, 2023.
 
+
 Honours & PhD theses
 --------------------
 
@@ -182,6 +183,6 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi.org/10.1038/s41467-022-31903-2`: https://doi.org/10.1038/s41467-022-31903-2
 .. _`doi.org/10.1186/s40562-022-00241-y`: https://doi.org/10.1186/s40562-022-00241-y
 .. _`doi.org/10.1038/s41467-022-33361-2`: https://doi.org/10.1038/s41467-022-33361-2
-.. _`doi.org/110.1029/2022GC010844`: https://doi.org/110.1029/2022GC010844
+.. _`doi.org/10.1029/2022GC010844`: https://doi.org/10.1029/2022GC010844
 .. _`doi.org/10.5194/esurf-11-183-2023`: https://doi.org/10.5194/esurf-11-183-2023
 .. _`doi.org/10.1029/2022JF006812`: https://doi.org/10.1029/2022JF006812
