@@ -98,9 +98,9 @@ Bahadori, A., Holt, W.E., Austermann, J. et al.: *The role of gravitational body
 
 Liu, J., Webster, J., Salles, T. et al.: *The Formation of Atolls: New Insights From Numerical Simulations*, **JGR: Earth Surface**, `doi.org/10.1029/2022JF006812`_, 2022. 
 
-Petit, C., Salles, T., Godard, V. et al.: *River incision, 10Be production and transport in a source-to-sink sediment system (Var catchment, SW Alps)*, **eSurf**, `doi:10.5194/esurf-11-183-2023`_, 2023.
+Petit, C., Salles, T., Godard, V. et al.: *River incision, 10Be production and transport in a source-to-sink sediment system (Var catchment, SW Alps)*, **eSurf**, `doi/10.5194/esurf-11-183-2023`_, 2023.
 
-Ding, X., Davila, F.M., Lithgow-Bertelloni, C.: *Mechanisms of Subsidence and Uplift of Southern Patagonia and Offshore Basins During Slab Window Formation*, **Geochem. Geophys. Geosyst.**, `doi:10.1029/2022GC010844`_, 2023.
+Ding, X., Davila, F.M., Lithgow-Bertelloni, C.: *Mechanisms of Subsidence and Uplift of Southern Patagonia and Offshore Basins During Slab Window Formation*, **Geochem. Geophys. Geosyst.**, `doi/10.1029/2022GC010844`_, 2023.
 
 Honours & PhD theses
 --------------------
