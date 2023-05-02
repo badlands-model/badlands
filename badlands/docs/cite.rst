@@ -27,72 +27,49 @@ Papers that use the code
 
 Salles T., N. Flament and D. Müller: *Influence of mantle flow on the drainage of eastern Australia since the Jurassic Period*, **Geochem. Geophys. Geosyst.**, `doi:10.1002/2016GC006617`_, 2017.
 
-
 Salles T., X. Ding, J.M. Webster, A. Vila-Concejo, G. Brocard and J. Pall: *A unified framework for modelling sediment fate from source to sink and its interactions with reef systems over geological times*, **Scientific Report**, `doi:10.1038/s41598-018-23519-8`_, 2018.
-
 
 Ding X., T. Salles, N. Flament and P. Rey: *Quantitative stratigraphic analysis in a source-to-sink numerical framework*, **Geoscientific Model Development**, `doi:10.5194/gmd-12-2571-2019`_, 2019.
 
-
 Pechlivanidou S., P. Cowie, G. Duclaux, N. Nixon, R. Gawthorpe, T. Salles: *Tipping the balance: Shifts in sediment production in an active rift setting*, **Geology**, `doi:10.1130/G45589.1`_, 2019.
-
 
 Chandra, R., D. Azam, A. Kapoor and D. Müller: *Surrogate-assisted Bayesian inversion for landscape and basin evolution models*, **Geoscientific Model Development** Discuss., `doi:10.5194/gmd-2018-315`_, in review, 2019.
 
-
 Rochette P., R. Alaç, P. Beck, G. Brocard, A. J. Cavosie, V. Debaille, B. Devouard, F. Jourdan, B. Mougel, F. Moustard, F. Moynier, S. Nomade, G. R. Osinski, B. Reynard and J. Cornec: *Pantasma: Evidence for a Pleistocene circa 14 km diameter impact crater in Nicaragua*, **Meteoritic & Planetary Science**,  `doi:10.1111/maps.13244`_, 2019.
-
 
 Chandra R., D. Azam , D. Müller, T. Salles, S. Cripps: *A Bayesian inference approach for parameter uncertainty quantification in Badlands*, **Computers & Geosciences**, `doi:10.1016/j.cageo.2019.06.012`_, 2019.
 
-
 Salles T., P. Rey, E. Bertuzzo: *Mapping landscape connectivity under tectonic and climatic forcing*, **Earth Surface Dynamics**, `doi:10.5194/esurf-2019-32`_, 2019.
-
 
 Zahirovic S. , T. Salles, D. Müller, M. Gurnis, W. Cao, C. Braz, L. Harrington, Y. Ibrahim, R. Garrett, S. Williams, A. Chen, M. Hou and J. G. Ogg: *From Paleogeographic maps to Evolving Deep‐time Digital Earth models*, **Acta Geologica Sinica**, `doi:10.1111/1755-6724.14250`_, 2019.
 
-
 Suo Y., Li S., Jin C., Zhang Y., Zhou J., Li X., Wang P., Liu Z., Wang X. and Somerville I.: *Eastward tectonic migration and transition of the Jurassic-Cretaceous Andean-type continental margin along Southeast China*, **Earth-Science Reviews**, `doi:10.1016/j.earscirev.2019.102884`_, 2019.
-
 
 Chang C. and Liu L.: *Distinct responses of intraplate sedimentation to different subsidence mechanisms: Insights from forward landscape evolution simulations*, **JGR: Earth Surface**, `doi:10.1029/2018JF004905`_, 2019.
 
-
 Chandra, R.,  Müller D., Azam, D., Deo, R., Butterworth, N., Salles, T. and Cripps, S.: *Multicore parallel tempering Bayeslands for basin and landscape evolution*, **Geochem. Geophys. Geosyst.**, 20, `doi:10.1029/2019GC008465`_, 2019.
-
 
 Wang H., Gurnis M. and Skogseid J.: *Continent-wide drainage reorganization in North America driven by mantle flow*, **Earth and Planetary Science Letters**, `doi:10.1016/j.epsl.2019.115910`_, 2019.
 
-
 Yang X. and Smith G.: *Gippsland Basin 3D forward modelling in Badlands*, **ASEG Extended Abstracts**, 1, 1-5, `doi:10.1080/22020586.2019.12073104`_, 2019.
-
 
 Chandra R., Azam D. and Müller D.: *Probabilistic modelling of sedimentary basin evolution using Bayeslands*,  **ASEG Extended Abstracts**, 1, 1-5, `doi:10.1080/22020586.2019.12073181`_, 2019.
 
-
 Fernandes V. M., Roberts G. G., White N. and Whittaker A. C.: *Continental‐scale landscape evolution: A history of North American topography*, **JGR: Earth Surface**, 124, `doi:10.1029/2018JF004979`_, 2019.
-
 
 Ding X., T. Salles, N. Flament, C. Mallard and P. Rey: *Drainage and sedimentary responses to dynamic topography*, **Geophysical Research Letters**, `doi:10.1029/2019GL084400`_, `doi:10.1029/2020GC008915`_, 2019.
 
-
 Liu, Z., Dai, L., Li, S., Li, Z.-H., Ding, X., Bukhari,  S. W. H., Somerville, I.: *Earth's surface responses during geodynamic evolution: Numerical insight from the southern East China Sea Continental Shelf Basin, West Pacific*, **Gondwana Research**, `doi:10.1016/j.gr.2020.12.011`_, 2020.
-
 
 Thran A. C., M. East, J. M. Webster, T. Salles and Petit, C.: *The influence of carbonate platforms on the geomorphological development of a mixed carbonate‐siliciclastic margin (Great Barrier Reef, Australia)*, **Geochemistry, Geophysics, Geosystems**, 21, e2020GC008915, `doi:10.1029/2020GC008915`_, 2020.
 
-
 Zhang J., Sylvester, Z. and Covault, J.: *How do basin margins record long-term tectonic and climatic changes?*, **Geology**, 48, `doi:10.1130/G47498.1`_, 2020. 
-
 
 Chang C. and Liu L.; *Investigating the formation of the Cretaceous Western Interior Seaway using landscape evolution simulations*, **GSA Bulletin**, `doi: 10.1130/B35653.1`_, 2020. 
 
-
 Manley K., Salles, T. and Müller, D.; *Modeling the Dynamic Landscape Evolution of a Volcanic Coastal Environment Under Future Climate Trajectories*, **Frontiers Earth Sci.**, `doi:10.3389/feart.2020.550312`_, 2020. 
 
-
 Zhang, J., Flaig, P., Wartes, M., Aschoff, J., and Shuster, M.: *Integrating stratigraphic modelling, inversion analysis, and shelf‐margin records to guide provenance analysis: An example from the Cretaceous Colville Basin, Arctic Alaska*, **Basin Research**, `doi:10.1111/bre.12543`_, 2021.
-
 
 Wapenhans, I., Fernandes, V. M., O’Malley, C., White, N., and Roberts, G. G.: *Scale-dependent contributors to river profile geometry*, **JGR: Earth Surface**, `doi:10.1029/2020JF005879`_, 2021.
 
@@ -117,8 +94,13 @@ Bahadori, A., Holt, W.E., Feng, R. et al.: *Coupled influence of tectonics, clim
 
 Puzyrev, V., Salles, T., Surma, G. et al.: *Geophysical model generation with generative adversarial networks*, **Geosci. Lett.**, `doi.org/10.1186/s40562-022-00241-y`_, 2022. 
 
+Bahadori, A., Holt, W.E., Austermann, J. et al.: *The role of gravitational body forces in the development of metamorphic core complexes*, **Nat Commun**, `doi.org/10.1038/s41467-022-33361-2`_, 2022.
 
-Bahadori, A., Holt, W.E., Austermann, J. et al.: *The role of gravitational body forces in the development of metamorphic core complexes*, **Nat Commun**, `doi.org/10.1038/s41467-022-33361-2`_, 2022
+Liu, J., Webster, J., Salles, T. et al.: *The Formation of Atolls: New Insights From Numerical Simulations*, **JGR: Earth Surface**, `doi.org/10.1029/2022JF006812`_, 2022. 
+
+Petit, C., Salles, T., Godard, V. et al.: *River incision, 10Be production and transport in a source-to-sink sediment system (Var catchment, SW Alps)*, **eSurf**, `doi:10.5194/esurf-11-183-2023`_, 2023.
+
+Ding, X., Davila, F.M., Lithgow-Bertelloni, C.: *Mechanisms of Subsidence and Uplift of Southern Patagonia and Offshore Basins During Slab Window Formation*, **Geochem. Geophys. Geosyst.**, `doi:10.1029/2022GC010844`_, 2023.
 
 Honours & PhD theses
 --------------------
@@ -200,3 +182,6 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi.org/10.1038/s41467-022-31903-2`: https://doi.org/10.1038/s41467-022-31903-2
 .. _`doi.org/10.1186/s40562-022-00241-y`: https://doi.org/10.1186/s40562-022-00241-y
 .. _`doi.org/10.1038/s41467-022-33361-2`: https://doi.org/10.1038/s41467-022-33361-2
+.. _`doi.org/110.1029/2022GC010844`: https://doi.org/110.1029/2022GC010844
+.. _`doi.org/10.5194/esurf-11-183-2023`: https://doi.org/10.5194/esurf-11-183-2023
+.. _`doi.org/10.1029/2022JF006812`: https://doi.org/10.1029/2022JF006812
