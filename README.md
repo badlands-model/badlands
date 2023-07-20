@@ -11,7 +11,7 @@ Badlands - Basin & Landscape Dynamics
 
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/badlandsmodel/pybadlands-demo-serial)](https://cloud.docker.com/u/badlandsmodel/repository/docker/badlandsmodel/badlands)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/badlands-model/badlands-docker/binder?filepath=StartHere.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/badlands-model/badlands-teaching/binder)
 
 <div align="center">
     <img width=1000 src="https://github.com/badlands-model/badlands/blob/master/badlands/docs/img/view.jpg?raw=true" alt="sketch Badlands" title="sketch of Badlands range of models."</img>
