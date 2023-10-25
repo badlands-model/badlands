@@ -1,5 +1,5 @@
 triangle
-git+https://github.com/kinnala/meshplex
+meshplex@git+https://github.com/kinnala/meshplex
 numpy>=1.15.0
 h5py>=2.8.0
 six>=1.11.0
