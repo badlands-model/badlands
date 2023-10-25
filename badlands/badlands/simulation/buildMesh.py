@@ -157,9 +157,9 @@ def construct_mesh(input, filename, verbose=False):
     inGIDs = lGIDs
     FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32, order="F")
     FVmesh.neighbours.fill(-2)
-    FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float, order="F")
-    FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float, order="F")
-    FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
+    FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float64, order="F")
+    FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float64, order="F")
+    FVmesh.control_volumes = np.zeros(totPts, dtype=np.float64)
 
     # Compute Finite Volume parameters
     FVmesh.construct_FV(lGIDs, verbose)
@@ -364,9 +364,9 @@ def reconstruct_mesh(recGrid, input, verbose=False):
     inGIDs = lGIDs
     FVmesh.neighbours = np.zeros((totPts, 20), dtype=np.int32, order="F")
     FVmesh.neighbours.fill(-2)
-    FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float, order="F")
-    FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float, order="F")
-    FVmesh.control_volumes = np.zeros(totPts, dtype=np.float)
+    FVmesh.edge_length = np.zeros((totPts, 20), dtype=np.float64, order="F")
+    FVmesh.vor_edges = np.zeros((totPts, 20), dtype=np.float64, order="F")
+    FVmesh.control_volumes = np.zeros(totPts, dtype=np.float64)
 
     # Compute Finite Volume parameters
     FVmesh.construct_FV(lGIDs, verbose)

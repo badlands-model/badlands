@@ -115,7 +115,7 @@ class eroMesh:
                         engine="c",
                         header=None,
                         na_filter=False,
-                        dtype=numpy.float,
+                        dtype=numpy.float64,
                         low_memory=False,
                     )
                     reMap = numpy.reshape(
@@ -139,7 +139,7 @@ class eroMesh:
                         engine="c",
                         header=None,
                         na_filter=False,
-                        dtype=numpy.float,
+                        dtype=numpy.float64,
                         low_memory=False,
                     )
                     rtMap = numpy.reshape(

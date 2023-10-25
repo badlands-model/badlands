@@ -117,7 +117,7 @@ class stratiWedge():
                 self.paleoDepth[:,eroLay] = elev
                 for l in range(1,eroLay):
                     thMap = pandas.read_csv(str(thickMap[l-1]), sep=r'\s+', engine='c',
-                                       header=None, na_filter=False, dtype=numpy.float, low_memory=False)
+                                       header=None, na_filter=False, dtype=numpy.float64, low_memory=False)
                     # Extract thickness values
                     tmpH = thMap.values[:,0]
                     tH = numpy.reshape(tmpH,(len(regX), len(regY)), order='F')

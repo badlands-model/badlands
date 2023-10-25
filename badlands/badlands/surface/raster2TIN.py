@@ -118,7 +118,7 @@ class raster2TIN:
             engine="c",
             header=None,
             na_filter=False,
-            dtype=numpy.float,
+            dtype=numpy.float64,
             low_memory=False,
         )
         self.rectX = data.values[:, 0]
