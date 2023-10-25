@@ -50,7 +50,7 @@ class pelagicGrowth:
         # Read depth control file
         depthdata = pandas.read_csv(self.depthfile, sep=r'\s+', engine='c',
                                header=None, na_filter=False,
-                               dtype=numpy.float, low_memory=False)
+                               dtype=numpy.float64, low_memory=False)
 
         self.depthval = numpy.zeros(len(depthdata.values[:,0])+2)
         self.depthfct = numpy.zeros(len(self.depthval))

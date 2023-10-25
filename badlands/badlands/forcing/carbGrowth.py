@@ -138,7 +138,7 @@ class carbGrowth:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
 
@@ -163,7 +163,7 @@ class carbGrowth:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
             self.depthval2 = numpy.zeros(len(depthdata.values[:, 0]) + 2)
@@ -199,7 +199,7 @@ class carbGrowth:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
 
@@ -222,7 +222,7 @@ class carbGrowth:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
 
@@ -259,7 +259,7 @@ class carbGrowth:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
 
@@ -284,7 +284,7 @@ class carbGrowth:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
 

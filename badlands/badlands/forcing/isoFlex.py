@@ -148,7 +148,7 @@ class isoFlex:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
             self.Te = numpy.reshape(TeMap.values, (self.ny, self.nx))

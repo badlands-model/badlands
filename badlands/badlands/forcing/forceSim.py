@@ -220,7 +220,7 @@ class forceSim:
             engine="c",
             header=None,
             na_filter=False,
-            dtype=numpy.float,
+            dtype=numpy.float64,
             low_memory=False,
         )
 
@@ -400,7 +400,7 @@ class forceSim:
                 engine="c",
                 header=None,
                 na_filter=False,
-                dtype=numpy.float,
+                dtype=numpy.float64,
                 low_memory=False,
             )
 
@@ -546,7 +546,7 @@ class forceSim:
                     engine="c",
                     header=None,
                     na_filter=False,
-                    dtype=numpy.float,
+                    dtype=numpy.float64,
                     low_memory=False,
                 ).values
 
@@ -625,7 +625,7 @@ class forceSim:
                     engine="c",
                     header=None,
                     na_filter=False,
-                    dtype=numpy.float,
+                    dtype=numpy.float64,
                     low_memory=False,
                 )
                 dvals = disps.values
@@ -638,7 +638,7 @@ class forceSim:
                         engine="c",
                         header=None,
                         na_filter=False,
-                        dtype=numpy.float,
+                        dtype=numpy.float64,
                         low_memory=False,
                     ).values
 

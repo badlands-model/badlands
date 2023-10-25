@@ -27,7 +27,7 @@ requirements:
     - gflex >=1.1.0
     - h5py >=2.8.0
     - matplotlib >=3.0
-    - meshplex
+    - meshplex 0.13*
     - numpy >=1.15.0
     - pandas >=0.24
     - python

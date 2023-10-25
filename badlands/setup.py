@@ -8,7 +8,7 @@
 #  /root/.local/bin/twine upload dist/*
 ##############################
 
-from setuptools import setup, find_packages
+from setuptools import setup 
 from numpy.distutils.core import setup, Extension
 
 import glob
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         include_package_data=True,
         install_requires=[
             "triangle",
-            "meshplex",
+            "meshplex @ git+https://github.com/kinnala/meshplex",
             "numpy>=1.15.0",
             "six>=1.11.0",
             "setuptools>=38.4.0",
