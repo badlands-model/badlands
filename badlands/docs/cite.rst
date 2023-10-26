@@ -98,10 +98,13 @@ Bahadori, A., Holt, W.E., Austermann, J. et al.: *The role of gravitational body
 
 Liu, J., Webster, J., Salles, T. et al.: *The Formation of Atolls: New Insights From Numerical Simulations*, **JGR: Earth Surface**, `doi.org/10.1029/2022JF006812`_, 2022. 
 
+Yang, X., Smith, G., and Gupta, R. *Basin analysis palaeo-landscape modelling: Testing the critical controls using experimental design constrained by a real 3D geological model, Gippsland Basin, Australia*, **Basin Research**, `doi.org/10.1111/bre.12710`_, 2023.
+
 Petit, C., Salles, T., Godard, V. et al.: *River incision, 10Be production and transport in a source-to-sink sediment system (Var catchment, SW Alps)*, **eSurf**, `doi.org/10.5194/esurf-11-183-2023`_, 2023.
 
 Ding, X., Davila, F.M., Lithgow-Bertelloni, C.: *Mechanisms of Subsidence and Uplift of Southern Patagonia and Offshore Basins During Slab Window Formation*, **Geochem. Geophys. Geosyst.**, `doi.org/10.1029/2022GC010844`_, 2023.
 
+Wright, L. J. M., Scholz, C. A.: *Spatio-temporal variations in sediment delivery as a response to rapid quaternary climate change in the Lake Malawi Rift, East Africa*, **Journal of Geophysical Research: Earth Surface**, `doi.org/10.1029/2022JF007027`_, 2023.
 
 Honours & PhD theses
 --------------------
@@ -186,3 +189,5 @@ Chan, S.: *Reconstruction of the sedimentation patterns along the Norway margin 
 .. _`doi.org/10.1029/2022GC010844`: https://doi.org/10.1029/2022GC010844
 .. _`doi.org/10.5194/esurf-11-183-2023`: https://doi.org/10.5194/esurf-11-183-2023
 .. _`doi.org/10.1029/2022JF006812`: https://doi.org/10.1029/2022JF006812
+.. _`doi.org/10.1111/bre.12710`: https://doi.org/10.1111/bre.12710
+.. _`doi.org/10.1029/2022JF007027`: https://doi.org/10.1029/2022JF007027
