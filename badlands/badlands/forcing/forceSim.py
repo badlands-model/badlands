@@ -702,67 +702,336 @@ class forceSim:
             return update, sdispX, sdispY
         else:
             return update
-
+    
+    
     def apply_XY_displacements(
-        self,
-        area,
-        fixIDs,
-        telev,
-        tcum,
-        hcum,
-        fcum,
-        wcum,
-        tflex=None,
-        scum=None,
-        Te=None,
-        Ke=None,
-        flexure=0,
-        strat=0,
-        ero=0,
-    ):
+            self,
+            area,
+            fixIDs,
+            telev,
+            tcum,
+            hcum,
+            fcum,
+            wcum,
+            tflex=None,
+            scum=None,
+            Te=None,
+            Ke=None,
+            flexure=0,
+            strat=0,
+            ero=0,
+        ):
+            """
+            Apply horizontal displacements and check if any point needs to be merged.
+            Args:
+                area : float averaged area of the irregular grid delaunay cells.
+                fixIDs : integer number of unstructured vertices which needs to stay fix (edges and borders nodes).
+                elev : float numpy array with elevation of previous TIN nodes.
+                tcum : float numpy array with erosion/deposition values from previous TIN nodes.
+                tflex : float numpy array with cumulative flexural values from previous TIN nodes.
+                scum : float numpy array with erosion/deposition used for stratal mesh.
+                hcum : float numpy array with erosion/deposition for hillslope used for stratal mesh.
+                wcum : float numpy array with erosion/deposition for wave used for stratal mesh.
+                Te : float numpy array with thickness used for erosional mesh.
+                Ke : float numpy array with erodibility used for erosional mesh.
+                flexure : integer flagging flexural isostasy.
+                strat : integer flagging stratigraphic mesh model.
+                ero : integer flagging erosional mesh model.
+            Returns
+            -------
+            tinMesh
+                delaunay mesh generated after displacements.
+            newelev
+                numpy array containing the updated elevation for the new TIN.
+            newcum
+                numpy array containing the updated erosion/deposition values for the new TIN.
+            newhcum
+                numpy array containing the updated erosion/deposition values for hillslope in the new TIN.
+            newwcum
+                numpy array containing the updated erosion/deposition values for wave in the new TIN.
+            newcumf
+                numpy array containing the updated cumulative flexural values for the new TIN.
+            newscum
+                numpy array containing the updated erosion/deposition values used in the stratal mesh.
+            newKe
+                numpy array containing the updated erodibility values for the new TIN.
+            newTe
+                numpy array containing the updated thickness values used in the erosional mesh.
+            """
+
+            # Apply displacements to TIN points (excluding boundary points)
+            telev += self.dispZ
+            tXY = numpy.copy(self.tXY)
+            tXY[fixIDs:, 0] += self.dispX[fixIDs:]
+            tXY[fixIDs:, 1] += self.dispY[fixIDs:]
+
+            ##Detects wave module
+            #if wcum is not None:
+            meanH_i=numpy.copy(self.meanH)
+            meanS_i=numpy.copy(self.meanS)
+
+            # Specify inside simulation area parameters
+            dx = tXY[1, 0] - tXY[0, 0]
+            minX = min(tXY[:fixIDs, 0]) + dx
+            minY = min(tXY[:fixIDs, 1]) + dx
+            maxX = max(tXY[:fixIDs, 0]) - dx
+            maxY = max(tXY[:fixIDs, 1]) - dx
+
+            # Find points outside the area
+            xID = numpy.where(
+                numpy.logical_or(tXY[fixIDs:, 0] <= minX, tXY[fixIDs:, 0] >= maxX)
+            )[0]
+            yID = numpy.where(
+                numpy.logical_or(tXY[fixIDs:, 1] <= minY, tXY[fixIDs:, 1] >= maxY)
+            )[0]
+            tIDs = numpy.concatenate((xID, yID), axis=0)
+            tID = numpy.unique(tIDs)
+            tID += fixIDs
+
+            # Delete outside domain points if any
+            if len(tID) > 0:
+                self.tXY = numpy.delete(tXY, tID, 0)
+                elev = numpy.delete(telev, tID, 0)
+                cum = numpy.delete(tcum, tID, 0)
+                hum = numpy.delete(hcum, tID, 0)
+                fum = numpy.delete(fcum, tID, 0)
+                if wcum is not None:
+                    wum = numpy.delete(wcum, tID, 0)
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH = numpy.delete(meanH_i, tID, 0)
+                        meanS = numpy.delete(meanS_i, tID, 0)
+                if flexure == 1:
+                    cumf = numpy.delete(tflex, tID, 0)
+                if strat == 1:
+                    stcum = numpy.delete(scum, tID, 0)
+                if ero == 1:
+                    lay = Ke.shape[1]
+                    mKe = numpy.zeros((len(cum), lay))
+                    mTe = numpy.zeros((len(cum), lay))
+                    for k in range(lay):
+                        mKe[:, k] = numpy.delete(Ke[:, k], tID, 0)
+                        mTe[:, k] = numpy.delete(Te[:, k], tID, 0)
+            else:
+                self.tXY = numpy.copy(tXY)
+                elev = telev
+                cum = tcum
+                hum = hcum
+                fum = fcum
+                if wcum is not None:
+                    ##### THERE WAS A TYPO HERE....
+                    wum = wcum
+                    #############
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH = meanH_i
+                        meanS = meanS_i
+                if flexure == 1:
+                    cumf = tflex
+                if strat == 1:
+                    stcum = scum
+                if ero == 1:
+                    lay = Ke.shape[1]
+                    mKe = Ke
+                    mTe = Te
+
+            # Create KDTree with deformed points and find points which needs to be merged
+            tree = cKDTree(self.tXY)
+            pairs = tree.query_pairs(self.merge3d)
+
+            # For points which require merging define a new point and
+            # interpolate parameters based on merged points
+            if len(pairs) > 0:
+                pairIDs = numpy.array(list(pairs))
+                nonfixIDs = numpy.where(pairIDs[:, 1] >= fixIDs)
+                tXY = numpy.copy(self.tXY)
+                self.tXY = numpy.delete(tXY, pairIDs[nonfixIDs, 1], 0)
+                elev = numpy.delete(elev, pairIDs[nonfixIDs, 1], 0)
+                cum = numpy.delete(cum, pairIDs[nonfixIDs, 1], 0)
+                hum = numpy.delete(hum, pairIDs[nonfixIDs, 1], 0)
+                fum = numpy.delete(fum, pairIDs[nonfixIDs, 1], 0)
+                if wcum is not None:
+                    wum = numpy.delete(wum, pairIDs[nonfixIDs, 1], 0)
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH = numpy.delete(meanH, pairIDs[nonfixIDs, 1], 0)
+                        meanS = numpy.delete(meanS, pairIDs[nonfixIDs, 1], 0)
+                if flexure == 1:
+                    cumf = numpy.delete(cumf, pairIDs[nonfixIDs, 1], 0)
+                if strat == 1:
+                    stcum = numpy.delete(stcum, pairIDs[nonfixIDs, 1], 0)
+
+                # Create KDTree with deformed points and find points which needs to be merged
+                tree = cKDTree(self.tXY)
+
+            newXY = self.tXY
+            newelev = elev
+            newcum = cum
+            newhcum = hum
+            newfcum = fum
+            if wcum is not None:
+                newwcum = wum
+                if self.meanH is not None and self.meanS is not None:
+                    new_meanH = meanH
+                    new_meanS = meanS
+            if flexure == 1:
+                newcumf = cumf
+            if strat == 1:
+                newscum = stcum
+            if ero == 1:
+                nKe = mKe
+                nTe = mTe
+
+            # Based on new points build the triangulation
+            tmpTIN = triangle.triangulate({"vertices": newXY}, "eqDa" + str(area))
+            idsX = numpy.where(
+                numpy.logical_and(
+                    tmpTIN["vertices"][:, 0] > minX, tmpTIN["vertices"][:, 0] < maxX
+                )
+            )
+            idsY = numpy.where(
+                numpy.logical_and(
+                    tmpTIN["vertices"][:, 1] > minY, tmpTIN["vertices"][:, 1] < maxY
+                )
+            )
+            insID = numpy.intersect1d(idsX, idsY)
+            tmpXY = numpy.zeros((fixIDs + len(insID), 2))
+            tmpXY[:fixIDs, :] = tXY[:fixIDs, :]
+            tmpXY[fixIDs:, :] = tmpTIN["vertices"][insID, :]
+            newTIN = triangle.triangulate({"vertices": tmpXY}, "eDa" + str(area))
+
+            # If some points have been added during the triangulation update the TIN
+            # interpolate neighbouring parameters to these new points
+            if len(newTIN["vertices"][:, 0]) > len(newXY[:, 0]):
+                addPts = newTIN["vertices"][len(newXY[:, 0]) :, :2]
+                dist, ids = tree.query(addPts, k=3)
+                weights = 1.0 / dist ** 2
+                if len(elev[ids].shape) == 3:
+                    zvals = elev[ids][:, :, 0]
+                    cumvals = cum[ids][:, :, 0]
+                    humvals = hum[ids][:, :, 0]
+                    fumvals = fum[ids][:, :, 0]
+                    if wcum is not None:
+                        wumvals = wum[ids][:, :, 0]
+                        if self.meanH is not None and self.meanS is not None:
+                            meanH_vals = meanH[ids][:, :, 0]
+                            meanS_vals = meanS[ids][:, :, 0]
+                    if flexure == 1:
+                        cumfvals = cumf[ids][:, :, 0]
+                    if strat == 1:
+                        scumvals = stcum[ids][:, :, 0]
+                else:
+                    zvals = elev[ids]
+                    cumvals = cum[ids]
+                    humvals = hum[ids]
+                    fumvals = fum[ids]
+                    if wcum is not None:
+                        wumvals = wum[ids]
+                        if self.meanH is not None and self.meanS is not None:
+                            meanH_vals = meanH[ids]
+                            meanS_vals = meanS[ids]
+                    if flexure == 1:
+                        cumfvals = cumf[ids]
+                    if strat == 1:
+                        scumvals = stcum[ids]
+                if ero == 1:
+                    Tevals = numpy.zeros((len(zvals), lay))
+                    Kevals = numpy.zeros((len(zvals), lay))
+                    for k in range(lay):
+                        if len(mTe[ids, k].shape) == 3:
+                            Tevals[:, k] = mTe[ids, k][:, :, 0]
+                            Kevals[:, k] = mKe[ids, k][:, :, 0]
+                        else:
+                            Tevals[:, k] = mTe[ids, k]
+                            Kevals[:, k] = mKe[ids, k]
+                zavg = numpy.average(zvals, weights=weights, axis=1)
+                cumavg = numpy.average(cumvals, weights=weights, axis=1)
+                humavg = numpy.average(humvals, weights=weights, axis=1)
+                fumavg = numpy.average(fumvals, weights=weights, axis=1)
+                if wcum is not None:
+                    wumavg = numpy.average(wumvals, weights=weights, axis=1)
+                    if self.meanH is not None and self.meanS is not None:
+                        meanH_avg = numpy.average(meanH_vals, weights=weights, axis=1)
+                        meanS_avg = numpy.average(meanS_vals, weights=weights, axis=1)
+                if flexure == 1:
+                    cumfavg = numpy.average(cumfvals, weights=weights, axis=1)
+                if strat == 1:
+                    scumavg = numpy.average(scumvals, weights=weights, axis=1)
+                if ero == 1:
+                    Teavg = numpy.zeros((len(zavg), lay))
+                    Keavg = numpy.zeros((len(zavg), lay))
+                    for k in range(lay):
+                        Teavg[:, k] = numpy.average(Tevals[:, k], weights=weights, axis=1)
+                        Keavg[:, k] = Kevals[indices[0], k]
+                newelev = numpy.concatenate((newelev, zavg), axis=0)
+                newcum = numpy.concatenate((newcum, cumavg), axis=0)
+                newhcum = numpy.concatenate((newhcum, humavg), axis=0)
+                newfcum = numpy.concatenate((newfcum, fumavg), axis=0)
+                if wcum is not None:
+                    newwcum = numpy.concatenate((newwcum, wumavg), axis=0)
+                    if self.meanH is not None and self.meanS is not None:
+                        new_meanH = numpy.concatenate((new_meanH, meanH_avg), axis=0)
+                        new_meanS = numpy.concatenate((new_meanS, meanS_avg), axis=0)
+                if flexure == 1:
+                    newcumf = numpy.concatenate((newcumf, cumfavg), axis=0)
+                if strat == 1:
+                    newscum = numpy.concatenate((newscum, scumavg), axis=0)
+                if ero == 1:
+                    newTe = numpy.zeros((len(newelev), lay))
+                    newKe = numpy.zeros((len(newelev), lay))
+                    for k in range(lay):
+                        newTe[:, k] = numpy.concatenate((nTe[:, k], Teavg[:, k]), axis=0)
+                        newKe[:, k] = numpy.concatenate((nKe[:, k], Keavg[:, k]), axis=0)
+            elif len(newTIN["vertices"][:, 0]) < len(newXY):
+                raise ValueError("Problem building the TIN after 3D displacements.")
+
+            if flexure == 0:
+                newcumf = None
+            if strat == 0:
+                newscum = None
+            if ero == 0:
+                newKe = None
+                newTe = None
+            if wcum is None:
+                newwcum = None
+                new_meanH = None
+                new_meanS = None
+
+            if wcum is not None and self.meanH is not None and self.meanS is not None:
+                self.meanH = new_meanH
+                self.meanS = new_meanS
+
+            return (
+                newTIN,
+                newelev,
+                newcum,
+                newhcum,
+                newfcum,
+                newwcum,
+                newcumf,
+                newscum,
+                newKe,
+                newTe,
+            )
+    
+    def apply_XY_displacements_Carb_vars(self,area,fixIDs,carbMesh):
+        
         """
         Apply horizontal displacements and check if any point needs to be merged.
-
         Args:
             area : float averaged area of the irregular grid delaunay cells.
             fixIDs : integer number of unstructured vertices which needs to stay fix (edges and borders nodes).
-            elev : float numpy array with elevation of previous TIN nodes.
-            tcum : float numpy array with erosion/deposition values from previous TIN nodes.
-            tflex : float numpy array with cumulative flexural values from previous TIN nodes.
-            scum : float numpy array with erosion/deposition used for stratal mesh.
-            hcum : float numpy array with erosion/deposition for hillslope used for stratal mesh.
-            wcum : float numpy array with erosion/deposition for wave used for stratal mesh.
-            Te : float numpy array with thickness used for erosional mesh.
-            Ke : float numpy array with erodibility used for erosional mesh.
-            flexure : integer flagging flexural isostasy.
-            strat : integer flagging stratigraphic mesh model.
-            ero : integer flagging erosional mesh model.
+            carbMesh : carbonate mesh object that contain all carbonate variables
+            """
+        
+        #Initial variables
+        paleodepth_i=numpy.copy(carbMesh.paleoDepth)
+        depothick_i=numpy.copy(carbMesh.depoThick)
+        layerthick_i=numpy.copy(carbMesh.layerThick)
+        tinBase_i=numpy.copy(carbMesh.tinBase)
 
-        Returns
-        -------
-        tinMesh
-            delaunay mesh generated after displacements.
-        newelev
-            numpy array containing the updated elevation for the new TIN.
-        newcum
-            numpy array containing the updated erosion/deposition values for the new TIN.
-        newhcum
-            numpy array containing the updated erosion/deposition values for hillslope in the new TIN.
-        newwcum
-            numpy array containing the updated erosion/deposition values for wave in the new TIN.
-        newcumf
-            numpy array containing the updated cumulative flexural values for the new TIN.
-        newscum
-            numpy array containing the updated erosion/deposition values used in the stratal mesh.
-        newKe
-            numpy array containing the updated erodibility values for the new TIN.
-        newTe
-            numpy array containing the updated thickness values used in the erosional mesh.
-        """
-
-        # Apply displacements to TIN points (excluding boundary points)
-        telev += self.dispZ
-        tXY = numpy.copy(self.tXY)
+        ct=0
+        
+        tXY0=(carbMesh.tXY)
+        
+        tXY = numpy.copy(tXY0)
         tXY[fixIDs:, 0] += self.dispX[fixIDs:]
         tXY[fixIDs:, 1] += self.dispY[fixIDs:]
 
@@ -774,203 +1043,184 @@ class forceSim:
         maxY = max(tXY[:fixIDs, 1]) - dx
 
         # Find points outside the area
-        xID = numpy.where(
-            numpy.logical_or(tXY[fixIDs:, 0] <= minX, tXY[fixIDs:, 0] >= maxX)
-        )[0]
-        yID = numpy.where(
-            numpy.logical_or(tXY[fixIDs:, 1] <= minY, tXY[fixIDs:, 1] >= maxY)
-        )[0]
+        xID = numpy.where(numpy.logical_or(tXY[fixIDs:, 0] <= minX, tXY[fixIDs:, 0] >= maxX))[0]
+        yID = numpy.where(numpy.logical_or(tXY[fixIDs:, 1] <= minY, tXY[fixIDs:, 1] >= maxY))[0]
         tIDs = numpy.concatenate((xID, yID), axis=0)
         tID = numpy.unique(tIDs)
         tID += fixIDs
-
-        # Delete outside domain points if any
+        
         if len(tID) > 0:
-            self.tXY = numpy.delete(tXY, tID, 0)
-            elev = numpy.delete(telev, tID, 0)
-            cum = numpy.delete(tcum, tID, 0)
-            hum = numpy.delete(hcum, tID, 0)
-            fum = numpy.delete(fcum, tID, 0)
-            if wcum is not None:
-                wum = numpy.delete(wcum, tID, 0)
-            if flexure == 1:
-                cumf = numpy.delete(tflex, tID, 0)
-            if strat == 1:
-                stcum = numpy.delete(scum, tID, 0)
-            if ero == 1:
-                lay = Ke.shape[1]
-                mKe = numpy.zeros((len(cum), lay))
-                mTe = numpy.zeros((len(cum), lay))
-                for k in range(lay):
-                    mKe[:, k] = numpy.delete(Ke[:, k], tID, 0)
-                    mTe[:, k] = numpy.delete(Te[:, k], tID, 0)
+            carbMesh.tXY = numpy.delete(tXY, tID, 0)
         else:
-            self.tXY = numpy.copy(tXY)
-            elev = telev
-            cum = tcum
-            hum = hcum
-            fum = fcum
-            if wcum is not None:
-                wum = hwum
-            if flexure == 1:
-                cumf = tflex
-            if strat == 1:
-                stcum = scum
-            if ero == 1:
-                lay = Ke.shape[1]
-                mKe = Ke
-                mTe = Te
+            carbMesh.tXY = (tXY)
+        
+        for J in range (0,paleodepth_i.shape[1]):
+            # Apply displacements to TIN points (excluding boundary points)
+            
+            #Reset Variables
+            temp_depothick=[]
+            temp_PaleoDepth=None
+            temp_layerthick=None
+            
+            if ct==0:
+                temp_tinBase=numpy.copy(tinBase_i)
+            temp_PaleoDepth=numpy.copy(paleodepth_i[:,J])
+            for nc in range(0,numpy.shape(depothick_i)[2]):
+                temp_depothick.append(numpy.copy(depothick_i[:,J,nc]))
+            temp_layerthick=numpy.copy(layerthick_i[:,J])
 
-        # Create KDTree with deformed points and find points which needs to be merged
-        tree = cKDTree(self.tXY)
-        pairs = tree.query_pairs(self.merge3d)
+            # Delete outside domain points if any
+            depothickk=[]
+            if len(tID) > 0:
+                if ct==0:
+                    TinBase = numpy.delete(temp_tinBase, tID, 0)
+                paleodepth  = numpy.delete(temp_PaleoDepth, tID, 0)
+                for i in range (len(temp_depothick)):
+                    depothickk.append(numpy.delete(temp_depothick[i], tID, 0))
+                layerthick = numpy.delete(temp_layerthick, tID, 0)
+                 ############################################
 
-        # For points which require merging define a new point and
-        # interpolate parameters based on merged points
-        if len(pairs) > 0:
-            pairIDs = numpy.array(list(pairs))
-            nonfixIDs = numpy.where(pairIDs[:, 1] >= fixIDs)
-            tXY = numpy.copy(self.tXY)
-            self.tXY = numpy.delete(tXY, pairIDs[nonfixIDs, 1], 0)
-            elev = numpy.delete(elev, pairIDs[nonfixIDs, 1], 0)
-            cum = numpy.delete(cum, pairIDs[nonfixIDs, 1], 0)
-            hum = numpy.delete(hum, pairIDs[nonfixIDs, 1], 0)
-            fum = numpy.delete(fum, pairIDs[nonfixIDs, 1], 0)
-            if wcum is not None:
-                wum = numpy.delete(wum, pairIDs[nonfixIDs, 1], 0)
-            if flexure == 1:
-                cumf = numpy.delete(cumf, pairIDs[nonfixIDs, 1], 0)
-            if strat == 1:
-                stcum = numpy.delete(stcum, pairIDs[nonfixIDs, 1], 0)
+            else:
+                if ct==0:
+                    TinBase = temp_tinBase
+                paleodepth = temp_PaleoDepth
+                for nc in range(0,len(temp_depothick)):
+                    depothickk.append(temp_depothick[nc])
+                layerthick = temp_layerthick
+                ############################################
 
             # Create KDTree with deformed points and find points which needs to be merged
-            tree = cKDTree(self.tXY)
+            if ct==0:
+                tree = cKDTree(carbMesh.tXY)
+                pairs = tree.query_pairs(self.merge3d)
 
-        newXY = self.tXY
-        newelev = elev
-        newcum = cum
-        newhcum = hum
-        newfcum = fum
-        if wcum is not None:
-            newwcum = wum
-        if flexure == 1:
-            newcumf = cumf
-        if strat == 1:
-            newscum = stcum
-        if ero == 1:
-            nKe = mKe
-            nTe = mTe
+            # For points which require merging define a new point and
+            # interpolate parameters based on merged points
+            if len(pairs) > 0:
+                pairIDs = numpy.array(list(pairs))
+                nonfixIDs = numpy.where(pairIDs[:, 1] >= fixIDs)
+                
+                if ct==0:
+                    tXY = numpy.copy(carbMesh.tXY)
+                    carbMesh.tXY = numpy.delete(tXY, pairIDs[nonfixIDs, 1], 0)
+                    TinBase = numpy.delete(TinBase, pairIDs[nonfixIDs, 1], 0)
+                paleodepth = numpy.delete(paleodepth, pairIDs[nonfixIDs, 1], 0)
+                for nc in range(0,len(temp_depothick)):
+                    depothickk[nc]= numpy.delete(depothickk[nc],pairIDs[nonfixIDs, 1], 0)
+                layerthick = numpy.delete(layerthick, pairIDs[nonfixIDs, 1], 0)
+                
+                ############################################
 
-        # Based on new points build the triangulation
-        tmpTIN = triangle.triangulate({"vertices": newXY}, "eqDa" + str(area))
-        idsX = numpy.where(
-            numpy.logical_and(
-                tmpTIN["vertices"][:, 0] > minX, tmpTIN["vertices"][:, 0] < maxX
+                # Create KDTree with deformed points and find points which needs to be merged
+                tree = cKDTree(carbMesh.tXY)
+            
+            if ct==0:
+                newXY = carbMesh.tXY
+                newTinBase=TinBase
+
+            newPaleoDepth= paleodepth
+            for nc in range(0,len(temp_depothick)):
+                newdepothick=depothickk
+            newlayerthick= layerthick
+
+            # Based on new points build the triangulation
+            tmpTIN = triangle.triangulate({"vertices": newXY}, "eqDa" + str(area))
+            idsX = numpy.where(
+                numpy.logical_and(
+                    tmpTIN["vertices"][:, 0] > minX, tmpTIN["vertices"][:, 0] < maxX
+                )
             )
-        )
-        idsY = numpy.where(
-            numpy.logical_and(
-                tmpTIN["vertices"][:, 1] > minY, tmpTIN["vertices"][:, 1] < maxY
+            idsY = numpy.where(
+                numpy.logical_and(
+                    tmpTIN["vertices"][:, 1] > minY, tmpTIN["vertices"][:, 1] < maxY
+                )
             )
-        )
-        insID = numpy.intersect1d(idsX, idsY)
-        tmpXY = numpy.zeros((fixIDs + len(insID), 2))
-        tmpXY[:fixIDs, :] = tXY[:fixIDs, :]
-        tmpXY[fixIDs:, :] = tmpTIN["vertices"][insID, :]
-        newTIN = triangle.triangulate({"vertices": tmpXY}, "eDa" + str(area))
+            insID = numpy.intersect1d(idsX, idsY)
+            tmpXY = numpy.zeros((fixIDs + len(insID), 2))
+            tmpXY[:fixIDs, :] = tXY[:fixIDs, :]
+            tmpXY[fixIDs:, :] = tmpTIN["vertices"][insID, :]
+            newTIN = triangle.triangulate({"vertices": tmpXY}, "eDa" + str(area))
 
-        # If some points have been added during the triangulation update the TIN
-        # interpolate neighbouring parameters to these new points
-        if len(newTIN["vertices"][:, 0]) > len(newXY[:, 0]):
-            addPts = newTIN["vertices"][len(newXY[:, 0]) :, :2]
-            dist, ids = tree.query(addPts, k=3)
-            weights = 1.0 / dist ** 2
-            if len(elev[ids].shape) == 3:
-                zvals = elev[ids][:, :, 0]
-                cumvals = cum[ids][:, :, 0]
-                humvals = hum[ids][:, :, 0]
-                fumvals = fum[ids][:, :, 0]
-                if wcum is not None:
-                    wumvals = wum[ids][:, :, 0]
-                if flexure == 1:
-                    cumfvals = cumf[ids][:, :, 0]
-                if strat == 1:
-                    scumvals = stcum[ids][:, :, 0]
-            else:
-                zvals = elev[ids]
-                cumvals = cum[ids]
-                humvals = hum[ids]
-                fumvals = fum[ids]
-                if wcum is not None:
-                    wumvals = wum[ids]
-                if flexure == 1:
-                    cumfvals = cumf[ids]
-                if strat == 1:
-                    scumvals = stcum[ids]
-            if ero == 1:
-                Tevals = numpy.zeros((len(zvals), lay))
-                Kevals = numpy.zeros((len(zvals), lay))
-                for k in range(lay):
-                    if len(mTe[ids, k].shape) == 3:
-                        Tevals[:, k] = mTe[ids, k][:, :, 0]
-                        Kevals[:, k] = mKe[ids, k][:, :, 0]
-                    else:
-                        Tevals[:, k] = mTe[ids, k]
-                        Kevals[:, k] = mKe[ids, k]
-            zavg = numpy.average(zvals, weights=weights, axis=1)
-            cumavg = numpy.average(cumvals, weights=weights, axis=1)
-            humavg = numpy.average(humvals, weights=weights, axis=1)
-            fumavg = numpy.average(fumvals, weights=weights, axis=1)
-            if wcum is not None:
-                wumavg = numpy.average(wumvals, weights=weights, axis=1)
-            if flexure == 1:
-                cumfavg = numpy.average(cumfvals, weights=weights, axis=1)
-            if strat == 1:
-                scumavg = numpy.average(scumvals, weights=weights, axis=1)
-            if ero == 1:
-                Teavg = numpy.zeros((len(zavg), lay))
-                Keavg = numpy.zeros((len(zavg), lay))
-                for k in range(lay):
-                    Teavg[:, k] = numpy.average(Tevals[:, k], weights=weights, axis=1)
-                    Keavg[:, k] = Kevals[indices[0], k]
-            newelev = numpy.concatenate((newelev, zavg), axis=0)
-            newcum = numpy.concatenate((newcum, cumavg), axis=0)
-            newhcum = numpy.concatenate((newhcum, humavg), axis=0)
-            newfcum = numpy.concatenate((newfcum, fumavg), axis=0)
-            if wcum is not None:
-                newwcum = numpy.concatenate((newwcum, wumavg), axis=0)
-            if flexure == 1:
-                newcumf = numpy.concatenate((newcumf, cumfavg), axis=0)
-            if strat == 1:
-                newscum = numpy.concatenate((newscum, scumavg), axis=0)
-            if ero == 1:
-                newTe = numpy.zeros((len(newelev), lay))
-                newKe = numpy.zeros((len(newelev), lay))
-                for k in range(lay):
-                    newTe[:, k] = numpy.concatenate((nTe[:, k], Teavg[:, k]), axis=0)
-                    newKe[:, k] = numpy.concatenate((nKe[:, k], Keavg[:, k]), axis=0)
-        elif len(newTIN["vertices"][:, 0]) < len(newXY):
-            raise ValueError("Problem building the TIN after 3D displacements.")
+            # If some points have been added during the triangulation update the TIN
+            # interpolate neighbouring parameters to these new points
+            if len(newTIN["vertices"][:, 0]) > len(newXY[:, 0]):
+                addPts = newTIN["vertices"][len(newXY[:, 0]) :, :2]
+                dist, ids = tree.query(addPts, k=3)
+                weights = 1.0 / dist ** 2
+                
+                depothickk_vals=[]
+                
+                if len(layerthick[ids].shape) == 3:
+                    print("3D - Remeshing Carb stratigraphic history")
+                    #######################################
+                    ### Carbonate case
+                    if ct==0:
+                        TinBase_vals = TinBase[ids][:, :, 0]
+                    paleodepth_vals = paleodepth[ids][:, :, 0]
+                    for nc in range(0,len(temp_depothick)):
+                        depothickk_vals.append(depothickk[nc][ids][:, :, 0])
+                    layerthick_vals = layerthick[ids][:, :, 0]
+                    #####################################
+                else:
+                    
+                    #print("Remeshing Carb stratigraphic history")
+        #             ####################################
+                    ### Carbonate case
+                    if ct==0:
+                        TinBase_vals = TinBase[ids]
+                    
+                    paleodepth_vals = paleodepth[ids]
+                    for nc in range(0,len(temp_depothick)):
+                        depothickk_vals.append(depothickk[nc][ids])
+                    layerthick_vals = layerthick[ids]
 
-        if flexure == 0:
-            newcumf = None
-        if strat == 0:
-            newscum = None
-        if ero == 0:
-            newKe = None
-            newTe = None
-        if wcum is None:
-            newwcum = None
+                    #####################################
+                ####################################################
+                #Average carbonate mesh variables
+                if ct==0:
+                    TinBase_avg = numpy.average(TinBase_vals, weights=weights, axis=1)
+                depothickk_avg=[]
+                
+                paleodepth_avg= numpy.average(paleodepth_vals, weights=weights, axis=1)
+                for nc in range(0,len(temp_depothick)):
+                    depothickk_avg.append(numpy.average(depothickk_vals[nc], weights=weights, axis=1))
+                layerthick_avg= numpy.average(layerthick_vals, weights=weights, axis=1)
+                
+                ####################################################
+                #New Carbonate variables computation
+                if ct==0:
+                    newTinBase = numpy.concatenate((newTinBase,TinBase_avg), axis=0)
+                newPaleoDepth= numpy.concatenate((newPaleoDepth,paleodepth_avg), axis=0)
+                for nc in range(0,len(temp_depothick)):
+                    newdepothick[nc]=numpy.concatenate((newdepothick[nc],depothickk_avg[nc]), axis=0)
+                newlayerthick= numpy.concatenate((newlayerthick,layerthick_avg), axis=0)
+                ####################################################
+            elif len(newTIN["vertices"][:, 0]) < len(newXY):
+                raise ValueError("Problem building the TIN after 3D displacements.")
+            
+            if ct==0:
+                #deformed TIN mesh after horizontal displacements. This regrids the carb strata variables at all time steps.
+                def_PaleoDepth=numpy.zeros((len(newPaleoDepth),numpy.shape(paleodepth_i)[1]),order='F')
+                def_depothick=numpy.zeros((len(newPaleoDepth),numpy.shape(depothick_i)[1],numpy.shape(depothick_i)[2]),order='F')
+                def_layerthick=numpy.zeros((len(newPaleoDepth),numpy.shape(layerthick_i)[1]),order='F')
 
-        return (
-            newTIN,
-            newelev,
-            newcum,
-            newhcum,
-            newfcum,
-            newwcum,
-            newcumf,
-            newscum,
-            newKe,
-            newTe,
-        )
+            def_PaleoDepth[:,J]=newPaleoDepth
+            for nc in range(0,len(temp_depothick)):
+                def_depothick[:,J,nc]=newdepothick[nc]
+            def_layerthick[:,J]=newlayerthick
+            
+            ct=ct+1
+            
+            #This avoids to re-mesh the entire array, which is full of zeros
+            if carbMesh.step + 2 == ct:
+                break
+        
+        carbMesh.tinBase=newTinBase
+        carbMesh.paleoDepth= def_PaleoDepth
+        carbMesh.depoThick= def_depothick
+        carbMesh.layerThick= def_layerthick
+
+
+        return 1
+
+    
