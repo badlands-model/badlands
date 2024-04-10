@@ -14,8 +14,8 @@
 DIR=$(shell pwd)
 
 F90 ?= gfortran
-FFLAGS = -shared -O3 -fPIC
-# FFLAGS= -O0  -Wall  -Wline-truncation  -Wcharacter-truncation  -Wsurprising  -Waliasing  -Wimplicit-interface  -Wunused-parameter  -fwhole-file  -fcheck=all  -std=f2008  -pedantic  -fbacktrace -shared  -fPIC
+#FFLAGS = -shared -O3 -fPIC
+FFLAGS= -O0  -Wall  -Wline-truncation  -Wcharacter-truncation  -Wsurprising  -Waliasing  -Wimplicit-interface  -Wunused-parameter  -fwhole-file  -fcheck=all  -std=f2008  -pedantic  -fbacktrace -shared  -fPIC
 
 FMOD1 = classpd
 FMOD2 = classfv

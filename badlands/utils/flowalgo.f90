@@ -833,7 +833,7 @@ borders, pyDepo, pyEro, sedFluxes, slope, pyDensity, pylNodesNb, pygNodesNb, pyR
   real(kind=8),dimension(pygNodesNb),intent(out) :: slope
   real(kind=8),dimension(pygNodesNb),intent(out) :: pyDensity
 
-  integer :: n, donor, recvr, nID, tmpID, r
+  integer :: n, donor, recvr, nID, tmpID, r, tsteps
   real(kind=8) :: maxh, dh, waterH, fct, Qt, totflx, totspl, newdist,rhosed,rhowat,tauratio
   real(kind=8) :: dist, slp, slpdh, updh, tmpdist, totdist, width, frac, upperslp, bedfrac
   real(kind=8),dimension(pyRockNb) :: SPL, Qs, Qb, frck, erodep, pitDep
@@ -1217,14 +1217,14 @@ borders, pyDepo, pyEro, sedFluxes, slope, pyDensity, pylNodesNb, pygNodesNb, pyR
     elseif(maxval(pitDep)>0. .and. pyArea(pitID(donor)+1)>0.)then
       ! Perform distribution
       tmpID = pitID(donor) + 1
-
-      do while(totdist > 0.)
+      tsteps = 0
+      do while(totdist > 0. .and. tsteps<100 .and. tmpID<=pygNodesNb .and. tmpID>0)
         ! Get the volume already deposited on the considered node
         tmpdist = 0.
+        tsteps = tsteps + 1
         do r = 1, pyRockNb
           tmpdist = tmpdist + pyDepo(tmpID,r)
         enddo
-
         ! In case the depression is underwater
         if(pyfillH(tmpID)<sea)then
           if(pyElev(donor)<sea)then
