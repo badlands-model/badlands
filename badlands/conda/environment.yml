@@ -1,0 +1,20 @@
+name: badlands
+channels:
+  - conda-forge
+  - fastai
+dependencies:
+  - python=3.8
+  - numpy=1.21
+  - pip
+  - pandas
+  - scipy
+  - compilers
+  - gfortran
+  - h5py
+  - meshplex
+  - gFlex
+  - scikit-image
+  - scipy
+  - setuptools
+  - pip:
+    - triangle
