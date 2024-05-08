@@ -1,0 +1,40 @@
+################################
+# Download this file, open the directory in a terminal and run:
+#
+# conda env create --file environment.yml
+#
+# if successful activate the environment:
+#
+# conda activate badlands
+#
+# Then download badlands from github: https://github.com/Geodels/gospl/tree/newSPL
+# Unzip it and go to the folder where the setup.py file is located.
+#
+# python3 setup.py install --user
+#
+################################
+
+name: badlands
+channels:
+  - conda-forge
+  - fastai
+dependencies:
+  - python=3.8
+  - jupyterlab=2.1
+  - numpy=1.21
+  - pip
+  - pandas
+  - scipy
+  - compilers
+  - gfortran
+  - h5py
+  - cmocean
+  - meshplex
+  - pip:
+      - matplotlib==3.3.4
+      - gFlex
+      - colorlover
+      - lavavu
+      - piglet
+      - pyvirtualdisplay
+      - plotly
