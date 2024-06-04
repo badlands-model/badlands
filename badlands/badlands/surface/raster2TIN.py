@@ -431,3 +431,156 @@ class raster2TIN:
                 fcum[onIDs] = f[indices[onIDs, 0]]
 
         return elev, cum, hcum, scum, fcum
+
+    def load_hdf5_carbM(self,restartFolder, timestep, tXY,nbSed,erolay_big):
+        """
+        This function reads and allocates **badlands** carbonate parameters & variables from a previous
+        simulation. These parameters are obtained from a specific time HDF5 file.
+        Important:
+            This function is only called when a **restart simulation** is ran... |:bomb:|
+        Args:
+            restartFolder: restart folder name as defined in tge XML input file.
+            timestep: time step to load defined based on output interval number.
+            tXY: 2D numpy array TIN grid local coordinates.
+            nbSed: The number of carbonate variables
+            erolay_big: the number of time steps the model will have according to the UW script and Bdls xml file
+        Returns
+        -------
+        res_PaleoDepth
+            numpy array containing the updated PaleoDepth carbonate variable from the restart model and all time steps.
+        res_depothick
+            numpy array containing the updated PaleoDepth carbonate variable from the restart model and all time steps.
+        res_layerthick
+            numpy array containing the updated PaleoDepth carbonate variable from the restart model and all time steps.
+        """
+        
+        if os.path.exists(restartFolder):
+            folder = restartFolder + "/h5/"
+            fileCPU = "tin.time%s.hdf5" % timestep
+            restartncpus = len(glob.glob1(folder, fileCPU))
+            if restartncpus == 0:
+                raise ValueError(
+                    "The requested time step for the restart simulation cannot be found in the restart folder."
+                )
+        else:
+            raise ValueError(
+                "The restart folder is missing or the given path is incorrect."
+            )
+
+        df = h5py.File("%s/h5/tin.time%s.hdf5" % (restartFolder, timestep), "r")
+        coords = numpy.array((df["/coords"]))
+
+        x, y, z = numpy.hsplit(coords, 3)
+
+        XY = numpy.column_stack((x, y))
+        tree = cKDTree(XY)
+        distances, indices = tree.query(tXY, k=3)
+        ########################################################################################################
+        ###### INTERPOLATE CARBONATE DATA TO THE INITIAL SHAPE
+        if os.path.exists(restartFolder):
+            folderC = restartFolder+'/h5/'
+            fileCPUC = 'stratal.time%s.hdf5' % timestep
+            restartncpusC = len(glob.glob1(folderC,fileCPUC))
+            if restartncpusC == 0:
+                raise ValueError('The requested time step for the restart simulation cannot be found in the restart folder.')
+        else:
+            raise ValueError('The restart folder is missing or the given path is incorrect.')
+
+        dfC = h5py.File('%s/h5/stratal.time%s.hdf5' % (restartFolder, timestep), 'r')
+
+        paleoDepth_i = numpy.array((dfC['/paleoDepth']))
+        eroLay1 =  paleoDepth_i.shape[1]
+        eroLay =  erolay_big
+        #maybe erolay + 1? does the trick
+        depoThicks_i = numpy.zeros((paleoDepth_i.shape[0],eroLay,nbSed)) #Shape in second row is always time step + 1. The 0 also counts!!
+
+        
+        for r in range(nbSed-1):
+            depoThicks_i[:,:eroLay1,r]=numpy.array((dfC['/depoThickRock'+str(r)]))
+
+        layerThick_i= numpy.sum(depoThicks_i[:,:eroLay,:],axis=-1)
+
+       ###################################################################################################
+        ct=0
+        for J in range (0,numpy.shape(paleoDepth_i )[1]):
+        # Apply displacements to TIN points (excluding boundary points)
+
+            #Reset Variables
+            temp_depothick=[]
+            temp_PaleoDepth=None
+            temp_layerthick=None
+
+            temp_PaleoDepth=numpy.copy(paleoDepth_i[:,J])
+            for nc in range(0,nbSed-1):
+                temp_depothick.append(numpy.copy(depoThicks_i[:,J,nc]))
+                
+            temp_layerthick=numpy.copy(layerThick_i[:,J])
+
+       ###################################################################################################
+
+            if len(temp_PaleoDepth[indices].shape) == 3:
+                paleoDepth_vals=temp_PaleoDepth[indices][:, :, 0]
+
+                depoThicks_vals=[]
+                for nc in range(0,nbSed-1):
+                    depoThicks_vals.append(temp_depothick[nc][indices][:, :, 0])
+
+                layerThick_vals=temp_layerthick[indices][:, :, 0]
+
+            else:
+                paleoDepth_vals=temp_PaleoDepth[indices]
+
+                depoThicks_vals=[]
+                for nc in range(0,nbSed-1):
+                    depoThicks_vals.append(temp_depothick[nc][indices])
+                    
+                layerThick_vals=temp_layerthick[indices]
+
+
+            with numpy.errstate(divide="ignore"):
+
+                paleoDepth_f=numpy.average(paleoDepth_vals, weights=(1.0 / distances), axis=1)
+                layerThick_f=numpy.average(layerThick_vals, weights=(1.0 / distances), axis=1)
+                
+                depoThicks_f=[]
+                for nc in range(0,nbSed-1):
+                    depoThicks_f.append(numpy.average(depoThicks_vals[nc], weights=(1.0 / distances), axis=1))
+
+            onIDs = numpy.where(distances[:, 0] == 0)[0]
+            if len(onIDs) > 0:
+                if len(temp_PaleoDepth[indices].shape) == 3:
+                    paleoDepth_f[onIDs]= temp_PaleoDepth[indices[onIDs, 0], 0]
+                    layerThick_f[onIDs]= temp_layerthick[indices[onIDs, 0], 0]
+                    depoThicks_f=[]
+                    
+                    for nc in range(0,nbSed-1):
+                        depoThick_aux=temp_depothick[nc][indices[onIDs, 0], 0]
+                        depoThicks_f.append(depoThick_aux)
+
+                else:
+                    paleoDepth_f[onIDs]= temp_PaleoDepth[indices[onIDs, 0]]
+                    layerThick_f[onIDs]= temp_layerthick[indices[onIDs, 0]]
+                    depoThicks_f=[]
+                    
+                    depoThick_aux=numpy.copy(paleoDepth_f)
+                    for nc in range(0,nbSed-1):
+
+                        depoThicks_f.append(depoThick_aux)
+
+            ########################################################################################################
+            ### THE NUMPY ARRAYS WITH THE RE-MESHED DATA ARE CREATED JUST ONCE
+            if ct==0:
+                #deformed TIN mesh after horizontal displacements. This regrids the carb strata variables at all time steps.
+                res_PaleoDepth=numpy.zeros((len(paleoDepth_f),eroLay),order='F')
+                res_depothick=numpy.zeros((len(paleoDepth_f),eroLay,nbSed),order='F')
+                res_layerthick=numpy.zeros((len(paleoDepth_f),eroLay),order='F')
+                
+            res_PaleoDepth[:,J]=paleoDepth_f
+            res_layerthick[:,J]=layerThick_f
+            
+            for nc in range(0,nbSed-1):
+                res_depothick[:,J,nc]=depoThicks_f[nc]
+            
+            ct=ct+1
+
+        return res_PaleoDepth, res_depothick, res_layerthick

@@ -40,6 +40,7 @@ if "READTHEDOCS" not in os.environ:
     from badlands import visualiseFlow, visualiseTIN, eroMesh
 
 
+
 def write_checkpoints(
     input,
     recGrid,
@@ -63,7 +64,6 @@ def write_checkpoints(
 ):
     """
     Create the checkpoint files (used for HDF5 output).
-
     Args:
         input: class containing XML input file parameters.
         recGrid: class describing the regular grid characteristics.
@@ -143,13 +143,33 @@ def write_checkpoints(
         flow.basinID[seaIDs] = -1
     visdis[visdis < 1.0] = 1.0
 
+    ########################################################################
+    # The pelagic rain is now another "Rock"
     rockOn = False
-    if input.carbonate or input.pelagic:
+    if input.carbonate:
         rockOn = True
-
+    else:
+        rockOn = False
+        
+    if input.carbonate2:
+        carb2On = True
+    else:
+        carb2On = False
+        
+    if input.pelagic:
+        pelagicOn = True
+    else:
+        pelagicOn = False
+    ######################################################################
+        
+        
     # Write HDF5 files
     if input.waveSed and tNow > input.tStart:
         waveOn = True
+        ######################################################################
+        #print("wave bug- re start")
+        #print(len(lGIDs),len(force.meanH))
+        ######################################################################
         meanH = force.meanH[lGIDs]
         meanS = force.meanS[lGIDs]
         wdiff = wavediff[lGIDs]
@@ -159,6 +179,9 @@ def write_checkpoints(
         meanS = None
         wdiff = None
 
+    
+    
+    
     if input.flexure:
         visualiseTIN.write_hdf5_flexure(
             input.outDir,
@@ -186,6 +209,38 @@ def write_checkpoints(
             prop[lGIDs, :],
             force.sealevel,
         )
+    #############################################################
+    # NEW PELAGIC FIELD
+    #############################################################
+    elif input.pelagic:
+        visualiseTIN.write_hdf5_pelagic(
+            input.outDir,
+            input.th5file,
+            step,
+            FVmesh.node_coords[:, :2],
+            elevation[lGIDs],
+            fillH[lGIDs],
+            rain[lGIDs],
+            visdis[lGIDs],
+            cumdiff[lGIDs],
+            cumhill[lGIDs],
+            cumfail[lGIDs],
+            FVmesh.outCells,
+            input.oroRain,
+            eroOn,
+            flow.erodibility[lGIDs],
+            FVmesh.control_volumes[lGIDs],
+            waveOn,
+            meanH,
+            meanS,
+            wdiff,
+            rockOn,
+            pelagicOn,
+            carb2On,
+            prop[lGIDs, :],
+            force.sealevel,
+        )
+    #############################################################
     else:
         visualiseTIN.write_hdf5(
             input.outDir,
