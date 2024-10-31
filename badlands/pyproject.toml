@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61", "wheel", "meson>=1.4.0", "meson-python", "numpy==1.26.4"]
+build-backend = "mesonpy"
+
+[project]
+name    = "badlands"
+version = "2.3"
+authors = [ 
+  {name="Tristan Salles", email="tristan.salles@sydney.edu.au"},
+]
+description="Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model"
+requires-python=">=3.7"
+classifiers= [
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "triangle",
+  "meshplex@git+https://github.com/kinnala/meshplex",
+  "numpy>=1.15.0",
+  "six>=1.11.0",
+  "setuptools>=38.4.0",
+  "gFlex>=1.1.0",
+  "scikit-image>=0.15",
+  "pandas>=0.24",
+  "scipy>=1.2",
+  "h5py>=2.8.0",
+  "matplotlib>=3.0"
+]
+[project.urls]
+Homepage = "https://github.com/badlands-model"
+
+#description="Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model",
+#long_description=long_description,
+#long_description_content_type="text/markdown",
+
