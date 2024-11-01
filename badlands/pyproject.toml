@@ -9,15 +9,8 @@ authors = [
   {name="Tristan Salles", email="tristan.salles@sydney.edu.au"},
 ]
 description="Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model"
+readme = {file = "../README.md", content-type = "text/markdown"}
 requires-python=">=3.7"
-classifiers= [
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-]
 dependencies = [
   "triangle",
   "meshplex@git+https://github.com/kinnala/meshplex",
@@ -31,10 +24,21 @@ dependencies = [
   "h5py>=2.8.0",
   "matplotlib>=3.0"
 ]
+maintainers = [
+    {name="Julian Giordani", email="julian.giordani@sydney.edu.au"},
+    {name="Tristan Salles", email="tristan.salles@sydney.edu.au"},
+]
+license = {file = "../LICENSE"}
+classifiers= [
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+
 [project.urls]
 Homepage = "https://github.com/badlands-model"
-
-#description="Basin and Landscape Dynamics (Badlands) is a TIN-based landscape evolution model",
-#long_description=long_description,
-#long_description_content_type="text/markdown",
+Documentation = "https://badlands.readthedocs.io/"
 

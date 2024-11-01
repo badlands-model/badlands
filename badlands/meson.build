@@ -1,7 +1,3 @@
-# this_directory = path.abspath(path.dirname(__file__))
-# with io.open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
-#     long_description = f.read()
-# 
 project( 'badlands',
     'fortran', 'c', 
     version:'2.3.0',
