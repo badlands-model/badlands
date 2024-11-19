@@ -840,6 +840,22 @@ class Model(object):
             )
             self.elevation += sub
             self.cumdiff += sub
+
+        # if Underworld coupling is active, force a strata write at the end
+        if self.input.udw==1:
+            purple = "\033[0;35m"
+            endcol = "\033[00m"
+            print(purple + "Stratal layering output to align with Underworld coupling" + endcol)
+            # force a strata write
+            self.write = 1
+            sub = self.strata.buildStrata(
+                self.elevation,
+                self.cumdiff,
+                self.force.sealevel,
+                self.recGrid.boundsPt,
+                self.write,
+                self.outputStep + 1,
+            )
             
         # Create checkpoint files and write HDF5 output
         if (
