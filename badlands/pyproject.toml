@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61", "wheel", "meson>=1.4.0", "meson-python", "numpy==1.26.4"]
+requires = ["wheel", "meson>=1.4.0", "meson-python", "numpy"]
 build-backend = "mesonpy"
 
 [project]
@@ -16,7 +16,6 @@ dependencies = [
   "meshplex@git+https://github.com/kinnala/meshplex",
   "numpy>=1.15.0",
   "six>=1.11.0",
-  "setuptools>=38.4.0",
   "gFlex>=1.1.0",
   "scikit-image>=0.15",
   "pandas>=0.24",
@@ -30,6 +29,7 @@ maintainers = [
 ]
 license = {file = "../LICENSE"}
 classifiers= [
+  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
