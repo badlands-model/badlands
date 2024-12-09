@@ -14,7 +14,7 @@ requires-python=">=3.7"
 dependencies = [
   "triangle",
   "meshplex@git+https://github.com/kinnala/meshplex",
-  "numpy>=1.15.0",
+  "numpy<2",
   "six>=1.11.0",
   "gFlex>=1.1.0",
   "scikit-image>=0.15",
