@@ -3,7 +3,6 @@ meshplex@git+https://github.com/kinnala/meshplex
 numpy>=1.15.0
 h5py>=2.8.0
 six>=1.11.0
-setuptools>=38.4.0
 pandas>=0.24
 scipy>=1.2
 scikit-image>=0.15
