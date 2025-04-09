@@ -42,6 +42,7 @@ class xmlParser:
         self.Afactor = 1
         self.nopit = 0
         self.udw = 0
+        self.udw_force_final_strata = 0
         self.searef = None
         self.poro0 = 0.0
         self.poroC = 0.47
@@ -289,6 +290,16 @@ class xmlParser:
                     self.udw = 1
             else:
                 self.udw = 0
+            element = None
+            element = grid.find("udw_force_final_strata")
+            if element is not None:
+                self.udw_force_final_strata = int(element.text)
+                if self.udw_force_final_strata < 1:
+                    self.udw_force_final_strata = 0
+                else:
+                    self.udw_force_final_strata = 1
+            else:
+                self.udw_force_final_strata = 0
             element = None
             element = grid.find("searef")
             if element is not None:
