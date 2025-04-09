@@ -842,7 +842,7 @@ class Model(object):
             self.cumdiff += sub
 
         # if Underworld coupling is active, force a strata write at the end
-        if self.input.udw==1:
+        if self.input.udw==1 and self.input.udw_force_final_strata==1:
             purple = "\033[0;35m"
             endcol = "\033[00m"
             print(purple + "Stratal layering output to align with Underworld coupling" + endcol)
