@@ -297,18 +297,20 @@ class Model(object):
 
         Warning:
             If specified end time (**tEnd**) is greater than the one defined in the XML input file priority
-            is given to the XML value.
+            is given to the XML value. If run from Underworld (or UWGeo) use tEnd not from XML file.
         """
 
         assert hasattr(
             self, "recGrid"
         ), "DEM file has not been loaded. Configure one in your XML file or call the build_mesh function."
 
-        if tEnd > self.input.tEnd:
-            print(
-                "Specified end time is greater than the one used in the XML input file and has been adjusted!"
-            )
-            tEnd = self.input.tEnd
+        # if run from Underworld alway use tEnd arg.
+        if self.input.udw == 0:
+            if tEnd > self.input.tEnd:
+                print(
+                    "Specified end time is greater than the one used in the XML input file and has been adjusted!"
+                )
+                tEnd = self.input.tEnd
 
         # Define non-flow related processes times
         if not self.simStarted:
@@ -320,8 +322,8 @@ class Model(object):
             if self.input.laytime > 0:
                 self.force.next_layer = self.input.tStart + self.input.laytime
             else:
-                self.force.next_layer = self.input.tEnd + 1000.0
-            self.exitTime = self.input.tEnd
+                self.force.next_layer = tEnd + 1000.0
+            self.exitTime = tEnd
             if self.input.flexure:
                 self.force.next_flexure = self.input.tStart + self.input.ftime
             else:
@@ -344,7 +346,7 @@ class Model(object):
             # Load precipitation rate
             if (
                 self.force.next_rain <= self.tNow
-                and self.force.next_rain < self.input.tEnd
+                and self.force.next_rain < tEnd
             ):
                 if self.tNow == self.input.tStart:
                     ref_elev = buildMesh.get_reference_elevation(
@@ -365,7 +367,7 @@ class Model(object):
                 # Vertical displacements
                 if (
                     self.force.next_disp <= self.tNow
-                    and self.force.next_disp < self.input.tEnd
+                    and self.force.next_disp < tEnd
                 ):
                     ldisp = np.zeros(self.totPts, dtype=float)
                     ldisp.fill(-1.0e6)
@@ -381,7 +383,7 @@ class Model(object):
                 # 3D displacements
                 if (
                     self.force.next_disp <= self.tNow
-                    and self.force.next_disp < self.input.tEnd
+                    and self.force.next_disp < tEnd
                 ):
                     if self.input.laytime == 0:
                         updateMesh = self.force.load_Disp_map(
@@ -583,7 +585,7 @@ class Model(object):
                     # Load carbonate growth rates for species 1 and 2 during a given growth event
                     if (
                         self.force.next_carb <= self.tNow
-                        and self.force.next_carb < self.input.tEnd
+                        and self.force.next_carb < tEnd
                     ):
                         (
                             self.carbMaxGrowthSp1,
@@ -842,7 +844,7 @@ class Model(object):
             self.cumdiff += sub
 
         # if Underworld coupling is active, force a strata write at the end
-        if self.input.udw==1 and self.input.udw_force_final_strata==1:
+        if self.input.udw==1:
             purple = "\033[0;35m"
             endcol = "\033[00m"
             print(purple + "Stratal layering output to align with Underworld coupling" + endcol)
@@ -859,8 +861,9 @@ class Model(object):
             
         # Create checkpoint files and write HDF5 output
         if (
+            #self.tNow == tEnd
             self.input.udw == 0
-            or self.tNow == self.input.tEnd
+            or self.tNow == tEnd
             or self.tNow == self.force.next_display
         ):
             checkPoints.write_checkpoints(
