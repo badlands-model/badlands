@@ -204,7 +204,7 @@ class Model(object):
             if self.input.waveSed:
                 self.force.next_wave = self.input.tStart + self.input.tWave
             else:
-                self.force.next_wave = self.input.tEnd + 1.0e5
+                self.force.next_wave = np.inf
 
         if self.input.carb:
 
@@ -213,7 +213,7 @@ class Model(object):
             if self.carbTIN is not None:
                 self.prop = np.zeros((self.totPts, self.carbTIN.nbSed))
         else:
-            self.next_carbStep = self.input.tEnd + 1.0e5
+            self.next_carbStep = np.inf
             self.prop = np.zeros((self.totPts, 1))
 
     def _rebuild_mesh(self, verbose=False):
@@ -304,13 +304,18 @@ class Model(object):
             self, "recGrid"
         ), "DEM file has not been loaded. Configure one in your XML file or call the build_mesh function."
 
-        # if run from Underworld alway use tEnd arg.
-        if self.input.udw == 0:
-            if tEnd > self.input.tEnd:
-                print(
-                    "Specified end time is greater than the one used in the XML input file and has been adjusted!"
-                )
-                tEnd = self.input.tEnd
+        # use the smallest tEnd, either passing or from the XML - when udw coupling is disabled
+        if (self.input.tEnd < tEnd) and (self.input.udw == 0):
+            print(
+            "Specified `tEnd` is greater than `tEnd` in the XML input file. Using the XML definition as it's smaller!"
+            )
+            tEnd = self.input.tEnd
+
+        # reference var within loop
+        tStart   = self.input.tStart
+        ftime    = self.input.ftime
+        tDisplay = self.input.tDisplay
+        laytime  = self.input.laytime
 
         # Define non-flow related processes times
         if not self.simStarted:
@@ -318,16 +323,15 @@ class Model(object):
             self.force.next_disp = self.force.T_disp[0, 0]
             self.force.next_carb = self.force.T_carb[0, 0]
 
-            self.force.next_display = self.input.tStart
-            if self.input.laytime > 0:
-                self.force.next_layer = self.input.tStart + self.input.laytime
+            self.force.next_display = tStart
+            if laytime > 0:
+                self.force.next_layer = tStart + laytime
             else:
-                self.force.next_layer = tEnd + 1000.0
-            self.exitTime = tEnd
+                self.force.next_layer = np.inf
             if self.input.flexure:
-                self.force.next_flexure = self.input.tStart + self.input.ftime
+                self.force.next_flexure = tStart + ftime
             else:
-                self.force.next_flexure = self.exitTime + self.input.tDisplay
+                self.force.next_flexure = np.inf
             self.simStarted = True
 
         outStrata = 0
@@ -348,7 +352,7 @@ class Model(object):
                 self.force.next_rain <= self.tNow
                 and self.force.next_rain < tEnd
             ):
-                if self.tNow == self.input.tStart:
+                if self.tNow == tStart:
                     ref_elev = buildMesh.get_reference_elevation(
                         self.input, self.recGrid, self.elevation
                     )
@@ -359,7 +363,7 @@ class Model(object):
                 )
 
             # Initialize waveFlux at tStart
-            # if self.tNow == self.input.tStart:
+            # if self.tNow == tStart:
             #     self.force.initWaveFlux(self.inIDs)
 
             # Load tectonic grid
@@ -385,7 +389,7 @@ class Model(object):
                     self.force.next_disp <= self.tNow
                     and self.force.next_disp < tEnd
                 ):
-                    if self.input.laytime == 0:
+                    if laytime == 0:
                         updateMesh = self.force.load_Disp_map(
                             self.tNow, self.FVmesh.node_coords[:, :2], self.inIDs
                         )
@@ -424,7 +428,7 @@ class Model(object):
                         sload = None
                         if (
                             self.input.udw == 1
-                            and self.tNow == self.input.tStart
+                            and self.tNow == tStart
                             and self.strata is not None
                         ):
                             if self.strata.oldload is None:
@@ -436,7 +440,7 @@ class Model(object):
                                 self.strata.oldload = np.zeros(
                                     len(self.elevation), dtype=float
                                 )
-                        if self.input.laytime > 0 and self.strata.oldload is not None:
+                        if laytime > 0 and self.strata.oldload is not None:
                             sload = self.strata.oldload
                             fstrat = 1
                         # Define erodibility map flags
@@ -490,7 +494,7 @@ class Model(object):
                             self.elevation += self.force.uDisp
 
                         # Update the stratigraphic mesh
-                        if self.input.laytime > 0 and self.strata is not None:
+                        if laytime > 0 and self.strata is not None:
                             self.strata.move_mesh(regdX, regdY, scum, verbose)
 
             # Compute isostatic flexure
@@ -518,7 +522,7 @@ class Model(object):
                 self.elevation += self.tinFlex
                 self.cumflex += self.tinFlex
                 # Update next flexure time
-                self.force.next_flexure += self.input.ftime
+                self.force.next_flexure += ftime
                 print(
                     "   - Compute flexural isostasy %0.02f seconds"
                     % (time.process_time() - flextime)
@@ -657,7 +661,7 @@ class Model(object):
 
             # Update next stratal layer time
             if self.tNow >= self.force.next_layer:
-                self.force.next_layer += self.input.laytime
+                self.force.next_layer += laytime
                 if self.straTIN is not None:
                     self.straTIN.step += 1
                 if self.input.laststrat == True:
@@ -698,7 +702,7 @@ class Model(object):
 
             # Create checkpoint files and write HDF5 output
             if self.tNow >= self.force.next_display:
-                if self.force.next_display > self.input.tStart:
+                if self.force.next_display > tStart:
                     outStrata = 1
                 checkPoints.write_checkpoints(
                     self.input,
@@ -740,7 +744,7 @@ class Model(object):
 
                 # Update next display time
                 last_output = time.process_time()
-                self.force.next_display += self.input.tDisplay
+                self.force.next_display += tDisplay
                 self.outputStep += 1
                 if self.carbTIN is not None:
                     self.carbTIN.step += 1
@@ -821,7 +825,7 @@ class Model(object):
             self.elevation += self.tinFlex
             self.cumflex += self.tinFlex
             # Update next flexure time
-            self.force.next_flexure += self.input.ftime
+            self.force.next_flexure += ftime
             print(
                 "   - Compute flexural isostasy %0.02f seconds"
                 % (time.process_time() - flextime)
@@ -829,7 +833,7 @@ class Model(object):
 
         # Update next stratal layer time
         if self.tNow >= self.force.next_layer:
-            self.force.next_layer += self.input.laytime
+            self.force.next_layer += laytime
             if self.input.laststrat==True: 
                 self.write=1 # set parameter to call hdf5 stratal writer
             sub = self.strata.buildStrata(
@@ -904,7 +908,7 @@ class Model(object):
                     % (time.process_time() - meshtime)
                 )
 
-            self.force.next_display += self.input.tDisplay
+            self.force.next_display += tDisplay
             self.outputStep += 1
             if self.straTIN is not None:
                 self.straTIN.write_hdf5_stratigraphy(self.lGIDs, self.outputStep - 1)
