@@ -73,6 +73,7 @@ class Model(object):
         self.pelaval = None
         self.applyDisp = False
         self.simStarted = False
+        self.strat_write = 0 # disable stratigraphic output first time
 
     def load_xml(self, filename, verbose=False):
         """
@@ -334,7 +335,6 @@ class Model(object):
                 self.force.next_flexure = np.inf
             self.simStarted = True
 
-        outStrata = 0
         last_time = time.process_time()
         last_output = time.process_time()
 
@@ -664,26 +664,23 @@ class Model(object):
                 self.force.next_layer += laytime
                 if self.straTIN is not None:
                     self.straTIN.step += 1
-                if self.input.laststrat == True:
-                   outStrata=0
                 if self.strata:
                     if self.tNow==tEnd: 
-                        self.write=1 # set parameter to call hdf5 stratal writer on final strat only
+                        self.strat_write=1 # set parameter to call hdf5 stratal writer on final strat only
                     else:
-                        self.write=0
+                        self.strat_write=0
                     if self.input.laststrat == False:
-                        self.write=outStrata #revert to previous behaviour by default
+                        self.strat_write=1 # if laststrat is False always output strata hdf5
                     sub = self.strata.buildStrata(
                         self.elevation,
                         self.cumdiff,
                         self.force.sealevel,
                         self.recGrid.boundsPt,
-                        self.write,
+                        self.strat_write,
                         self.outputStep,
                     )
                     self.elevation += sub
                     self.cumdiff += sub
-                outStrata = 0
 
             # Compute stream network
             self.fillH, self.elevation = buildFlux.streamflow(
@@ -703,7 +700,6 @@ class Model(object):
             # Create checkpoint files and write HDF5 output
             if self.tNow >= self.force.next_display:
                 if self.force.next_display > tStart:
-                    outStrata = 1
                 checkPoints.write_checkpoints(
                     self.input,
                     self.recGrid,
@@ -835,13 +831,13 @@ class Model(object):
         if self.tNow >= self.force.next_layer:
             self.force.next_layer += laytime
             if self.input.laststrat==True: 
-                self.write=1 # set parameter to call hdf5 stratal writer
+                self.strat_write=1 # set parameter to call hdf5 stratal writer
             sub = self.strata.buildStrata(
                 self.elevation,
                 self.cumdiff,
                 self.force.sealevel,
                 self.recGrid.boundsPt,
-                self.write, #was 0
+                self.strat_write,
                 self.outputStep + 1,
             )
             self.elevation += sub
@@ -853,13 +849,13 @@ class Model(object):
             endcol = "\033[00m"
             print(purple + "Stratal layering output to align with Underworld coupling" + endcol)
             # force a strata write
-            self.write = 1
+            self.strat_write = 1
             sub = self.strata.buildStrata(
                 self.elevation,
                 self.cumdiff,
                 self.force.sealevel,
                 self.recGrid.boundsPt,
-                self.write,
+                self.strat_write,
                 self.outputStep + 1,
             )
             
