@@ -22,6 +22,7 @@ dependencies:
   - python=3.8
   - jupyterlab=2.1
   - numpy=1.21
+  - git-lfs
   - pip
   - pandas
   - scipy
