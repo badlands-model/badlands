@@ -1,4 +1,4 @@
-name: badlands_new
+name: badlands
 channels:
   - conda-forge
   - fastai
