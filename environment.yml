@@ -1,0 +1,19 @@
+name: badlands_new
+channels:
+  - conda-forge
+  - fastai
+dependencies:
+  - python=3.12
+  - jupyterlab=2.1
+  - numpy<2
+  - pip
+  - pandas
+  - scipy
+  - compilers
+  - gfortran
+  - git-lfs
+  - h5py
+  - meshplex
+  - matplotlib
+  - pip:
+      - gFlex
