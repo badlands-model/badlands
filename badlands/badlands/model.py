@@ -699,7 +699,7 @@ class Model(object):
 
             # Create checkpoint files and write HDF5 output
             if self.tNow >= self.force.next_display:
-                if self.force.next_display > tStart:
+                # if self.force.next_display > tStart:
                 checkPoints.write_checkpoints(
                     self.input,
                     self.recGrid,
