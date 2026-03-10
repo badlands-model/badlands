@@ -4,7 +4,7 @@ channels:
   - fastai
 dependencies:
   - python=3.12
-  - jupyterlab=2.1
+  - jupyterlab
   - numpy<2
   - pip
   - pandas
