@@ -115,8 +115,11 @@ If you would like a native local build, you will need to download, install and c
 
 We have created a **Python3 Package** that should handle all dependencies for you. And the recommended install is through the `PyPI package`_:
 
+First the runtime dependency `meshplex` must first be installed. We require an previously made version of it as new versions require a license). Only with this can `badlands` be run.
+
 .. code:: bash
 
+   sudo pip3 install git+https://github.com/kinnala/meshplex
    sudo pip3 install badlands
    sudo pip3 install badlands-companion
 
@@ -155,8 +158,7 @@ Then, cd to the respective folder and run the install command:
 
 .. code:: bash
 
-  cd badlands/badlands
-  sudo python3 setup.py install
+  sudo python3 -m pip install badlands.git/
 
 
 .. code:: bash

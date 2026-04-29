@@ -1,6 +1,0 @@
-include README.md
-include MANIFEST.in
-include COPYING
-include setup.cfg
-include utils/*
-include badlands/*

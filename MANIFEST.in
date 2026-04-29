@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+include MANIFEST.in
+include COPYING
+include setup.cfg
+include setup.py
+include meson.build
+include pyproject.toml
+recursive-include utils/ *.pyf *.f90 *.mod Makefile
+recursive-include src/badlands/ *.py
