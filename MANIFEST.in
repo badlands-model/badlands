@@ -6,5 +6,5 @@ include setup.cfg
 include setup.py
 include meson.build
 include pyproject.toml
-recursive-include utils/ *.pyf *.f90 *.mod Makefile
+recursive-include utils/ *.pyf *.f90 *.mod *.c Makefile
 recursive-include src/badlands/ *.py
