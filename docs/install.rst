@@ -115,7 +115,7 @@ If you would like a native local build, you will need to download, install and c
 
 We have created a **Python3 Package** that should handle all dependencies for you. And the recommended install is through the `PyPI package`_:
 
-First the runtime dependency `meshplex` must first be installed. We require an previously made version of it as new versions require a license). Only with this can `badlands` be run.
+The runtime dependency **meshplex** must first be installed. **badlands** requires a previous version of it as the **PyPI** version requires a license.
 
 .. code:: bash
 
