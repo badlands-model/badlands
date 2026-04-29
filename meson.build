@@ -114,7 +114,5 @@ foreach mod : badlands_extensions.keys()
 endforeach
 
 # Install other data or resources (like LICENSE or README)
-py.install_sources('../LICENSE', subdir: proj_name)
-py.install_sources('./badlands/__init__.py', subdir: proj_name)
-py.install_sources('./badlands/model.py', subdir: proj_name)
-install_subdir('./badlands/', install_dir: py.get_install_dir())
+py.install_sources('./LICENSE', subdir: proj_name)
+install_subdir('./src/badlands/', install_dir: py.get_install_dir())
