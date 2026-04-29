@@ -13,7 +13,6 @@ readme = {file = "README.md", content-type = "text/markdown"}
 requires-python=">=3.7"
 dependencies = [
   "triangle",
-  "meshplex@git+https://github.com/kinnala/meshplex",
   "numpy<2",
   "six>=1.11.0",
   "gFlex>=1.1.0",
