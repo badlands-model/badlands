@@ -18,10 +18,11 @@ import numpy
 try:
     import meshplex
 except ImportError as e:
-    raise ImportError("The `meshplex` dependency package is unavailable\n"          + \
-            "please ensure it's available / installed in the python environment.\n" + \
-            "It can be installed with: \n" + \
-            "   pip install git+https://github.com/kinnala/meshplex\n\n"           + \
+    raise ImportError(
+            "The `meshplex` dependency package is unavailable\n"
+            "please ensure it's available / installed in the python environment.\n"
+            "It can be installed with: \n"
+            "   pip install git+https://github.com/kinnala/meshplex\n\n"
             "Once installed please rerun `badlands`") from e
 
 import warnings
