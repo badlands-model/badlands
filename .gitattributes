@@ -1,0 +1,5 @@
+# Exclude large data files from tar ball
+*.gif             export-ignore
+*.jpg             export-ignore
+*.png             export-ignore
+*.pdf             export-ignore

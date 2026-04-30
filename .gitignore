@@ -1,11 +1,9 @@
 *.pyc
 *.sublime-*
 *.so
-pyBadlands.egg-info/
+badlands.egg-info/
 *.mod
 *.o
-Examples/.ipynb_checkpoints/
-libUtils/WaveComp/SwanSrc/*.o
 *.swp
 *.hdf5
 *.xmf
@@ -18,10 +16,9 @@ output/
 __MACOSX
 .DS_Store
 *.dSYM
-doc/_build/
+dist/
+docs/_build/
 tags
-doc/env/
+docs/env/
 *.egg
-badlands/badlands.egg-info
 *.gz
-badlands/docs/_build
