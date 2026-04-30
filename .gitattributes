@@ -2,3 +2,4 @@
 *.gif             export-ignore
 *.jpg             export-ignore
 *.png             export-ignore
+*.pdf             export-ignore
