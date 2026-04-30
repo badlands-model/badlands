@@ -11,3 +11,7 @@ To build documentation:
 Documentation is hosted on badlands.readthedocs.io. RTD's builder can't build
 the FORTRAN components of Badlands, so we stub them out with MagicMock, per
 the instructions at http://docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+
+To build the `dist` directory for a package release:
+
+    python -m build
