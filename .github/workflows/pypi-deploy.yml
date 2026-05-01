@@ -12,6 +12,12 @@ permissions:
 jobs:
   release-build:
     runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/badlands
+
+    permissions:
+      id-token: write # mandatory for trusted publishing
 
     steps:
       - uses: actions/checkout@v4
@@ -30,10 +36,16 @@ jobs:
           python -m pip install build twine
           python -m build --sdist
 
-      - name: Upload source distributions
-        env:
-          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-        run: |
-          twine check dist/*.tar.gz
-          twine upload --repository testpypi dist/*.tar.gz --verbose
+      - name: Upload to pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+          
+      # - name: Upload source distributions
+      #   env:
+      #     TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+      #     TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+      #   run: |
+      #     twine check dist/*.tar.gz
+      #     twine upload --repository testpypi dist/*.tar.gz --verbose
