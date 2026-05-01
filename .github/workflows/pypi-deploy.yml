@@ -20,10 +20,10 @@ jobs:
       id-token: write # mandatory for trusted publishing
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Micromamba Environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: environment.yml
           environment-name: badlands
@@ -40,12 +40,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-
-          
-      # - name: Upload source distributions
-      #   env:
-      #     TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
-      #     TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-      #   run: |
-      #     twine check dist/*.tar.gz
-      #     twine upload --repository testpypi dist/*.tar.gz --verbose
