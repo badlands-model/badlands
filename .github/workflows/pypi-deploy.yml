@@ -1,0 +1,39 @@
+# This workflow will upload a Python Package to PyPI when a release is created
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+
+name: Upload PyPI package
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Micromamba Environment
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          environment-name: badlands
+          generate-run-shell: true
+          cache-environment: true
+
+      - name: Build source distributions
+        run: |
+          micromamba list -v
+          python -m pip install build twine
+          python -m build --sdist
+
+      - name: Upload source distributions
+        env:
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        run: |
+          twine check dist/*.tar.gz
+          twine upload --repository testpypi dist/*.tar.gz --verbose
