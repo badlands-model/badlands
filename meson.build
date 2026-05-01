@@ -1,6 +1,6 @@
 project( 'badlands',
     'fortran', 'c', 
-    version:'2.3.2',
+    version:'2.3.1',
     license:'GPLv3',
     meson_version: '>=1.4.0',
     default_options : ['warning_level=2', 'python.install_env=auto'])
