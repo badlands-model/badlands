@@ -13,8 +13,8 @@ jobs:
   release-build:
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/badlands
+      name: pypi
+      url: https://pypi.org/p/badlands
 
     permissions:
       id-token: write # mandatory for trusted publishing
@@ -38,5 +38,5 @@ jobs:
 
       - name: Upload to pypi
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+        # with:
+        #   repository-url: https://test.pypi.org/legacy/
