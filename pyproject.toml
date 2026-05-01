@@ -4,7 +4,7 @@ build-backend = "mesonpy"
 
 [project]
 name    = "badlands"
-version = "2.3.1"
+dynamic = ["version"] # this should be source from meson.build
 authors = [ 
   {name="Tristan Salles", email="tristan.salles@sydney.edu.au"},
 ]

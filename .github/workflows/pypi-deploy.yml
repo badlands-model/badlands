@@ -1,0 +1,42 @@
+# This workflow will upload a Python Package to PyPI when a release is created
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+
+name: Upload PyPI package
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/badlands
+
+    permissions:
+      id-token: write # mandatory for trusted publishing
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Micromamba Environment
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: environment.yml
+          environment-name: badlands
+          generate-run-shell: true
+          cache-environment: true
+
+      - name: Build source distributions
+        run: |
+          micromamba list -v
+          python -m pip install build twine
+          python -m build --sdist
+
+      - name: Upload to pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # with:
+        #   repository-url: https://test.pypi.org/legacy/
